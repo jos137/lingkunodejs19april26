@@ -1,0 +1,80 @@
+<style>
+.feat-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.feat-add-btn { padding: 10px 20px; border: none; border-radius: 10px; background: linear-gradient(135deg,#10b981,#059669); color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s; }
+.feat-add-btn:hover { transform: translateY(-1px); }
+.feat-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+.feat-table { width: 100%; border-collapse: collapse; }
+.feat-table thead th { background: #f9fafb; padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
+.feat-table tbody td { padding: 14px 18px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; font-weight: 500; }
+.feat-table tbody tr:hover { background: #f9fafb; }
+.feat-toggle { width: 44px; height: 24px; border-radius: 24px; border: none; cursor: pointer; position: relative; transition: 0.2s; }
+.feat-toggle.on { background: #10b981; }
+.feat-toggle.off { background: #cbd5e1; }
+.feat-del { padding: 6px 12px; border: 1px solid #fecaca; border-radius: 8px; background: #fff; color: #ef4444; font-size: 11px; font-weight: 700; cursor: pointer; }
+.feat-del:hover { background: #fef2f2; }
+.feat-empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+
+/* Modal */
+.feat-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+.feat-modal-bg.show { display: flex; }
+.feat-modal { background: #fff; border-radius: 16px; width: 420px; max-width: 90vw; padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.feat-modal h3 { font-size: 16px; font-weight: 900; margin-bottom: 18px; }
+.feat-modal-input { width: 100%; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-family: inherit; font-size: 14px; margin-bottom: 14px; outline: none; }
+.feat-modal-input:focus { border-color: #3b82f6; }
+.feat-modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+.feat-modal-btn { padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+.feat-modal-btn.save { background: #10b981; color: #fff; }
+.feat-modal-btn.cancel { background: #f3f4f6; color: #374151; }
+</style>
+
+<div class="feat-header">
+    <div></div>
+    <button class="feat-add-btn" onclick="document.getElementById('addFeatModal').classList.add('show')"><i class="fas fa-plus"></i> Tambah Fitur</button>
+</div>
+
+<div class="feat-table-wrap">
+    <% if (features.length > 0) { %>
+        <table class="feat-table">
+            <thead><tr><th>#</th><th>Flag Key</th><th>Deskripsi</th><th>Status</th><th>Aksi</th></tr></thead>
+            <tbody>
+                <% features.forEach(f => { %>
+                    <tr>
+                        <td><strong><%= f.id %></strong></td>
+                        <td><strong><%= f.flag_key %></strong></td>
+                        <td><%= f.description || '-' %></td>
+                        <td>
+                            <form action="/admin/features/<%= f.id %>/toggle" method="POST" style="display:inline;">
+                                <button type="submit" class="feat-toggle <%= f.is_enabled ? 'on' : 'off' %>"></button>
+                            </form>
+                            <span style="font-size:11px;margin-left:6px;color:<%= f.is_enabled ? '#10b981' : '#94a3b8' %>;font-weight:700;">
+                                <%= f.is_enabled ? 'ON' : 'OFF' %>
+                            </span>
+                        </td>
+                        <td>
+                            <form action="/admin/features/<%= f.id %>/delete" method="POST" style="display:inline;" onsubmit="return confirm('Hapus fitur ini?')">
+                                <button type="submit" class="feat-del"><i class="fas fa-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                <% }); %>
+            </tbody>
+        </table>
+    <% } else { %>
+        <div class="feat-empty"><i class="fas fa-toggle-off" style="font-size:28px;display:block;margin-bottom:8px;"></i>Belum ada feature flag.</div>
+    <% } %>
+</div>
+
+<!-- Add Modal -->
+<div class="feat-modal-bg" id="addFeatModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="feat-modal">
+        <h3>Tambah Feature Flag</h3>
+        <form action="/admin/features/create" method="POST">
+            <input class="feat-modal-input" name="flag_key" placeholder="Flag key (cth: enable_dark_mode)" required>
+            <input class="feat-modal-input" name="description" placeholder="Deskripsi singkat">
+            <div class="feat-modal-btns">
+                <button type="button" class="feat-modal-btn cancel" onclick="document.getElementById('addFeatModal').classList.remove('show')">Batal</button>
+                <button type="submit" class="feat-modal-btn save">Simpan</button>
+            </div>
+        </form>
+    </div>
+</div>

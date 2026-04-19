@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - <%= product.name %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #10b981; --bg: #f8fafc; --text-dark: #111827; --text-muted: #6b7280; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; align-items: center; }
+        
+        .checkout-card { width: 100%; max-width: 420px; background: #fff; border-radius: 24px; padding: 32px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); margin: 20px; }
+        .back-link { display: flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 700; margin-bottom: 24px; transition: 0.2s; }
+        .back-link:hover { color: var(--text-dark); }
+        
+        .header { margin-bottom: 32px; }
+        .title { font-size: 22px; font-weight: 850; margin: 0; letter-spacing: -0.5px; }
+        .subtitle { font-size: 13px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+        
+        .product-summary { background: #f8fafc; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 16px; margin-bottom: 32px; border: 1px solid #f1f5f9; }
+        .product-icon { width: 44px; height: 44px; background: #10b98122; color: #10b981; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+        .product-info { flex: 1; }
+        .product-name { font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
+        .product-price { font-size: 14px; font-weight: 700; color: #10b981; }
+
+        .form-group { margin-bottom: 20px; }
+        .label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input { width: 100%; padding: 14px 18px; border: 1.5px solid #e5e7eb; border-radius: 14px; font-family: inherit; font-size: 14px; outline: none; transition: 0.2s; box-sizing: border-box; }
+        .input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,0.08); }
+        
+        .pay-btn { width: 100%; padding: 18px; background: linear-gradient(135deg, #10b981, #059669); color: #fff; border: none; border-radius: 16px; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 25px -5px rgba(16,185,129,0.4); display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 12px; }
+        .pay-btn:hover { transform: translateY(-2px); box-shadow: 0 15px 35px -5px rgba(16,185,129,0.5); }
+        
+        .footer-note { text-align: center; margin-top: 24px; font-size: 11px; color: var(--text-muted); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .footer-note i { color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="checkout-card">
+        <a href="javascript:history.back()" class="back-link"><i class="fas fa-chevron-left"></i> Kembali</a>
+        
+        <div class="header">
+            <h1 class="title">Informasi Pesanan</h1>
+            <p class="subtitle">Silakan lengkapi data diri Anda untuk melanjutkan pembayaran.</p>
+        </div>
+
+        <% 
+            let raw = product.image_url || product.thumbnail || '';
+            let thumb = '';
+            try {
+                if (raw && raw.startsWith('[')) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr) && arr.length > 0) thumb = arr[0];
+                } else { thumb = raw; }
+            } catch(e) { thumb = raw; }
+            const thumbUrl = thumb && !thumb.startsWith('http') && !thumb.startsWith('/') ? '/uploads/products/' + thumb : (thumb || 'https://via.placeholder.com/150');
+        %>
+
+        <div class="product-summary">
+            <div class="product-icon" style="background: none; overflow: hidden; border: 1px solid #f1f5f9;">
+                <img src="<%= thumbUrl %>" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <div class="product-info">
+                <div class="product-name"><%= product.name %></div>
+                <div class="product-price">Rp <%= parseFloat(product.price || 0).toLocaleString('id-ID') %></div>
+            </div>
+        </div>
+
+        <form action="/checkout/process" method="POST" id="checkoutForm">
+            <input type="hidden" name="product_id" value="<%= product.id %>">
+            <input type="hidden" name="payment_method" id="payMethod" value="qr">
+            <input type="hidden" name="payment_channel" id="payChannel" value="qris">
+            
+            <div class="form-group">
+                <label class="label">Nama Lengkap</label>
+                <input type="text" name="name" class="input" placeholder="Masukkan nama Anda" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="label">Alamat Email</label>
+                <input type="email" name="email" class="input" placeholder="Email untuk pengiriman produk" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="label">Nomor WhatsApp</label>
+                <input type="text" name="phone" class="input" placeholder="e.g. 08123456789" required>
+            </div>
+
+            <div class="form-group" style="margin-top: 32px;">
+                <label class="label">Pilih Metode Pembayaran</label>
+                <div class="payment-grid">
+                    <div class="pay-option active" data-method="qr" data-channel="qris" onclick="selectPay(this)">
+                        <img src="https://img.icons8.com/color/48/000000/qr-code.png" alt="QRIS">
+                        <span>QRIS</span>
+                    </div>
+                    <div class="pay-option" data-method="va" data-channel="bca" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Bank_Central_Asia.svg" alt="BCA">
+                        <span>BCA</span>
+                    </div>
+                    <div class="pay-option" data-method="va" data-channel="mandiri" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/a/ad/Bank_Mandiri_logo_2016.svg" alt="Mandiri">
+                        <span>Mandiri</span>
+                    </div>
+                    <div class="pay-option" data-method="va" data-channel="bni" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/id/5/55/BNI_logo.svg" alt="BNI">
+                        <span>BNI</span>
+                    </div>
+                    <div class="pay-option" data-method="va" data-channel="bri" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/2/2e/BRI_Logo.svg" alt="BRI">
+                        <span>BRI</span>
+                    </div>
+                    <div class="pay-option" data-method="cstore" data-channel="alfamart" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Alfamart_logo.svg" alt="Alfamart">
+                        <span>Alfamart</span>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="pay-btn">
+                Lanjutkan Pembayaran <i class="fas fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <style>
+            .payment-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+            .pay-option { 
+                padding: 12px 8px; border: 1.5px solid #f1f5f9; border-radius: 12px; 
+                display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; 
+                cursor: pointer; transition: 0.2s; position: relative; background: #fff;
+            }
+            .pay-option img { height: 20px; width: auto; max-width: 100%; filter: grayscale(1); opacity: 0.6; transition: 0.2s; }
+            .pay-option span { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
+            .pay-option:hover { border-color: #cbd5e1; background: #f8fafc; }
+            .pay-option.active { border-color: #10b981; background: #f0fdf4; box-shadow: 0 4px 12px rgba(16,185,129,0.1); }
+            .pay-option.active img { filter: grayscale(0); opacity: 1; }
+            .pay-option.active span { color: #065f46; }
+            .pay-option.active::after { content: '\f058'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 4px; right: 4px; font-size: 10px; color: #10b981; }
+        </style>
+
+        <script>
+            function selectPay(el) {
+                document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('active'));
+                el.classList.add('active');
+                document.getElementById('payMethod').value = el.dataset.method;
+                document.getElementById('payChannel').value = el.dataset.channel;
+            }
+        </script>
+
+        <div class="footer-note">
+            <i class="fas fa-lock"></i> Pembayaran Aman & Terenkripsi oleh iPaymu
+        </div>
+    </div>
+</body>
+</html>

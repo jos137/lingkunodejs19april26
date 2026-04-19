@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In — Lingku.xyz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f0f1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Logo */
+        .login-logo {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .login-logo a {
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .login-logo .logo-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 20px; color: white;
+            box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+        }
+        .login-logo .logo-text {
+            font-size: 32px;
+            font-weight: 900;
+            color: #1e293b;
+            letter-spacing: -1px;
+        }
+
+        /* Card */
+        .login-card {
+            background: #fff;
+            width: 360px;
+            max-width: 90vw;
+            padding: 30px 28px 36px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.06);
+        }
+
+        /* Form */
+        .form-group { margin-bottom: 18px; }
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e1e1e;
+            margin-bottom: 6px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1.5px solid #8c8f94;
+            border-radius: 4px;
+            font-size: 15px;
+            font-family: inherit;
+            color: #1e1e1e;
+            background: #fff;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .form-input:focus {
+            border-color: #2271b1;
+            box-shadow: 0 0 0 1px #2271b1;
+        }
+
+        /* Remember + Forgot */
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .remember-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: #50575e;
+            cursor: pointer;
+        }
+        .remember-label input[type="checkbox"] {
+            width: 16px; height: 16px;
+            accent-color: #2271b1;
+            cursor: pointer;
+        }
+        .forgot-link {
+            font-size: 12px;
+            color: #2271b1;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .forgot-link:hover { text-decoration: underline; color: #135e96; }
+
+        /* Button */
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #2271b1;
+            color: #fff;
+            border: 1px solid #2271b1;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .login-btn:hover { background: #135e96; }
+
+        /* Error */
+        .login-error {
+            background: #fcf0f1;
+            border-left: 4px solid #d63638;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #d63638;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Success */
+        .login-success {
+            background: #edfaef;
+            border-left: 4px solid #00a32a;
+            padding: 12px 14px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            color: #00a32a;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* Bottom links */
+        .login-links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .login-links a {
+            font-size: 13px;
+            color: #50575e;
+            text-decoration: none;
+        }
+        .login-links a:hover { color: #2271b1; text-decoration: underline; }
+        .login-links .sep { color: #c3c4c7; margin: 0 6px; }
+
+        /* Back to site */
+        .back-link {
+            text-align: center;
+            margin-top: 28px;
+        }
+        .back-link a {
+            font-size: 13px;
+            color: #50575e;
+            text-decoration: none;
+        }
+        .back-link a:hover { color: #2271b1; }
+        .back-link a span { font-size: 16px; }
+
+        /* Language toggle */
+        .login-footer {
+            position: fixed;
+            bottom: 16px;
+            text-align: center;
+            font-size: 11px;
+            color: #a7aaad;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-logo">
+        <a href="/">
+            <img src="/images/logo.png" alt="Logo" style="height: 60px;">
+        </a>
+    </div>
+
+    <div class="login-card">
+        <% if (locals.error) { %>
+            <div class="login-error"><%= error %></div>
+        <% } %>
+        <% if (locals.success) { %>
+            <div class="login-success"><%= success %></div>
+        <% } %>
+
+        <form action="/auth/login" method="POST">
+            <div class="form-group">
+                <label class="form-label" for="email">Email Address</label>
+                <input type="email" id="email" name="email" class="form-input" 
+                    value="<%= locals.email || '' %>" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" name="password" class="form-input" required>
+            </div>
+
+            <div class="form-row">
+                <label class="remember-label">
+                    <input type="checkbox" name="remember" value="1"> Remember Me
+                </label>
+                <a href="#" class="forgot-link">Lost your password?</a>
+            </div>
+
+            <button type="submit" class="login-btn">Log In</button>
+        </form>
+    </div>
+
+    <div class="login-links">
+        <a href="/auth/register">Don't have an account? Register</a>
+    </div>
+
+    <div class="back-link">
+        <a href="/"><span>←</span> Go to Lingku.xyz</a>
+    </div>
+
+    <div class="login-footer">
+        &copy; 2026 Lingku.xyz
+    </div>
+
+</body>
+</html>

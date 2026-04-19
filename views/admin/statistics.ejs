@@ -1,0 +1,41 @@
+<style>
+.stat-cards {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px;
+}
+.stat-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.stat-card-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; }
+.stat-card-value { font-size: 26px; font-weight: 900; color: #111827; }
+.stat-card-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
+</style>
+
+<div class="stat-cards">
+    <div class="stat-card">
+        <div class="stat-card-label" style="color:#10b981;">TOTAL REVENUE</div>
+        <div class="stat-card-value">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label" style="color:#3b82f6;">TOTAL PESANAN</div>
+        <div class="stat-card-value"><%= total_orders || 0 %></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label" style="color:#059669;">SELESAI</div>
+        <div class="stat-card-value" style="color:#059669;"><%= completed_orders || 0 %></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-card-label" style="color:#d97706;">PENDING</div>
+        <div class="stat-card-value" style="color:#d97706;"><%= pending_orders || 0 %></div>
+    </div>
+</div>
+
+<div class="card" style="padding:28px;">
+    <div style="font-size:12px;font-weight:800;color:#374151;letter-spacing:0.5px;margin-bottom:16px;">RINGKASAN PERFORMA</div>
+    <p style="font-size:14px;color:#64748b;line-height:1.7;">
+        Total pendapatan Anda adalah <strong style="color:#111827;">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></strong>
+        dari <strong style="color:#111827;"><%= total_orders || 0 %> pesanan</strong>.
+        <br>Pesanan selesai: <strong style="color:#059669;"><%= completed_orders || 0 %></strong>,
+        Pending: <strong style="color:#d97706;"><%= pending_orders || 0 %></strong>.
+    </p>
+</div>

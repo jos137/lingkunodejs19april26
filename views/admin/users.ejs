@@ -1,0 +1,106 @@
+<style>
+.users-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
+.users-table { width: 100%; border-collapse: collapse; }
+.users-table thead th { background: #f9fafb; padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
+.users-table tbody td { padding: 14px 18px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; font-weight: 500; }
+.users-table tbody tr { cursor: pointer; transition: 0.1s; }
+.users-table tbody tr:hover { background: #f0fdf4; }
+.user-avatar-sm { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; }
+.role-badge { padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 800; }
+.role-badge.admin { background: #fef2f2; color: #dc2626; }
+.role-badge.user { background: #eff6ff; color: #3b82f6; }
+.role-badge.seller { background: #f0fdf4; color: #059669; }
+
+/* Modal */
+.user-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+.user-modal-bg.show { display: flex; }
+.user-modal {
+    background: #fff; border-radius: 16px; width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 28px;
+}
+.user-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.user-modal-header h3 { font-size: 18px; font-weight: 900; color: #111827; }
+.user-modal-close { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
+.user-modal-close:hover { background: #f3f4f6; color: #111827; }
+.user-modal-avatar { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 16px; }
+.user-detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
+.user-detail-row:last-child { border-bottom: none; }
+.user-detail-row .label { color: #94a3b8; font-weight: 600; }
+.user-detail-row .value { color: #111827; font-weight: 700; }
+</style>
+
+<div class="users-table-wrap">
+    <table class="users-table">
+        <thead>
+            <tr><th>#</th><th>Avatar</th><th>Nama</th><th>Email</th><th>Role</th><th>Terdaftar</th></tr>
+        </thead>
+        <tbody>
+            <% if (users.length > 0) { %>
+                <% users.forEach(function(u, idx) { 
+                    const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
+                    const color = colors[idx % colors.length]; 
+                %>
+                    <tr onclick="showUser(<%= idx %>)">
+                        <td><strong><%= u.id %></strong></td>
+                        <td><div class="user-avatar-sm" style="background:<%= color %>"><%= u.name ? u.name.charAt(0).toUpperCase() : '?' %></div></td>
+                        <td><strong><%= u.name || '-' %></strong></td>
+                        <td><%= u.email || '-' %></td>
+                        <td><span class="role-badge <%= u.role || 'user' %>"><%= (u.role || 'user').toUpperCase() %></span></td>
+                        <td><%= u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-' %></td>
+                    </tr>
+                <% }); %>
+            <% } else { %>
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">Belum ada user.</td></tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<!-- User Detail Modal -->
+<div class="user-modal-bg" id="userModal" onclick="if(event.target===this)closeModal()">
+    <div class="user-modal" id="userModalContent"></div>
+</div>
+
+<script>
+const usersData = [];
+<% users.forEach(function(u) { %>
+usersData.push({
+    id: '<%= u.id %>',
+    name: '<%= (u.name || "").replace(/'/g, "\\'") %>',
+    email: '<%= (u.email || "").replace(/'/g, "\\'") %>',
+    role: '<%= u.role || "user" %>',
+    phone: '<%= u.phone || "" %>',
+    slug: '<%= u.slug || u.username || "" %>',
+    balance: '<%= u.balance || 0 %>',
+    created_at: '<%= u.created_at || "" %>'
+});
+<% }); %>
+
+function showUser(idx) {
+    const u = usersData[idx];
+    const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
+    const color = colors[idx % colors.length];
+    const date = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-';
+    
+    document.getElementById('userModalContent').innerHTML = `
+        <div class="user-modal-header">
+            <h3>Detail User</h3>
+            <button class="user-modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="user-modal-avatar" style="background:${color}">${u.name ? u.name.charAt(0).toUpperCase() : '?'}</div>
+        <div class="user-detail-row"><span class="label">ID</span><span class="value">#${u.id}</span></div>
+        <div class="user-detail-row"><span class="label">Nama</span><span class="value">${u.name}</span></div>
+        <div class="user-detail-row"><span class="label">Email</span><span class="value">${u.email}</span></div>
+        <div class="user-detail-row"><span class="label">Role</span><span class="value"><span class="role-badge ${u.role}">${u.role.toUpperCase()}</span></span></div>
+        <div class="user-detail-row"><span class="label">Slug</span><span class="value">${u.slug || '-'}</span></div>
+        <div class="user-detail-row"><span class="label">Phone</span><span class="value">${u.phone || '-'}</span></div>
+        <div class="user-detail-row"><span class="label">Terdaftar</span><span class="value">${date}</span></div>
+    `;
+    document.getElementById('userModal').classList.add('show');
+}
+
+function closeModal() {
+    document.getElementById('userModal').classList.remove('show');
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+</script>

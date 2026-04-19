@@ -1,0 +1,348 @@
+<style>
+/* ===== GLOBAL RESPONSIVE ===== */
+.edit-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+.edit-back { padding: 8px 16px; border: 1.5px solid #3b82f6; border-radius: 8px; color: #3b82f6; font-size: 13px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px; background: #fff; transition: 0.2s; }
+.edit-back:hover { background: #eff6ff; transform: translateX(-3px); }
+.edit-title { font-size: clamp(18px, 4vw, 22px); font-weight: 900; color: #111827; }
+
+.edit-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+
+/* Sections */
+.edit-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: clamp(16px, 3vw, 24px); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.edit-section-title { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+
+/* Form elements */
+.ef-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px; display: block; }
+.ef-input { width: 100%; padding: 12px 16px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-family: inherit; font-size: 14px; color: #111827; outline: none; background: #fff; transition: 0.15s; }
+.ef-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+.ef-group { margin-bottom: 18px; }
+.ef-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ef-checkbox { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
+.ef-checkbox input { width: 18px; height: 18px; accent-color: #3b82f6; cursor: pointer; }
+
+/* Enhanced Editor */
+.editor-container { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
+.rte-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px; border-bottom: 1.5px solid #e5e7eb; background: #f9fafb; flex-wrap: wrap; }
+.rte-toolbar select { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 5px 8px; font-size: 12px; font-family: inherit; background: #fff; color: #374151; cursor: pointer; outline: none; transition: 0.15s; }
+.rte-toolbar select:hover { border-color: #cbd5e1; }
+.rte-btn { width: 34px; height: 34px; border: none; background: none; border-radius: 8px; cursor: pointer; font-size: 14px; color: #475569; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
+.rte-btn:hover { background: #f1f5f9; color: #1e293b; }
+.rte-btn.active { background: #eff6ff; color: #2563eb; font-weight: 900; }
+.rte-sep { width: 1px; height: 22px; background: #e5e7eb; margin: 0 4px; }
+
+.rte-body-wrapper { position: relative; }
+.rte-body { min-height: 240px; max-height: 500px; padding: 20px; font-size: 14px; line-height: 1.7; color: #334155; outline: none; overflow-y: auto; background: #fff; }
+.rte-code { display: none; width: 100%; min-height: 240px; border: none; padding: 20px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace; font-size: 13px; color: #0f172a; background: #f8fafc; outline: none; resize: vertical; }
+
+/* Price Tabs */
+.price-tabs { display: flex; gap: 4px; margin-bottom: 18px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
+.price-tab { flex: 1; padding: 10px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 8px; text-align: center; transition: 0.15s; }
+.price-tab:hover { color: #374151; }
+.price-tab.active { color: #2563eb; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+.price-panel { display: none; padding: 4px; }
+.price-panel.active { display: block; }
+
+/* Promo Box */
+.promo-box { background: #f8fafc; border: 1.5px solid #eaebf0; border-radius: 14px; padding: 20px; margin-top: 18px; border-left: 4px solid #f59e0b; }
+.promo-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.promo-header label { font-size: 13px; font-weight: 900; color: #92400e; letter-spacing: 0.5px; cursor: pointer; }
+.promo-note { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.5; font-style: italic; }
+
+/* Media Upload */
+.media-preview { width: 100%; aspect-ratio: 4/3; border-radius: 14px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 14px; border: 2px dashed #e2e8f0; position: relative; transition: 0.2s; }
+.media-preview:hover { border-color: #3b82f6; background: #f1f5f9; }
+.media-preview img { width: 100%; height: 100%; object-fit: cover; }
+.media-preview-placeholder { color: #cbd5e1; font-size: 48px; }
+.media-upload-btn { display: flex; width: 100%; padding: 12px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #3b82f6; border-radius: 12px; color: #3b82f6; font-size: 13px; font-weight: 800; cursor: pointer; background: #fff; transition: 0.2s; }
+.media-upload-btn:hover { background: #3b82f6; color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
+
+/* Schedule */
+.sched-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+/* Footer Save */
+.edit-footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; }
+.save-btn { padding: 14px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; font-size: 15px; font-weight: 900; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
+.save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.3); }
+
+/* ===== MOBILE ADAPTATION ===== */
+@media (max-width: 1100px) {
+    .edit-grid { grid-template-columns: 1fr; }
+    .edit-grid > div:nth-child(2) { order: -1; } /* Thumb in mobile appears first */
+}
+@media (max-width: 640px) {
+    .ef-row, .sched-row { grid-template-columns: 1fr; }
+    .edit-grid { gap: 16px; }
+    .edit-section { padding: 16px; border-radius: 12px; }
+    .save-btn { width: 100%; justify-content: center; }
+}
+</style>
+
+<%
+const p = product || {};
+let raw = p.thumbnail || p.cover_image || p.image || p.image_url || p.thumb || '';
+let thumb = '';
+if (raw) {
+    if (Array.isArray(raw)) {
+        if (raw.length > 0) thumb = raw[0];
+    } else if (typeof raw === 'string') {
+        if (raw.startsWith('[')) {
+            try {
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr) && arr.length > 0) thumb = arr[0];
+            } catch (e) { thumb = raw; }
+        } else { thumb = raw; }
+    } else if (typeof raw === 'object' && raw !== null) {
+        thumb = Object.values(raw)[0] || '';
+    }
+}
+const thumbUrl = thumb && !thumb.startsWith('http') && !thumb.startsWith('/') ? '/uploads/products/' + thumb : thumb;
+
+// Safe description handling: unescape if it looks escaped
+let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+%>
+
+<div class="edit-header">
+    <a href="/admin/products" class="edit-back"><i class="fas fa-arrow-left"></i> Kembali</a>
+    <div class="edit-title">Edit Digital</div>
+</div>
+
+<form action="/admin/products/<%= p.id %>/update" method="POST" enctype="multipart/form-data" id="editorForm">
+<div class="edit-grid">
+    <!-- LEFT COLUMN -->
+    <div>
+        <!-- Judul & Deskripsi -->
+        <div class="edit-section">
+            <div class="edit-section-title"><i class="fas fa-file-alt" style="color:#2563eb"></i> Judul & Deskripsi</div>
+            <div class="ef-group">
+                <label class="ef-label">Nama Produk</label>
+                <input class="ef-input" name="name" value="<%= p.name || '' %>" placeholder="Contoh: E-book Strategi Marketing" required>
+            </div>
+            <div class="ef-group">
+                <label class="ef-label">Deskripsi Produk</label>
+                <div class="editor-container">
+                    <div class="rte-toolbar">
+                        <select onchange="format('formatBlock', this.value);this.value=''" title="Style">
+                            <option value="p">Normal</option>
+                            <option value="h1">Judul 1</option>
+                            <option value="h2">Judul 2</option>
+                            <option value="h3">Judul 3</option>
+                            <option value="blockquote">Quote</option>
+                        </select>
+                        <select onchange="format('fontSize', this.value);this.value=''" title="Ukuran Font">
+                            <option value="">Font Size</option>
+                            <option value="1">Sangat Kecil</option>
+                            <option value="2">Kecil</option>
+                            <option value="3">Normal</option>
+                            <option value="4">Besar</option>
+                            <option value="5">Sangat Besar</option>
+                            <option value="6">Raksasa</option>
+                        </select>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" onclick="format('bold')" title="Tebal"><i class="fas fa-bold"></i></button>
+                        <button type="button" class="rte-btn" onclick="format('italic')" title="Miring"><i class="fas fa-italic"></i></button>
+                        <button type="button" class="rte-btn" onclick="format('underline')" title="Garis Bawah"><i class="fas fa-underline"></i></button>
+                        <button type="button" class="rte-btn" onclick="toggleLink()" title="Link"><i class="fas fa-link"></i></button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" onclick="format('insertOrderedList')" title="List Angka"><i class="fas fa-list-ol"></i></button>
+                        <button type="button" class="rte-btn" onclick="format('insertUnorderedList')" title="List Point"><i class="fas fa-list-ul"></i></button>
+                        <div class="rte-sep"></div>
+                        <button type="button" class="rte-btn" id="viewModeBtn" onclick="toggleMode()" title="Ganti Mode (Visual/HTML)"><i class="fas fa-code"></i></button>
+                        <button type="button" class="rte-btn" onclick="format('removeFormat')" title="Hapus Format"><i class="fas fa-remove-format"></i></button>
+                    </div>
+                    <div class="rte-body-wrapper">
+                        <div class="rte-body" contenteditable="true" id="descEditor"><%- displayDesc %></div>
+                        <textarea class="rte-code" id="descCode" placeholder="Masukkan kode HTML..."></textarea>
+                    </div>
+                </div>
+                <input type="hidden" name="description" id="descInput">
+            </div>
+        </div>
+
+        <!-- Pengaturan Harga -->
+        <div class="edit-section">
+            <div class="edit-section-title"><i class="fas fa-tags" style="color:#10b981"></i> Pengaturan Harga</div>
+            <div class="price-tabs">
+                <div class="price-tab active" onclick="showPriceTab('fixed', this)">Harga Tetap</div>
+                <div class="price-tab" onclick="showPriceTab('flexible', this)">Bayar Seikhlasnya</div>
+                <div class="price-tab" onclick="showPriceTab('free', this)">Gratis</div>
+            </div>
+
+            <div class="price-panel active" id="p-fixed">
+                <div class="ef-row">
+                    <div class="ef-group">
+                        <label class="ef-label">Harga Promo (Rp)</label>
+                        <input class="ef-input" type="number" name="price" value="<%= p.price || '' %>" placeholder="99000">
+                    </div>
+                    <div class="ef-group">
+                        <label class="ef-label">Harga Normal (Rp)</label>
+                        <input class="ef-input" type="number" name="normal_price" value="<%= p.normal_price || '' %>" placeholder="199000">
+                    </div>
+                </div>
+            </div>
+            <div class="price-panel" id="p-flexible">
+                <div class="ef-group">
+                    <label class="ef-label">Harga Minimum Pembayaran (Rp)</label>
+                    <input class="ef-input" type="number" name="min_price" value="<%= p.min_price || '' %>" placeholder="10000">
+                </div>
+            </div>
+            <div class="price-panel" id="p-free">
+                <div style="padding:20px; text-align:center; color:#64748b; font-size:13px; background:#f9fafb; border-radius:12px;">
+                    <i class="fas fa-gift" style="font-size:32px; display:block; margin-bottom:12px; color:#10b981;"></i>
+                    Produk ini akan dapat didownload secara <strong>GRATIS</strong> oleh pembeli.
+                </div>
+            </div>
+
+            <!-- Promo Timer -->
+            <div class="promo-box">
+                <div class="promo-header">
+                    <input type="checkbox" id="promoToggle" name="promo_enabled" <%= p.promo_enabled ? 'checked' : '' %>>
+                    <label for="promoToggle">AKTIFKAN FITUR PROMO & TIMER</label>
+                </div>
+                <div id="promoFields" style="<%= p.promo_enabled ? '' : 'opacity:0.4;pointer-events:none;' %>">
+                    <label class="ef-label" style="color:#d97706">Sisa Waktu Promo (Menit)</label>
+                    <input class="ef-input" type="number" name="promo_duration" value="<%= p.promo_duration || 10 %>" style="border-color:#fbbf24; font-weight:800; font-size:16px;">
+                    <div class="promo-note">*Harga normal akan dicoret & hitung mundur akan berjalan otomatis di halaman produk.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div>
+        <!-- Media Produk -->
+        <div class="edit-section">
+            <div class="edit-section-title"><i class="fas fa-image" style="color:#ec4899"></i> Media Produk</div>
+            <div class="media-preview" id="mediaPreview">
+                <% if (thumbUrl) { %>
+                    <img src="<%= thumbUrl %>" id="mediaImg" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                    <i class="fas fa-cloud-upload-alt media-preview-placeholder" style="display:none;"></i>
+                <% } else { %>
+                    <i class="fas fa-cloud-upload-alt media-preview-placeholder"></i>
+                <% } %>
+            </div>
+            <label class="media-upload-btn" onclick="document.getElementById('mediaInput').click()">
+                <i class="fas fa-plus-circle"></i> Pilih Gambar Baru
+            </label>
+            <input type="file" name="thumbnail" id="mediaInput" accept="image/*" style="display:none" onchange="handlePreview(this)">
+            <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:10px;">Gunakan rasio 1:1 atau 4:3 untuk hasil terbaik.</p>
+        </div>
+
+        <!-- Stok & Akses -->
+        <div class="edit-section">
+            <div class="edit-section-title"><i class="fas fa-key" style="color:#f59e0b"></i> Akses & Stok</div>
+            <div class="ef-group">
+                <label class="ef-label">Stok / Kuota Pembelian</label>
+                <input class="ef-input" type="number" name="stock" value="<%= p.stock || 0 %>" placeholder="0 = Tak terbatas">
+            </div>
+            <div class="ef-group">
+                <label class="ef-label">Link Akses Produk (Setelah Bayar)</label>
+                <input class="ef-input" name="download_url" value="<%= p.download_url || p.access_url || '' %>" placeholder="https://drive.google.com/...">
+            </div>
+            <label class="ef-checkbox">
+                <input type="checkbox" name="show_forever" <%= p.show_forever ? 'checked' : '' %>> Tampilkan di rak produk selamanya
+            </label>
+        </div>
+
+        <!-- Jadwal -->
+        <div class="edit-section">
+            <div class="edit-section-title"><i class="fas fa-calendar-alt" style="color:#6366f1"></i> Jadwal Penjualan</div>
+            <div class="ef-group">
+                <label class="ef-label">Mulai Penjualan</label>
+                <div class="sched-row">
+                    <input class="ef-input" type="date" name="sale_start_date" value="<%= p.sale_start_date || '' %>">
+                    <input class="ef-input" type="time" name="sale_start_time" value="<%= p.sale_start_time || '00:00' %>">
+                </div>
+            </div>
+            <div class="ef-group">
+                <label class="ef-label">Selesai Penjualan</label>
+                <div class="sched-row">
+                    <input class="ef-input" type="date" name="sale_end_date" value="<%= p.sale_end_date || '' %>">
+                    <input class="ef-input" type="time" name="sale_end_time" value="<%= p.sale_end_time || '23:59' %>">
+                </div>
+            </div>
+        </div>
+        
+        <div class="edit-footer">
+            <button type="submit" class="save-btn">
+                <i class="fas fa-save"></i> Perbarui Produk
+            </button>
+        </div>
+    </div>
+</div>
+</form>
+
+<script>
+// --- Editor Core ---
+const editor = document.getElementById('descEditor');
+const coder = document.getElementById('descCode');
+let isCodeView = false;
+
+function format(cmd, val) {
+    document.execCommand(cmd, false, val);
+    editor.focus();
+}
+
+function toggleMode() {
+    isCodeView = !isCodeView;
+    const btn = document.getElementById('viewModeBtn');
+    if (isCodeView) {
+        coder.value = editor.innerHTML;
+        editor.style.display = 'none';
+        coder.style.display = 'block';
+        btn.classList.add('active');
+        btn.innerHTML = '<i class="fas fa-eye"></i>';
+    } else {
+        editor.innerHTML = coder.value;
+        coder.style.display = 'none';
+        editor.style.display = 'block';
+        btn.classList.remove('active');
+        btn.innerHTML = '<i class="fas fa-code"></i>';
+    }
+}
+
+function toggleLink() {
+    const url = prompt('Masukkan URL:', 'https://');
+    if (url) format('createLink', url);
+}
+
+// --- Price Tabs ---
+function showPriceTab(id, el) {
+    document.querySelectorAll('.price-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.price-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('p-' + id).classList.add('active');
+}
+
+// --- Promo Toggle ---
+document.getElementById('promoToggle').addEventListener('change', function() {
+    const fields = document.getElementById('promoFields');
+    if (this.checked) {
+        fields.style.opacity = '1';
+        fields.style.pointerEvents = 'auto';
+    } else {
+        fields.style.opacity = '0.4';
+        fields.style.pointerEvents = 'none';
+    }
+});
+
+// --- Photo Preview ---
+function handlePreview(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('mediaPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+// --- Final Submit ---
+document.getElementById('editorForm').addEventListener('submit', function(e) {
+    // If we are in code view, sync to editor first
+    if (isCodeView) {
+        editor.innerHTML = coder.value;
+    }
+    document.getElementById('descInput').value = editor.innerHTML;
+});
+</script>
+

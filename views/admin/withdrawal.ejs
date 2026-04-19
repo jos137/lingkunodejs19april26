@@ -1,0 +1,132 @@
+<style>
+/* Balance Card */
+.wd-balance { background: #111827; color: #fff; border-radius: 14px; padding: 28px; margin-bottom: 18px; }
+.wd-balance-label { font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1.5px; margin-bottom: 6px; }
+.wd-balance-value { font-size: 32px; font-weight: 900; }
+.wd-balance-sub { font-size: 12px; color: #64748b; margin-top: 6px; }
+
+.wd-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
+.wd-sum-card { background: #fff; border-radius: 12px; padding: 18px; border-left: 4px solid; }
+.wd-sum-card.cair { border-color: #10b981; }
+.wd-sum-card.pending { border-color: #f59e0b; }
+.wd-sum-card.ditolak { border-color: #ef4444; }
+.wd-sum-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; }
+.wd-sum-value { font-size: 20px; font-weight: 900; color: #111827; margin-top: 4px; }
+
+.wd-content { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.wd-form-card, .wd-history-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; }
+.wd-form-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 18px; }
+
+.wd-input-group { margin-bottom: 16px; }
+.wd-label { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px; display: block; }
+.wd-input {
+    width: 100%; padding: 11px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-family: inherit; font-size: 14px; color: #111827; outline: none;
+}
+.wd-input:focus { border-color: #3b82f6; }
+.wd-select { appearance: auto; background: #fff; }
+
+.wd-fee-row { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; }
+.wd-fee-row .label { color: #64748b; }
+.wd-fee-row .val { font-weight: 700; }
+.wd-fee-row .val.red { color: #ef4444; }
+.wd-fee-row .val.green { color: #10b981; }
+
+.wd-submit {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    font-size: 14px; font-weight: 800; cursor: pointer; margin-top: 10px; transition: 0.2s;
+}
+.wd-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+
+.wd-table { width: 100%; border-collapse: collapse; }
+.wd-table th { text-align: left; font-size: 11px; font-weight: 800; color: #94a3b8; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
+.wd-table td { font-size: 13px; color: #374151; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-weight: 500; }
+.wd-table .badge { padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 800; }
+.wd-table .badge.completed { background: #f0fdf4; color: #059669; }
+.wd-table .badge.pending { background: #fffbeb; color: #d97706; }
+.wd-table .badge.rejected { background: #fef2f2; color: #dc2626; }
+.wd-empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+
+@media (max-width: 768px) { .wd-content, .wd-summary { grid-template-columns: 1fr; } }
+</style>
+
+<%
+const fmt = (n) => 'Rp ' + (parseFloat(n || 0)).toLocaleString('id-ID');
+const bal = parseFloat(balance || 0);
+const totalCair = withdrawals.filter(w => w.status === 'completed').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
+const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
+const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
+%>
+
+<div class="wd-balance">
+    <div class="wd-balance-label">SALDO TERSEDIA</div>
+    <div class="wd-balance-value"><%= fmt(bal) %></div>
+    <div class="wd-balance-sub">Limit Harian: Rp 100.000.000 &nbsp;|&nbsp; Terpakai: Rp 0</div>
+</div>
+
+<div class="wd-summary">
+    <div class="wd-sum-card cair"><div class="wd-sum-label">Telah Cair</div><div class="wd-sum-value" style="color:#059669;"><%= fmt(totalCair) %></div></div>
+    <div class="wd-sum-card pending"><div class="wd-sum-label">Pending</div><div class="wd-sum-value" style="color:#d97706;"><%= fmt(totalPending) %></div></div>
+    <div class="wd-sum-card ditolak"><div class="wd-sum-label">Ditolak</div><div class="wd-sum-value" style="color:#ef4444;"><%= fmt(totalDitolak) %></div></div>
+</div>
+
+<div class="wd-content">
+    <div class="wd-form-card">
+        <div class="wd-form-title">FORM PENARIKAN</div>
+        <form action="/admin/withdrawal/request" method="POST" id="wdForm">
+            <div class="wd-input-group">
+                <label class="wd-label">Jumlah (Rp)</label>
+                <input type="number" name="amount" class="wd-input" id="wdAmount" value="0" min="10000" oninput="calcFee()">
+            </div>
+            <div class="wd-fee-row"><span class="label">Biaya Admin (3%):</span><span class="val red" id="feeDisplay">- Rp 0</span></div>
+            <div class="wd-fee-row"><span class="label">Estimasi Diterima:</span><span class="val green" id="estDisplay">Rp 0</span></div>
+            <div class="wd-input-group" style="margin-top:16px;">
+                <label class="wd-label">Metode Pembayaran</label>
+                <select name="bank_name" class="wd-input wd-select">
+                    <option>BCA</option><option>BNI</option><option>BRI</option><option>Mandiri</option>
+                    <option>DANA</option><option>OVO</option><option>GoPay</option><option>ShopeePay</option>
+                </select>
+            </div>
+            <div class="wd-input-group">
+                <label class="wd-label">Nama Pemilik Rekening</label>
+                <input type="text" name="account_name" class="wd-input" placeholder="Nama sesuai rekening" required>
+            </div>
+            <div class="wd-input-group">
+                <label class="wd-label">No Rekening / No HP</label>
+                <input type="text" name="account_number" class="wd-input" placeholder="Nomor rekening atau nomor e-wallet" required>
+            </div>
+            <button type="submit" class="wd-submit">Konfirmasi Penarikan</button>
+        </form>
+    </div>
+
+    <div class="wd-history-card">
+        <div class="wd-form-title">RIWAYAT PENARIKAN</div>
+        <% if (withdrawals.length > 0) { %>
+            <table class="wd-table">
+                <thead><tr><th>Tanggal</th><th>Nominal</th><th>Status</th></tr></thead>
+                <tbody>
+                <% withdrawals.forEach(w => { %>
+                    <tr>
+                        <td><%= w.created_at ? new Date(w.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-' %></td>
+                        <td><strong><%= fmt(w.amount) %></strong></td>
+                        <td><span class="badge <%= w.status %>"><%= (w.status || '').toUpperCase() %></span></td>
+                    </tr>
+                <% }); %>
+                </tbody>
+            </table>
+        <% } else { %>
+            <div class="wd-empty">Belum ada riwayat.</div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+function calcFee() {
+    const amount = parseInt(document.getElementById('wdAmount').value) || 0;
+    const fee = Math.round(amount * 0.03);
+    const est = amount - fee;
+    document.getElementById('feeDisplay').textContent = '- Rp ' + fee.toLocaleString('id-ID');
+    document.getElementById('estDisplay').textContent = 'Rp ' + est.toLocaleString('id-ID');
+}
+</script>

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2271b1; --bg: #f8fafc; --text-dark: #1e293b; --text-muted: #64748b; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 480px; padding: 15px 20px 50px 20px; display: flex; flex-direction: column; align-items: center; }
+        .profile { 
+            width: 100%; background: <%= user.profile_box_color || '#ffffff' %>; border-radius: 20px; padding: 20px;
+            display: flex; align-items: center; gap: 20px;
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
+            margin-bottom: 24px; border: 1.5px solid #f1f5f9;
+            box-sizing: border-box; text-align: left;
+        }
+        .avatar { 
+            width: 70px; height: 70px; border-radius: 16px; 
+            border: 2px solid white; box-shadow: 0 8px 15px rgba(0,0,0,0.08); 
+            object-fit: cover; flex-shrink: 0;
+        }
+        .profile-info { flex: 1; }
+        .name { font-size: 18px; font-weight: 850; margin: 0; color: #111827; letter-spacing: -0.3px; }
+        .handle { color: var(--primary); font-size: 13px; font-weight: 700; margin-top: 2px; display: block; }
+        .blocks-container { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+
+        /* Block Styles (Sesuai Struktur Baru PHP) */
+        .block-text { font-size: 15px; color: #475569; line-height: 1.6; text-align: left; }
+        .block-text p { margin-bottom: 10px; }
+        
+        .block-button { 
+            display: block; width: 100%; padding: 16px; background: var(--primary); color: white; border-radius: 30px; text-decoration: none; 
+            text-align: center; font-weight: 700; font-size: 15px; box-shadow: 0 6px 15px -3px rgba(34, 113, 177, 0.3); transition: transform 0.2s; 
+            box-sizing: border-box;
+        }
+        .block-button:hover { transform: translateY(-2px); }
+
+        .block-image { width: 100%; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 10px; }
+
+        .block-product {
+            display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; border: 1.5px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); text-decoration: none; color: inherit; transition: 0.2s;
+        }
+        .block-product:hover { transform: scale(1.02); border-color: var(--primary); }
+        .product-thumb { width: 55px; height: 55px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px; overflow: hidden; border: 1px solid #f1f5f9; flex-shrink: 0; }
+        .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .product-info { flex: 1; min-width: 0; }
+        .product-name { font-size: 14px; font-weight: 800; margin-bottom: 2px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .product-price { font-size: 13px; color: var(--primary); font-weight: 700; }
+
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; width: 100%; }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
+
+        .watermark { margin-top: 60px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+        .watermark strong { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile">
+            <img src="<%= user.profile_photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.fullname || 'U') + '&background=2271b1&color=fff' %>" class="avatar" alt="Avatar">
+            <div class="profile-info">
+                <h1 class="name"><%= user.fullname || 'User' %></h1>
+                <span class="handle">@<%= user.slug || user.username %></span>
+                <% if (user.bio) { %>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;"><%= user.bio %></div>
+                <% } %>
+            </div>
+        </div>
+
+        <div class="blocks-container">
+            <% blocks.forEach(block => { %>
+                <% if (block.hidden) return; %>
+                
+                <% if (block.type === 'text') { %>
+                    <div class="block-text"><%- block.text %></div>
+                
+                <% } else if (block.type === 'image' && block.url) { %>
+                    <img src="<%= block.url %>" class="block-image" alt="Image">
+                
+                <% } else if (block.type === 'video' && block.url) { %>
+                    <% 
+                        function getEmbed(url) {
+                            const reg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                            const match = url.match(reg);
+                            return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+                        }
+                        const embedUrl = getEmbed(block.url);
+                    %>
+                    <% if (embedUrl) { %>
+                        <div class="video-container">
+                            <iframe src="<%= embedUrl %>" allowfullscreen></iframe>
+                        </div>
+                    <% } %>
+                
+                <% } else if (block.type === 'product' && block.pid) { %>
+                    <% 
+                        const prod = products.find(p => p.id == block.pid); 
+                    %>
+                    <% if (prod) { 
+                        let thumbSrc = '';
+                        if (prod.processed_thumb) {
+                            thumbSrc = (prod.processed_thumb.startsWith('http') || prod.processed_thumb.startsWith('/')) 
+                                ? prod.processed_thumb 
+                                : '/uploads/products/' + prod.processed_thumb;
+                        }
+                    %>
+                        <a href="/p/<%= prod.id %>" class="block-product">
+                            <div class="product-thumb">
+                                <% if (thumbSrc) { %>
+                                    <img src="<%= thumbSrc %>" alt="Product Thumbnail" onerror="this.parentElement.innerHTML='<i class=\'fas fa-shopping-bag\'></i>'">
+                                <% } else { %>
+                                    <i class="fas fa-shopping-bag"></i>
+                                <% } %>
+                            </div>
+                            <div class="product-info">
+                                <div class="product-name"><%= prod.name %></div>
+                                <div class="product-price">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                            </div>
+                            <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 12px;"></i>
+                        </a>
+                    <% } %>
+                <% } else if (block.type === 'divider') { %>
+                    <% 
+                        let thickness = block.size === 'thick' ? '4px' : (block.size === 'medium' ? '2px' : '1px');
+                        let border = `${thickness} ${block.style || 'solid'} #e2e8f0`;
+                        let styleAttr = `width:100%; margin:20px 0; border-top:${border};`;
+                        if (block.style === 'gradient') {
+                            styleAttr = `width:100%; margin:20px 0; height:${thickness}; background:linear-gradient(90deg, transparent, #cbd5e1, transparent); border:none;`;
+                        }
+                    %>
+                    <div style="<%= styleAttr %>"></div>
+                <% } else if (block.type === 'button') { %>
+                    <% 
+                        const colorMap = {
+                            red: '#ef4444', yellow: '#eab308', blue: '#3b82f6', 
+                            green: '#10b981', purple: '#8b5cf6', pink: '#ec4899',
+                            default: '#2271b1'
+                        };
+                        const bgColor = colorMap[block.color] || colorMap.default;
+                    %>
+                    <a href="<%= block.link %>" class="block-button" target="_blank" style="background: <%= bgColor %>; box-shadow: 0 6px 15px -3px <%= bgColor %>44;"><%= block.label %></a>
+                <% } %>
+            <% }) %>
+        </div>
+
+        <div class="watermark">
+            Powered by <strong>Lingku.xyz</strong>
+        </div>
+    </div>
+</body>
+</html>

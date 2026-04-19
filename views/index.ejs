@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lingku.xyz – Satu Link untuk Semua Produk Digital Anda</title>
+    <meta name="description" content="Platform jualan otomatis dengan fee terendah. Tanpa biaya langganan bulanan. Kelola & jual produk digital jadi lebih mudah.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; color: #1e293b; background: #fff; overflow-x: hidden; }
+        a { text-decoration: none; color: inherit; }
+
+        /* ===== NAVBAR ===== */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(17,24,39,0.95);
+            backdrop-filter: blur(12px);
+            padding: 0 40px;
+            height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .navbar-logo {
+            display: flex; align-items: center; gap: 10px;
+        }
+        .navbar-logo .icon {
+            width: 32px; height: 32px; background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 8px; display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 14px; color: #fff;
+        }
+        .navbar-logo .text { font-size: 20px; font-weight: 900; color: #10b981; }
+        .navbar-links { display: flex; align-items: center; gap: 28px; }
+        .navbar-links a { font-size: 13px; font-weight: 600; color: #94a3b8; transition: color 0.2s; }
+        .navbar-links a:hover { color: #fff; }
+        .navbar-links .btn-login {
+            padding: 8px 20px; border-radius: 8px;
+            border: 1.5px solid #334155; color: #e2e8f0; font-weight: 700;
+            transition: 0.2s;
+        }
+        .navbar-links .btn-login:hover { border-color: #10b981; color: #10b981; }
+        .navbar-links .btn-register {
+            padding: 8px 20px; border-radius: 8px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff; font-weight: 700; box-shadow: 0 4px 14px rgba(16,185,129,0.3);
+            transition: 0.2s;
+        }
+        .navbar-links .btn-register:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.4); }
+
+        /* ===== HERO ===== */
+        .hero {
+            padding: 140px 40px 80px;
+            max-width: 1200px; margin: 0 auto;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 100px;
+            padding: 6px 16px 6px 8px; font-size: 12px; font-weight: 700; color: #059669;
+            margin-bottom: 20px;
+        }
+        .hero-badge .dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+        .hero h1 {
+            font-size: 48px; font-weight: 900; line-height: 1.15; letter-spacing: -1.5px;
+            color: #0f172a; margin-bottom: 20px;
+        }
+        .hero h1 span { color: #10b981; }
+        .hero p { font-size: 17px; color: #64748b; line-height: 1.7; margin-bottom: 32px; max-width: 480px; }
+        .hero-btns { display: flex; gap: 14px; }
+        .btn-primary {
+            padding: 14px 32px; border-radius: 12px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff; font-size: 15px; font-weight: 800;
+            box-shadow: 0 6px 20px rgba(16,185,129,0.35);
+            transition: 0.2s; border: none; cursor: pointer;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(16,185,129,0.45); }
+        .btn-secondary {
+            padding: 14px 32px; border-radius: 12px;
+            background: #fff; color: #374151; font-size: 15px; font-weight: 800;
+            border: 2px solid #e5e7eb; transition: 0.2s; cursor: pointer;
+        }
+        .btn-secondary:hover { border-color: #10b981; color: #10b981; }
+
+        /* Hero Image - Phone Mockup */
+        .hero-visual {
+            display: flex; justify-content: center; position: relative;
+        }
+        .phone-mockup {
+            width: 280px; background: #111827; border-radius: 36px; padding: 12px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.2);
+            transform: perspective(800px) rotateY(-8deg);
+        }
+        .phone-screen {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 26px; height: 480px; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center; padding: 40px 20px;
+        }
+        .phone-screen .ps-logo { font-size: 28px; font-weight: 900; margin-bottom: 12px; }
+        .phone-screen .ps-tagline { font-size: 13px; font-weight: 500; opacity: 0.85; margin-bottom: 30px; }
+        .phone-screen .ps-card {
+            background: rgba(255,255,255,0.15); backdrop-filter: blur(10px);
+            border-radius: 14px; padding: 16px; width: 100%; text-align: left;
+            margin-bottom: 10px;
+        }
+        .phone-screen .ps-card-title { font-size: 13px; font-weight: 700; }
+        .phone-screen .ps-card-price { font-size: 11px; opacity: 0.7; margin-top: 4px; }
+
+        /* ===== FEATURES ===== */
+        .features {
+            padding: 100px 40px; background: #f8fafc;
+        }
+        .section-center { text-align: center; max-width: 600px; margin: 0 auto 50px; }
+        .section-center h2 { font-size: 36px; font-weight: 900; letter-spacing: -1px; color: #0f172a; margin-bottom: 14px; }
+        .section-center p { font-size: 16px; color: #64748b; line-height: 1.7; }
+        .features-grid {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;
+            max-width: 1100px; margin: 0 auto;
+        }
+        .feature-card {
+            background: #fff; border-radius: 16px; padding: 32px 28px;
+            border: 1px solid #f1f5f9; transition: 0.3s;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+        .feature-icon {
+            width: 52px; height: 52px; border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; margin-bottom: 18px;
+        }
+        .feature-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 10px; color: #0f172a; }
+        .feature-card p { font-size: 14px; color: #64748b; line-height: 1.65; }
+
+        /* ===== PRICING ===== */
+        .pricing { padding: 100px 40px; }
+        .pricing-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px;
+            max-width: 800px; margin: 0 auto;
+        }
+        .pricing-card {
+            background: #fff; border-radius: 20px; padding: 36px 32px;
+            border: 2px solid #e5e7eb; transition: 0.3s; position: relative;
+        }
+        .pricing-card.popular { border-color: #10b981; }
+        .pricing-badge {
+            position: absolute; top: -12px; right: 20px;
+            background: #fbbf24; color: #92400e; font-size: 11px; font-weight: 800;
+            padding: 4px 14px; border-radius: 100px;
+        }
+        .pricing-plan { font-size: 13px; font-weight: 800; color: #10b981; letter-spacing: 1px; margin-bottom: 8px; }
+        .pricing-price { font-size: 40px; font-weight: 900; color: #0f172a; margin-bottom: 6px; }
+        .pricing-period { font-size: 13px; color: #94a3b8; margin-bottom: 24px; }
+        .pricing-features { list-style: none; margin-bottom: 28px; }
+        .pricing-features li {
+            padding: 8px 0; font-size: 14px; color: #475569;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .pricing-features li i { color: #10b981; font-size: 14px; }
+        .pricing-btn {
+            display: block; text-align: center; padding: 14px;
+            border-radius: 12px; font-size: 14px; font-weight: 800;
+            transition: 0.2s; border: none; cursor: pointer; width: 100%;
+        }
+        .pricing-btn.primary { background: linear-gradient(135deg,#10b981,#059669); color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+        .pricing-btn.outline { background: #fff; color: #374151; border: 2px solid #e5e7eb; }
+
+        /* ===== CTA ===== */
+        .cta {
+            padding: 80px 40px; text-align: center;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #fff;
+        }
+        .cta h2 { font-size: 36px; font-weight: 900; margin-bottom: 16px; letter-spacing: -1px; }
+        .cta p { font-size: 16px; color: #94a3b8; margin-bottom: 32px; }
+        .cta .btn-primary { font-size: 16px; padding: 16px 40px; }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #0f172a; color: #94a3b8; padding: 60px 40px 30px;
+        }
+        .footer-grid {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+            max-width: 1100px; margin: 0 auto 40px;
+        }
+        .footer-brand { }
+        .footer-brand .logo { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+        .footer-brand .logo .icon { width: 28px; height: 28px; background: #10b981; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; color: #fff; }
+        .footer-brand .logo .text { font-size: 18px; font-weight: 900; color: #10b981; }
+        .footer-brand p { font-size: 13px; line-height: 1.7; color: #64748b; }
+        .footer-col h4 { font-size: 12px; font-weight: 800; color: #e2e8f0; letter-spacing: 1px; margin-bottom: 16px; }
+        .footer-col a { display: block; font-size: 13px; color: #64748b; margin-bottom: 10px; transition: 0.2s; }
+        .footer-col a:hover { color: #10b981; }
+        .footer-bottom {
+            text-align: center; padding-top: 30px; border-top: 1px solid #1e293b;
+            font-size: 12px; color: #475569; max-width: 1100px; margin: 0 auto;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 900px) {
+            .hero { grid-template-columns: 1fr; text-align: center; padding: 120px 20px 60px; }
+            .hero p { max-width: 100%; }
+            .hero-btns { justify-content: center; }
+            .hero-visual { margin-top: 40px; }
+            .phone-mockup { transform: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .footer-grid { grid-template-columns: 1fr 1fr; }
+            .hero h1 { font-size: 34px; }
+            .navbar-links a:not(.btn-login):not(.btn-register) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="/" class="navbar-logo">
+            <div class="icon">L</div>
+            <span class="text">Lingku</span>
+        </a>
+        <div class="navbar-links">
+            <a href="#fitur">Fitur</a>
+            <a href="#harga">Harga</a>
+            <a href="/auth/login" class="btn-login">Masuk</a>
+            <a href="/auth/register" class="btn-register">Daftar Gratis</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div>
+            <div class="hero-badge"><div class="dot"></div> Platform #1 Kreator Indonesia</div>
+            <h1>Kelola & Jual <span>Produk Digital</span> Jadi Lebih Mudah</h1>
+            <p>Platform jualan otomatis dengan fee terendah. Tanpa biaya langganan bulanan, cukup fokus pada kreativitas Anda.</p>
+            <div class="hero-btns">
+                <a href="/auth/register" class="btn-primary">Mulai Gratis</a>
+                <a href="#fitur" class="btn-secondary">Pelajari Fitur</a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="ps-logo">Lingku</div>
+                    <div class="ps-tagline">Professional Digital Store</div>
+                    <div class="ps-card"><div class="ps-card-title">📦 E-Book Marketing</div><div class="ps-card-price">Rp 149.000</div></div>
+                    <div class="ps-card"><div class="ps-card-title">🎥 Video Course</div><div class="ps-card-price">Rp 299.000</div></div>
+                    <div class="ps-card"><div class="ps-card-title">🎨 Template Kit</div><div class="ps-card-price">Rp 89.000</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="fitur">
+        <div class="section-center">
+            <h2>Keunggulan Lingku.xyz</h2>
+            <p>Segala yang Anda butuhkan untuk sukses di dunia digital.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#f0fdf4; color:#10b981;"><i class="fas fa-bolt"></i></div>
+                <h3>Instan Setup</h3>
+                <p>Buat halaman jualan profesional dalam hitungan detik. Tanpa perlu skill desain atau coding.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-robot"></i></div>
+                <h3>Sistem Otomatis</h3>
+                <p>Sistem kami bekerja 24/7. Pembayaran terverifikasi, produk langsung dikirim ke pembeli.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#fdf4ff; color:#a855f7;"><i class="fas fa-palette"></i></div>
+                <h3>Desain Premium</h3>
+                <p>Halaman katalog produk yang clean, modern, dan sangat responsif untuk smartphone.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#fff7ed; color:#f59e0b;"><i class="fas fa-coins"></i></div>
+                <h3>Lebih Murah</h3>
+                <p>Tanpa biaya bulanan atau tahunan. Gunakan semua fitur pro kami secara gratis.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#fef2f2; color:#ef4444;"><i class="fas fa-percentage"></i></div>
+                <h3>Fee Rendah 2.5%</h3>
+                <p>Kami hanya mengambil fee sebesar 2.5% per transaksi. Keuntungan terbesar tetap milik Anda.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon" style="background:#f0fdf4; color:#10b981;"><i class="fas fa-heart"></i></div>
+                <h3>Ramah Pemula</h3>
+                <p>Dashboard yang intuitif dan mudah dipahami. Siapa pun bisa mulai jualan hari ini.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRICING -->
+    <section class="pricing" id="harga">
+        <div class="section-center">
+            <h2>Pilihan Paket Kreator</h2>
+            <p>Tingkatkan performa jualan dengan fitur PRO terbaik.</p>
+        </div>
+        <div class="pricing-grid">
+            <div class="pricing-card">
+                <div class="pricing-plan">STARTER</div>
+                <div class="pricing-price">Gratis</div>
+                <div class="pricing-period">Selamanya, tanpa batas waktu</div>
+                <ul class="pricing-features">
+                    <li><i class="fas fa-check"></i> Halaman bio link</li>
+                    <li><i class="fas fa-check"></i> Upload produk digital</li>
+                    <li><i class="fas fa-check"></i> Sistem pembayaran otomatis</li>
+                    <li><i class="fas fa-check"></i> Dashboard penjualan</li>
+                    <li><i class="fas fa-check"></i> Fee transaksi 2.5%</li>
+                </ul>
+                <a href="/auth/register" class="pricing-btn outline">Daftar Sekarang</a>
+            </div>
+            <div class="pricing-card popular">
+                <div class="pricing-badge">Best Value</div>
+                <div class="pricing-plan">PRO</div>
+                <div class="pricing-price">Rp 99K</div>
+                <div class="pricing-period">per bulan / Rp 799K per tahun</div>
+                <ul class="pricing-features">
+                    <li><i class="fas fa-check"></i> Semua fitur Starter</li>
+                    <li><i class="fas fa-check"></i> Custom domain</li>
+                    <li><i class="fas fa-check"></i> Hapus branding Lingku</li>
+                    <li><i class="fas fa-check"></i> Prioritas support</li>
+                    <li><i class="fas fa-check"></i> Fee transaksi 1%</li>
+                    <li><i class="fas fa-check"></i> Fitur analytics lanjutan</li>
+                </ul>
+                <a href="/auth/register" class="pricing-btn primary">Daftar Sekarang</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+        <h2>Mulai Uangkan Kreativitas Mu</h2>
+        <p>Bergabunglah dengan ribuan kreator lainnya. Nikmati fee terendah sekarang!</p>
+        <a href="/auth/register" class="btn-primary">BUAT AKUN GRATIS SEKARANG</a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="logo"><div class="icon">L</div><span class="text">Lingku</span></div>
+                <p>Platform Micro SaaS untuk menjual produk digital secara otomatis, aman, dan modern.</p>
+            </div>
+            <div class="footer-col">
+                <h4>PRODUK</h4>
+                <a href="#fitur">Fitur</a>
+                <a href="#harga">Harga</a>
+                <a href="/auth/register">Daftar Gratis</a>
+            </div>
+            <div class="footer-col">
+                <h4>BANTUAN</h4>
+                <a href="#">FAQ</a>
+                <a href="#">Hubungi Kami</a>
+            </div>
+            <div class="footer-col">
+                <h4>LEGAL</h4>
+                <a href="#">Terms & Conditions</a>
+                <a href="#">Refund Policy</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Lingku.xyz — Satu Link untuk Semua Produk Digital Anda.
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                document.querySelector(a.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            document.querySelector('.navbar').style.boxShadow = 
+                window.scrollY > 20 ? '0 4px 20px rgba(0,0,0,0.15)' : 'none';
+        });
+    </script>
+
+</body>
+</html>

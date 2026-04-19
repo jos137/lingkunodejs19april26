@@ -1,0 +1,126 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+.ga-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 14px; }
+.ga-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+.ga-card-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 6px; }
+.ga-card-value { font-size: 22px; font-weight: 900; color: #111827; }
+.ga-card-sub { font-size: 11px; color: #64748b; margin-top: 4px; }
+
+.ga-bottom { display: grid; grid-template-columns: 1fr 280px; gap: 18px; margin-top: 18px; }
+.ga-chart-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; }
+.ga-chart-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 16px; }
+.ga-actions-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; }
+.ga-action-title { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 16px; }
+.ga-action-btn { display: block; width: 100%; padding: 12px; text-align: center; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; margin-bottom: 10px; border: none; transition: 0.15s; text-decoration: none; }
+.ga-action-btn.primary { background: #ef4444; color: #fff; }
+.ga-action-btn.primary:hover { background: #dc2626; }
+.ga-action-btn.outline { background: #fff; color: #374151; border: 2px solid #e5e7eb; }
+.ga-action-btn.outline:hover { border-color: #3b82f6; color: #3b82f6; }
+.ga-stats { margin-top: 18px; }
+.ga-stat-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 13px; }
+.ga-stat-row .label { color: #94a3b8; }
+.ga-stat-row .val { font-weight: 800; color: #111827; }
+
+@media (max-width: 900px) { .ga-cards { grid-template-columns: repeat(2, 1fr); } .ga-bottom { grid-template-columns: 1fr; } }
+</style>
+
+<%
+const fmtR = (n) => 'Rp' + parseFloat(n || 0).toLocaleString('id-ID');
+%>
+
+<!-- Row 1: 4 Cards -->
+<div class="ga-cards">
+    <div class="ga-card">
+        <div class="ga-card-label">Total Gross Sales</div>
+        <div class="ga-card-value" style="color:#111827;"><%= fmtR(total_income) %></div>
+        <div class="ga-card-sub"><%= total_orders %> Pesanan Berhasil</div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Penjualan Platform</div>
+        <div class="ga-card-value" style="color:#3b82f6;"><%= fmtR(platform_income || 0) %></div>
+        <div class="ga-card-sub">Cuan Upgrade PRO</div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Omset Admin Lingku</div>
+        <div class="ga-card-value" style="color:#10b981;"><%= fmtR(total_income) %></div>
+        <div class="ga-card-sub">Produk Digital Admin</div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Dana Mengendap</div>
+        <div class="ga-card-value" style="color:#ef4444;"><%= fmtR(dana_mengendap || 0) %></div>
+        <div class="ga-card-sub">Total Saldo User</div>
+    </div>
+</div>
+
+<!-- Row 2: 4 Cards -->
+<div class="ga-cards">
+    <div class="ga-card">
+        <div class="ga-card-label">Total WD Keluar</div>
+        <div class="ga-card-value"><%= fmtR(total_wd || 0) %></div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Pending Payouts</div>
+        <div class="ga-card-value" style="color:#f59e0b;"><%= fmtR(pending_payouts || 0) %></div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Total Members</div>
+        <div class="ga-card-value" style="color:#3b82f6;"><%= customer_count %></div>
+    </div>
+    <div class="ga-card">
+        <div class="ga-card-label">Stock Alerts</div>
+        <div class="ga-card-value" style="color:#ef4444;"><%= stock_alerts || 0 %> Out</div>
+    </div>
+</div>
+
+<!-- Bottom: Chart + Actions -->
+<div class="ga-bottom">
+    <div class="ga-chart-card">
+        <div class="ga-chart-title">7-Day Growth Analysis</div>
+        <canvas id="growthChart" height="220"></canvas>
+    </div>
+    <div class="ga-actions-card">
+        <div class="ga-action-title">Admin Quick Actions</div>
+        <a href="/admin/withdrawal-queue" class="ga-action-btn primary">Proses Penarikan Dana</a>
+        <a href="/admin/users" class="ga-action-btn outline">Manajemen Seluruh User</a>
+        <div class="ga-stats">
+            <div class="ga-stat-row"><span class="label">Platform Stats:</span></div>
+            <div class="ga-stat-row"><span class="label">Total Produk:</span><span class="val"><%= total_products %></span></div>
+        </div>
+    </div>
+</div>
+
+<script>
+const chartData = <%- JSON.stringify(chartData || []) %>;
+const labels = chartData.map(d => { const dt = new Date(d.date); return dt.toLocaleDateString('id-ID', {day:'numeric',month:'short'}); });
+const values = chartData.map(d => d.orders || d.revenue || 0);
+
+if (labels.length === 0) {
+    for (let i = 6; i >= 0; i--) {
+        const dt = new Date(); dt.setDate(dt.getDate() - i);
+        labels.push(dt.toLocaleDateString('id-ID', {day:'numeric',month:'short'}));
+        values.push(0);
+    }
+}
+
+new Chart(document.getElementById('growthChart').getContext('2d'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [{
+            data: values,
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.08)',
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointBackgroundColor: '#3b82f6',
+            tension: 0.4,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } }
+    }
+});
+</script>

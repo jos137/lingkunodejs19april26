@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Admin' %> — Lingku.xyz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f3f4f6; display: flex; min-height: 100vh; color: #1e293b; }
+
+        /* ===== SIDEBAR ===== */
+        .sidebar {
+            width: 230px;
+            background: #111827;
+            color: #fff;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-logo {
+            padding: 20px 22px 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-logo .logo-icon {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 14px; color: white;
+        }
+        .sidebar-logo .logo-text {
+            font-size: 20px;
+            font-weight: 900;
+            color: #10b981;
+            letter-spacing: -0.5px;
+        }
+
+        .sidebar-section-label {
+            padding: 14px 22px 8px;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        .sidebar-nav { flex: 1; }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 22px;
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .sidebar-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
+        .sidebar-link.active {
+            color: #10b981;
+            background: rgba(16,185,129,0.08);
+            border-right: 3px solid #10b981;
+        }
+        .sidebar-link i { width: 18px; text-align: center; font-size: 14px; }
+
+        .sidebar-link .notif-badge {
+            position: absolute;
+            right: 16px;
+            background: #ef4444;
+            color: white;
+            font-size: 9px;
+            font-weight: 800;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 5px;
+        }
+
+        .sidebar-bottom {
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 6px 0;
+            margin-top: auto;
+        }
+        .sidebar-link.logout { color: #ef4444; }
+        .sidebar-link.logout:hover { background: rgba(239,68,68,0.08); }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: 230px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .page-header {
+            padding: 24px 32px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .page-header h1 {
+            font-size: 24px;
+            font-weight: 850;
+            color: #111827;
+            margin: 0;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .action-btn {
+            width: 40px;
+            height: 40px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .action-btn:hover {
+            color: #10b981;
+            border-color: #10b981;
+            background: rgba(16,185,129,0.04);
+        }
+        .action-btn .badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 18px;
+            height: 18px;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            font-size: 10px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #f8fafc;
+        }
+        .profile-container {
+            position: relative;
+        }
+        .profile-trigger {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .profile-trigger:hover {
+            border-color: #10b981;
+        }
+        .profile-trigger img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 12px;
+            width: 200px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            display: none;
+            z-index: 1000;
+            padding: 8px;
+            animation: slideUp 0.2s ease-out;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .dropdown-menu.show {
+            display: block;
+        }
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            color: #1e293b;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.15s;
+        }
+        .dropdown-item:hover {
+            background: #f1f5f9;
+            color: #10b981;
+        }
+        .dropdown-item i {
+            width: 16px;
+            text-align: center;
+            color: #64748b;
+            font-size: 14px;
+        }
+        .dropdown-item.logout {
+            color: #ef4444;
+        }
+        .dropdown-item.logout:hover {
+            background: rgba(239,68,68,0.05);
+        }
+        .dropdown-divider {
+            height: 1px;
+            background: #e5e7eb;
+            margin: 6px 0;
+        }
+        .page-body {
+            padding: 20px 32px 32px;
+            flex: 1;
+        }
+
+        /* ===== FOOTER ===== */
+        .page-footer {
+            padding: 18px 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #94a3b8;
+            border-top: 1px solid #e5e7eb;
+            background: #fff;
+        }
+        .page-footer a { color: #64748b; text-decoration: none; margin-left: 18px; font-weight: 600; }
+        .page-footer a:hover { color: #111827; }
+        .page-footer strong { color: #10b981; font-weight: 800; }
+
+        /* ===== CARD BASE ===== */
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .sidebar { width: 60px; }
+            .sidebar .logo-text, .sidebar-user-info, .sidebar-section-label, .sidebar-link span { display: none; }
+            .sidebar-link { justify-content: center; padding: 14px 0; }
+            .sidebar-link i { width: auto; }
+            .main-content { margin-left: 60px; }
+            .page-body { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <img src="/images/logo.png" alt="Logo" style="height: 35px;">
+        </div>
+
+        <nav class="sidebar-nav">
+            <div class="sidebar-section-label">Main Menu</div>
+            <a href="/admin" class="sidebar-link <%= title === 'Beranda' ? 'active' : '' %>">
+                <i class="fas fa-tachometer-alt"></i><span>Beranda</span>
+            </a>
+            <a href="/admin/builder" class="sidebar-link <%= title === 'Builder' ? 'active' : '' %>">
+                <i class="fas fa-th-large"></i><span>Builder</span>
+            </a>
+            <a href="/admin/products" class="sidebar-link <%= title === 'Produk Digital' ? 'active' : '' %>">
+                <i class="fas fa-box"></i><span>Produk Digital</span>
+            </a>
+            <a href="/admin/orders" class="sidebar-link <%= title === 'Pesanan' ? 'active' : '' %>">
+                <i class="fas fa-shopping-bag"></i><span>Pesanan</span>
+            </a>
+            <a href="/admin/statistics" class="sidebar-link <%= title === 'Statistik' ? 'active' : '' %>">
+                <i class="fas fa-chart-bar"></i><span>Statistik</span>
+            </a>
+            <a href="/admin/withdrawal" class="sidebar-link <%= title === 'Tarik Dana' ? 'active' : '' %>">
+                <i class="fas fa-money-bill-wave"></i><span>Tarik Dana</span>
+            </a>
+            <a href="/admin/guides" class="sidebar-link <%= title === 'Pusat Panduan' ? 'active' : '' %>">
+                <i class="fas fa-book"></i><span>Panduan</span>
+            </a>
+
+            <div class="sidebar-section-label">Admin Area</div>
+            <a href="/admin/users" class="sidebar-link <%= title === 'Manajemen User' ? 'active' : '' %>">
+                <i class="fas fa-users"></i><span>Manajemen User</span>
+            </a>
+            <a href="/admin/analytics" class="sidebar-link <%= title === 'Analisa Global' ? 'active' : '' %>">
+                <i class="fas fa-globe-asia"></i><span>Analisa Global</span>
+            </a>
+            <a href="/admin/withdrawal-queue" class="sidebar-link <%= title === 'WD Antrian' ? 'active' : '' %>">
+                <i class="fas fa-layer-group"></i><span>WD Antrian</span>
+                <% if (locals.pendingWDCount && pendingWDCount > 0) { %>
+                    <span class="notif-badge"><%= pendingWDCount %></span>
+                <% } %>
+            </a>
+            <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
+                <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <!-- Consolidated into Top Header Profile Menu -->
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main-content">
+        <div class="page-header">
+            <h1><%= title || 'Beranda' %></h1>
+            <div class="header-actions">
+                <a href="#" class="action-btn">
+                    <i class="fas fa-bell"></i>
+                    <span class="badge">3</span>
+                </a>
+                <div class="profile-container">
+                    <button class="profile-trigger" id="profileBtn">
+                        <img src="<%= (locals.user && user.profile_photo) ? user.profile_photo : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'Admin') + '&background=6366f1&color=fff' %>" alt="Profile">
+                    </button>
+                    <div class="dropdown-menu" id="profileMenu">
+                        <a href="/admin/settings" class="dropdown-item">
+                            <i class="fas fa-cog"></i> Pengaturan
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a href="/auth/logout" class="dropdown-item logout">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="page-body">
+            <%- body %>
+        </div>
+        <footer class="page-footer">
+            <div>&copy; 2026 <strong>Lingku.xyz</strong> - All Rights Reserved.</div>
+            <div>
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Help</a>
+            </div>
+        </footer>
+    </main>
+
+
+    <script>
+        const profileBtn = document.getElementById('profileBtn');
+        const profileMenu = document.getElementById('profileMenu');
+
+        if (profileBtn && profileMenu) {
+            profileBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                profileMenu.classList.toggle('show');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!profileMenu.contains(e.target) && !profileBtn.contains(e.target)) {
+                    profileMenu.classList.remove('show');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

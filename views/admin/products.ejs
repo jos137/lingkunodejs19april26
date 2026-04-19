@@ -1,0 +1,183 @@
+<style>
+/* ===== PRODUCTS HEADER ===== */
+.prod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+.prod-header h2 { font-size: 20px; font-weight: 900; color: #111827; }
+.prod-add-btn {
+    padding: 10px 22px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    font-size: 13px; font-weight: 800; cursor: pointer; transition: 0.2s;
+    display: flex; align-items: center; gap: 8px;
+}
+.prod-add-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+
+/* ===== PRODUCTS GRID (4 columns) ===== */
+.prod-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+.prod-card {
+    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+    overflow: hidden; transition: 0.2s; cursor: pointer;
+}
+.prod-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+
+.prod-thumb {
+    width: 100%; height: 140px; background: #f1f5f9;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+}
+.prod-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.prod-thumb-placeholder { color: #cbd5e1; font-size: 36px; }
+
+.prod-type-badge {
+    position: absolute; top: 8px; left: 8px;
+    padding: 3px 10px; border-radius: 6px; font-size: 9px; font-weight: 900;
+    letter-spacing: 0.5px; text-transform: uppercase;
+}
+.prod-type-badge.digital { background: #6366f1; color: #fff; }
+.prod-type-badge.tiket { background: #f59e0b; color: #fff; }
+.prod-type-badge.webinar { background: #3b82f6; color: #fff; }
+.prod-type-badge.mentoring { background: #ec4899; color: #fff; }
+
+.prod-body { padding: 14px; }
+.prod-name { font-size: 13px; font-weight: 700; color: #111827; margin-bottom: 6px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.prod-price { font-size: 15px; font-weight: 900; color: #111827; margin-bottom: 8px; }
+.prod-meta { display: flex; gap: 12px; font-size: 11px; color: #94a3b8; font-weight: 600; }
+
+.prod-actions { display: flex; justify-content: space-between; padding: 10px 14px; border-top: 1px solid #f3f4f6; }
+.prod-actions a, .prod-actions button {
+    font-size: 11px; font-weight: 700; text-decoration: none; border: none; background: none; cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.prod-actions .edit-btn { color: #3b82f6; }
+.prod-actions .edit-btn:hover { color: #2563eb; }
+.prod-actions .del-btn { color: #ef4444; }
+.prod-actions .del-btn:hover { color: #dc2626; }
+
+.prod-empty { grid-column: span 4; text-align: center; padding: 60px; color: #94a3b8; }
+
+/* ===== CATEGORY PICKER MODAL ===== */
+.cat-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
+.cat-modal-bg.show { display: flex; }
+.cat-modal { background: #fff; border-radius: 18px; width: 560px; max-width: 92vw; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.cat-modal-title { font-size: 18px; font-weight: 900; color: #111827; margin-bottom: 6px; }
+.cat-modal-desc { font-size: 13px; color: #64748b; margin-bottom: 24px; }
+.cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.cat-card {
+    background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 14px;
+    padding: 22px; cursor: pointer; transition: 0.15s; text-align: center;
+}
+.cat-card:hover { border-color: #10b981; background: #f0fdf4; transform: translateY(-2px); }
+.cat-card-icon { font-size: 28px; margin-bottom: 10px; display: block; }
+.cat-card-name { font-size: 14px; font-weight: 800; color: #111827; margin-bottom: 4px; }
+.cat-card-desc { font-size: 11px; color: #64748b; }
+
+/* ===== PRODUCT EDITOR MODAL ===== */
+.editor-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 600; align-items: center; justify-content: center; }
+.editor-modal-bg.show { display: flex; }
+.editor-modal { background: #fff; border-radius: 18px; width: 620px; max-width: 92vw; max-height: 85vh; overflow-y: auto; padding: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+.editor-title { font-size: 17px; font-weight: 900; color: #111827; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+.editor-subtitle { font-size: 12px; color: #64748b; margin-bottom: 22px; }
+.ed-group { margin-bottom: 16px; }
+.ed-label { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 5px; display: block; }
+.ed-input { width: 100%; padding: 10px 14px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-family: inherit; font-size: 13px; color: #111827; outline: none; }
+.ed-input:focus { border-color: #10b981; }
+.ed-textarea { min-height: 80px; resize: vertical; }
+.ed-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.ed-file-area { border: 2px dashed #e5e7eb; border-radius: 12px; padding: 24px; text-align: center; cursor: pointer; transition: 0.15s; }
+.ed-file-area:hover { border-color: #10b981; background: #f0fdf4; }
+.ed-file-area i { font-size: 24px; color: #10b981; display: block; margin-bottom: 8px; }
+.ed-file-area span { font-size: 12px; color: #64748b; }
+.ed-btns { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+.ed-btn { padding: 11px 24px; border-radius: 10px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; transition: 0.15s; }
+.ed-btn.save { background: #10b981; color: #fff; }
+.ed-btn.save:hover { background: #059669; }
+.ed-btn.cancel { background: #f3f4f6; color: #374151; }
+
+@media (max-width: 1024px) { .prod-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 768px) { .prod-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { 
+    .prod-grid { grid-template-columns: 1fr; } 
+    .prod-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .prod-add-btn { width: 100%; justify-content: center; }
+    .cat-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="prod-header">
+    <h2>Daftar Produk</h2>
+    <button class="prod-add-btn" onclick="document.getElementById('catModal').classList.add('show')">
+        <i class="fas fa-plus"></i> Produk Baru
+    </button>
+</div>
+
+<div class="prod-grid">
+    <% if (products.length > 0) { %>
+        <% products.forEach(function(p) {
+            const type = (p.type || p.product_type || 'digital').toLowerCase();
+            const typeLabel = type === 'tiket' ? 'TIKET' : type === 'webinar' ? 'WEBINAR' : type === 'mentoring' ? 'MENTORING' : 'DIGITAL';
+            const thumb = p.thumb || '';
+        %>
+            <div class="prod-card">
+                <div class="prod-thumb">
+                    <% if (thumb) { %>
+                        <img src="<%= thumb %>" alt="<%= p.name %>" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+                        <i class="fas fa-image prod-thumb-placeholder" style="display:none;"></i>
+                    <% } else { %>
+                        <i class="fas fa-image prod-thumb-placeholder"></i>
+                    <% } %>
+                    <span class="prod-type-badge <%= type %>"><%= typeLabel %></span>
+                </div>
+                <div class="prod-body">
+                    <div class="prod-name"><%= p.name %></div>
+                    <div class="prod-price">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                    <div class="prod-meta">
+                        <span><i class="fas fa-shopping-cart"></i> <%= p.sold || 0 %> Sold</span>
+                        <span><i class="fas fa-box"></i> <%= p.stock || 0 %> Stok</span>
+                    </div>
+                </div>
+                <div class="prod-actions">
+                    <a href="/admin/products/<%= p.id %>/edit" class="edit-btn"><i class="fas fa-edit"></i> Ubah</a>
+                    <form action="/admin/products/<%= p.id %>/delete" method="POST" onsubmit="return confirm('Hapus produk ini?')">
+                        <button type="submit" class="del-btn"><i class="fas fa-trash"></i> Hapus</button>
+                    </form>
+                </div>
+            </div>
+        <% }); %>
+    <% } else { %>
+        <div class="prod-empty">
+            <i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>
+            <div style="font-size:14px;font-weight:600;">Belum ada produk</div>
+            <div style="font-size:12px;margin-top:4px;">Klik "Produk Baru" untuk mulai berjualan!</div>
+        </div>
+    <% } %>
+</div>
+
+<!-- ===== CATEGORY PICKER MODAL ===== -->
+<div class="cat-modal-bg" id="catModal" onclick="if(event.target===this)this.classList.remove('show')">
+    <div class="cat-modal">
+        <div class="cat-modal-title">Pilih Jenis Produk</div>
+        <div class="cat-modal-desc">Pilih kategori produk yang ingin Anda buat.</div>
+        <div class="cat-grid">
+            <a href="/admin/products/create?type=digital" class="cat-card" style="text-decoration:none;">
+                <span class="cat-card-icon">📦</span>
+                <div class="cat-card-name">Produk Digital</div>
+                <div class="cat-card-desc">E-book, template, preset, software, dll.</div>
+            </a>
+            <a href="/admin/products/create?type=tiket" class="cat-card" style="text-decoration:none;">
+                <span class="cat-card-icon">🎫</span>
+                <div class="cat-card-name">Tiket Online</div>
+                <div class="cat-card-desc">Tiket event, konser, gathering, dll.</div>
+            </a>
+            <a href="/admin/products/create?type=webinar" class="cat-card" style="text-decoration:none;">
+                <span class="cat-card-icon">🎥</span>
+                <div class="cat-card-name">Event Webinar</div>
+                <div class="cat-card-desc">Webinar, workshop, live class, dll.</div>
+            </a>
+            <a href="/admin/products/create?type=mentoring" class="cat-card" style="text-decoration:none;">
+                <span class="cat-card-icon">🧑‍🏫</span>
+                <div class="cat-card-name">Mentoring 1on1</div>
+                <div class="cat-card-desc">Sesi mentoring pribadi, coaching, dll.</div>
+            </a>
+        </div>
+    </div>
+</div>
+

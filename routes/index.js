@@ -1,0 +1,38 @@
+const express = require('express');
+const router = express.Router();
+
+const indexController = require('../controllers/builderController');
+
+// Landing Page
+router.get('/', (req, res) => {
+    // If user is logged in, redirect to dashboard
+    if (req.session && req.session.user) {
+        return res.redirect('/admin');
+    }
+    res.render('index', { layout: false });
+});
+
+// Logout shortcut - redirect to auth/logout
+router.get('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        res.redirect('/');
+    });
+});
+
+// Product Detail Page
+router.get('/p/:productId', indexController.renderProductPage);
+
+// Checkout Flow
+router.get('/checkout/:productId', indexController.renderCheckoutPage);
+router.post('/checkout/process', indexController.processCheckout);
+router.post('/api/callback/ipaymu', indexController.ipaymuCallback);
+
+// Tracking & Email Events
+router.get('/track/email/:orderId.png', indexController.trackEmailOpen);
+router.get('/access/go/:orderId', indexController.handleAccessLink);
+
+// Dynamic User Landing Pages (MUST BE LAST)
+router.get('/:username', indexController.renderUserPage);
+router.get('/:username/:pageSlug', indexController.renderUserPage);
+
+module.exports = router;
