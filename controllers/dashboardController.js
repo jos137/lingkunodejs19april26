@@ -54,7 +54,7 @@ exports.getDashboardData = async (req, res) => {
         } catch(e) {}
 
         res.render('admin/dashboard', {
-            title: 'Beranda',
+            title: 'Dashboard',
             layout: './layouts/admin',
             stats: {
                 total_revenue: totalRevenue,
@@ -70,7 +70,7 @@ exports.getDashboardData = async (req, res) => {
     } catch (err) {
         console.error('Dashboard Error:', err.message);
         res.render('admin/dashboard', {
-            title: 'Beranda',
+            title: 'Dashboard',
             layout: './layouts/admin',
             stats: {},
             chartData: [],
