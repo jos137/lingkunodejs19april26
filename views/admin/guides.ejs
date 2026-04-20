@@ -1,42 +1,105 @@
 <style>
-.guides-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
-.guide-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 24px; transition: 0.2s; }
-.guide-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
-.guide-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
-.guide-card h3 { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 8px; }
-.guide-card p { font-size: 13px; color: #64748b; line-height: 1.6; }
+.g-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.g-title { font-size: 22px; font-weight: 850; color: #111827; letter-spacing: -0.5px; }
+.g-add-btn { background: #111827; color: #fff; border: none; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
+.g-add-btn:hover { background: #000; transform: translateY(-2px); }
+
+.guides-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.guide-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 25px; transition: 0.2s; position: relative; display: block; text-decoration: none; }
+.guide-card:hover { transform: translateY(-3px); border-color: #3b82f6; box-shadow: 0 15px 35px -5px rgba(0,0,0,0.06); }
+.guide-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 18px; }
+.guide-card h3 { font-size: 16px; font-weight: 800; color: #111827; margin: 0 0 8px 0; }
+.guide-card p { font-size: 13.5px; color: #64748b; line-height: 1.6; margin: 0; }
+.delete-guide { position: absolute; top: 15px; right: 15px; color: #ef4444; opacity: 0; transition: 0.2s; cursor: pointer; padding: 5px; }
+.guide-card:hover .delete-guide { opacity: 0.4; }
+.delete-guide:hover { opacity: 1 !important; transform: scale(1.1); }
+
+/* Modal Styles */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+.modal-content { background: #fff; width: 100%; max-width: 450px; border-radius: 20px; padding: 30px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.2); }
+.m-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; color: #111827; }
+.f-group { margin-bottom: 15px; }
+.f-label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.f-input { width: 100%; padding: 12px 16px; border: 1.5px solid #e5e7eb; border-radius: 12px; font-size: 14px; outline: none; box-sizing: border-box; }
+.f-input:focus { border-color: #3b82f6; }
+.f-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.m-btns { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; margin-top: 25px; }
+.btn-c { padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px; border: none; cursor: pointer; text-align: center; }
+.btn-cancel { background: #f1f5f9; color: #475569; }
+.btn-save { background: #111827; color: #fff; }
+
 @media (max-width: 768px) { .guides-grid { grid-template-columns: 1fr; } }
 </style>
 
+<div class="g-header">
+    <h1 class="g-title">Pusat Panduan</h1>
+    <button class="g-add-btn" onclick="openModal()"><i class="fas fa-plus"></i> Tambah Panduan</button>
+</div>
+
 <div class="guides-grid">
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#f0fdf4;color:#10b981;"><i class="fas fa-rocket"></i></div>
-        <h3>Mulai Cepat</h3>
-        <p>Panduan langkah demi langkah untuk memulai jualan produk digital pertama Anda di Lingku.xyz.</p>
-    </div>
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#eff6ff;color:#3b82f6;"><i class="fas fa-box"></i></div>
-        <h3>Mengelola Produk</h3>
-        <p>Cara menambah, mengedit, dan menghapus produk digital. Atur harga dan stok dengan mudah.</p>
-    </div>
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#fdf4ff;color:#a855f7;"><i class="fas fa-credit-card"></i></div>
-        <h3>Pembayaran & Penarikan</h3>
-        <p>Cara kerja sistem pembayaran otomatis dan proses penarikan dana ke rekening Anda.</p>
-    </div>
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#fff7ed;color:#f59e0b;"><i class="fas fa-paint-brush"></i></div>
-        <h3>Kustomisasi Halaman</h3>
-        <p>Gunakan Page Builder untuk mendesain halaman jualan yang menarik dan profesional.</p>
-    </div>
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#fef2f2;color:#ef4444;"><i class="fas fa-chart-line"></i></div>
-        <h3>Memahami Statistik</h3>
-        <p>Pelajari cara membaca dashboard dan statistik penjualan untuk mengoptimalkan bisnis Anda.</p>
-    </div>
-    <div class="guide-card">
-        <div class="guide-icon" style="background:#f0fdf4;color:#10b981;"><i class="fas fa-question-circle"></i></div>
-        <h3>FAQ</h3>
-        <p>Pertanyaan yang sering diajukan tentang penggunaan platform Lingku.xyz.</p>
+    <% if (locals.guides && guides.length > 0) { %>
+        <% guides.forEach(guide => { %>
+            <a href="<%= guide.link || '#' %>" class="guide-card" target="_blank">
+                <div class="guide-icon" style="background: <%= guide.icon_bg %>; color: <%= guide.icon_color %>;">
+                    <i class="fas <%= guide.icon %>"></i>
+                </div>
+                <h3><%= guide.title %></h3>
+                <p><%= guide.description %></p>
+                <div class="delete-guide" onclick="event.preventDefault(); if(confirm('Hapus panduan ini?')) window.location.href='/admin/guides/delete/<%= guide.id %>'">
+                    <i class="fas fa-trash-alt"></i>
+                </div>
+            </a>
+        <% }) %>
+    <% } else { %>
+        <div style="grid-column: span 2; text-align: center; padding: 100px; color: #94a3b8;">
+            <i class="fas fa-book-open" style="font-size: 40px; margin-bottom: 20px; opacity: 0.3;"></i>
+            <div style="font-weight: 700; font-size: 15px;">Belum ada panduan</div>
+            <p style="font-size: 13px; margin-top: 5px;">Klik tombol "Tambah Panduan" untuk membuat menu baru</p>
+        </div>
+    <% } %>
+</div>
+
+<!-- Modal Tambah Panduan -->
+<div class="modal" id="guideModal">
+    <div class="modal-content">
+        <h2 class="m-title">Tambah Panduan Baru</h2>
+        <form action="/admin/guides/add" method="POST">
+            <div class="f-group">
+                <label class="f-label">Judul Panduan</label>
+                <input type="text" name="title" class="f-input" placeholder="e.g. Cara Tarik Dana" required>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Deskripsi Singkat</label>
+                <textarea name="description" class="f-input" style="height: 80px; resize: none;" placeholder="Jelaskan isi panduan dalam 1 kalimat..."></textarea>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Link Panduan (URL Video/Artikel)</label>
+                <input type="url" name="link" class="f-input" placeholder="https://youtube.com/..." required>
+            </div>
+            <div class="f-group">
+                <label class="f-label">Icon FontAwesome</label>
+                <input type="text" name="icon" class="f-input" placeholder="fa-rocket">
+            </div>
+            <div class="f-row">
+                <div class="f-group">
+                    <label class="f-label">Warna Background Icon</label>
+                    <input type="color" name="icon_bg" class="f-input" value="#f0fdf4" style="height: 46px; padding: 5px;">
+                </div>
+                <div class="f-group">
+                    <label class="f-label">Warna Icon</label>
+                    <input type="color" name="icon_color" class="f-input" value="#10b981" style="height: 46px; padding: 5px;">
+                </div>
+            </div>
+            <div class="m-btns">
+                <button type="button" class="btn-c btn-cancel" onclick="closeModal()">Batal</button>
+                <button type="submit" class="btn-c btn-save">Simpan Panduan</button>
+            </div>
+        </form>
     </div>
 </div>
+
+<script>
+function openModal() { document.getElementById('guideModal').style.display = 'flex'; }
+function closeModal() { document.getElementById('guideModal').style.display = 'none'; }
+window.onclick = function(event) { if (event.target == document.getElementById('guideModal')) closeModal(); }
+</script>

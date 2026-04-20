@@ -513,14 +513,68 @@ exports.requestWithdrawal = async (req, res) => {
 // ===================== GUIDES =====================
 exports.getGuides = async (req, res) => {
     try {
-        let guides = [];
+        // Auto-Heal: Ensure guides table exists
         try {
-            const [rows] = await db.execute('SELECT * FROM guides ORDER BY id DESC');
-            guides = rows;
-        } catch(e) {}
-        res.render('admin/guides', { title: 'Pusat Panduan', layout: './layouts/admin', guides, user: req.session.user || res.locals.user });
+            await db.execute('SELECT 1 FROM guides LIMIT 1');
+        } catch (e) {
+            if (e.message.includes("Table") && e.message.includes("doesn't exist")) {
+                await db.execute(`
+                    CREATE TABLE guides (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        icon VARCHAR(50) DEFAULT 'fa-rocket',
+                        icon_bg VARCHAR(20) DEFAULT '#f0fdf4',
+                        icon_color VARCHAR(20) DEFAULT '#10b981',
+                        link VARCHAR(255),
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+                // Insert default guides
+                const defaults = [
+                    ['Mulai Cepat', 'Panduan langkah demi langkah untuk memulai jualan produk digital pertama Anda.', 'fa-rocket', '#f0fdf4', '#10b981'],
+                    ['Mengelola Produk', 'Cara menambah, mengedit, dan menghapus produk digital.', 'fa-box', '#eff6ff', '#3b82f6'],
+                    ['Pembayaran & WD', 'Cara kerja sistem pembayaran otomatis dan penarikan dana.', 'fa-credit-card', '#fdf4ff', '#a855f7']
+                ];
+                for (let d of defaults) {
+                    await db.execute('INSERT INTO guides (title, description, icon, icon_bg, icon_color) VALUES (?, ?, ?, ?, ?)', d);
+                }
+            }
+        }
+
+        const [guides] = await db.execute('SELECT * FROM guides ORDER BY id DESC');
+        res.render('admin/guides', { 
+            title: 'Pusat Panduan', 
+            layout: './layouts/admin', 
+            guides, 
+            user: req.session.user || res.locals.user 
+        });
     } catch (err) {
+        console.error('Guides Error:', err.message);
         res.render('admin/guides', { title: 'Pusat Panduan', layout: './layouts/admin', guides: [], user: req.session.user || res.locals.user });
+    }
+};
+
+exports.addGuide = async (req, res) => {
+    try {
+        const { title, description, icon, icon_bg, icon_color, link } = req.body;
+        await db.execute(
+            'INSERT INTO guides (title, description, icon, icon_bg, icon_color, link) VALUES (?, ?, ?, ?, ?, ?)',
+            [title, description, icon || 'fa-rocket', icon_bg || '#f0fdf4', icon_color || '#10b981', link || '#']
+        );
+        res.redirect('/admin/guides?success=1');
+    } catch (err) {
+        res.redirect('/admin/guides?error=' + encodeURIComponent(err.message));
+    }
+};
+
+exports.deleteGuide = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.execute('DELETE FROM guides WHERE id = ?', [id]);
+        res.redirect('/admin/guides?deleted=1');
+    } catch (err) {
+        res.redirect('/admin/guides?error=' + encodeURIComponent(err.message));
     }
 };
 

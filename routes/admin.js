@@ -92,6 +92,8 @@ router.post('/withdrawal/request', adminController.requestWithdrawal);
 
 // ===== GUIDES =====
 router.get('/guides', adminController.getGuides);
+router.post('/guides/add', adminController.addGuide);
+router.get('/guides/delete/:id', adminController.deleteGuide);
 
 // ===== USERS (Admin) =====
 router.get('/users', adminController.getUsers);
