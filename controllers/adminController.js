@@ -277,12 +277,22 @@ exports.getOrders = async (req, res) => {
             }
         }
 
-        // Auto-Heal: Ensure products.thumbnail column exists
-        try {
-            await db.execute("SELECT thumbnail FROM products LIMIT 1");
-        } catch (e) {
-            if (e.message.includes('Unknown column')) {
-                try { await db.execute("ALTER TABLE products ADD COLUMN thumbnail VARCHAR(255) DEFAULT NULL"); } catch(err) {}
+        // Auto-Heal: Ensure all possible product image columns exist to avoid SQL crashes
+        const colsToHeal = [
+            'thumbnail VARCHAR(255) DEFAULT NULL',
+            'image_url TEXT DEFAULT NULL',
+            'image_small VARCHAR(255) DEFAULT NULL',
+            'cover_image VARCHAR(255) DEFAULT NULL',
+            'photo VARCHAR(255) DEFAULT NULL'
+        ];
+        for (const colDef of colsToHeal) {
+            const colName = colDef.split(' ')[0];
+            try {
+                await db.execute(`SELECT ${colName} FROM products LIMIT 1`);
+            } catch (e) {
+                if (e.message.includes('Unknown column')) {
+                    try { await db.execute(`ALTER TABLE products ADD COLUMN ${colDef}`); } catch(err) {}
+                }
             }
         }
 
@@ -296,12 +306,12 @@ exports.getOrders = async (req, res) => {
         const totalItems = countRow[0].total;
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Safe query for Hostinger & Local DB - Fetch all columns to avoid missing column errors
+        // Safe query for Hostinger & Local DB
         const [orders] = await db.execute(
             `SELECT o.*, 
-                    p.name as product_name, 
+                    COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name, 
                     p.price as product_price, 
-                    p.image_url, p.image_small, p.thumbnail, p.cover_image, p.photo,
+                    p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo,
                     p.access_link,
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
@@ -310,20 +320,7 @@ exports.getOrders = async (req, res) => {
              ORDER BY o.id DESC
              LIMIT ? OFFSET ?`,
             [userId, limit, offset]
-        ).catch(async (err) => {
-             // If specific columns fail, fallback to a more generic query
-             return await db.execute(
-                `SELECT o.*, 
-                        COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name,
-                        p.price as product_price
-                 FROM orders o
-                 LEFT JOIN products p ON o.product_id = p.id
-                 WHERE o.user_id = ?
-                 ORDER BY o.id DESC
-                 LIMIT ? OFFSET ?`,
-                [userId, limit, offset]
-             );
-        });
+        );
 
         // Clean up data (handle multiple image columns and JSON prefixing)
         const cleanedOrders = orders.map(o => {
