@@ -411,7 +411,14 @@
 
                 <div class="profile-container">
                     <button class="profile-trigger" id="profileBtn">
-                        <img src="<%= (locals.user && user.profile_photo) ? user.profile_photo : 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'Admin') + '&background=6366f1&color=fff' %>" alt="Profile">
+                        <% 
+                            let finalPhoto = (locals.user && user.profile_photo) ? user.profile_photo : '';
+                            if (finalPhoto && !finalPhoto.startsWith('http') && !finalPhoto.startsWith('/')) {
+                                finalPhoto = '/uploads/profiles/' + finalPhoto;
+                            }
+                            const fallback = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.name || 'Admin') + '&background=6366f1&color=fff';
+                        %>
+                        <img src="<%= finalPhoto || fallback %>" alt="Profile" onerror="this.src='<%= fallback %>'">
                     </button>
                     <div class="dropdown-menu" id="profileMenu">
                         <a href="/admin/settings" class="dropdown-item">
