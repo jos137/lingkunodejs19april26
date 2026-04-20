@@ -292,7 +292,7 @@ exports.getOrders = async (req, res) => {
             `SELECT o.*, 
                     COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name, 
                     p.price as product_price, 
-                    COALESCE(p.image_url, p.image_small) as product_thumbnail,
+                    COALESCE(p.thumbnail, p.image_url, p.image_small) as product_thumbnail,
                     p.access_link,
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
