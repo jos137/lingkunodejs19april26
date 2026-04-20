@@ -296,12 +296,12 @@ exports.getOrders = async (req, res) => {
         const totalItems = countRow[0].total;
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Safe query for Hostinger DB
+        // Safe query for Hostinger & Local DB - Fetch all columns to avoid missing column errors
         const [orders] = await db.execute(
             `SELECT o.*, 
-                    COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name, 
+                    p.name as product_name, 
                     p.price as product_price, 
-                    COALESCE(p.thumbnail, p.image_url, p.image_small) as product_thumbnail,
+                    p.image_url, p.image_small, p.thumbnail, p.cover_image, p.photo,
                     p.access_link,
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
@@ -310,11 +310,25 @@ exports.getOrders = async (req, res) => {
              ORDER BY o.id DESC
              LIMIT ? OFFSET ?`,
             [userId, limit, offset]
-        );
+        ).catch(async (err) => {
+             // If specific columns fail, fallback to a more generic query
+             return await db.execute(
+                `SELECT o.*, 
+                        COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name,
+                        p.price as product_price
+                 FROM orders o
+                 LEFT JOIN products p ON o.product_id = p.id
+                 WHERE o.user_id = ?
+                 ORDER BY o.id DESC
+                 LIMIT ? OFFSET ?`,
+                [userId, limit, offset]
+             );
+        });
 
-        // Clean up data (handle JSON product_thumbnail and path prefixing)
+        // Clean up data (handle multiple image columns and JSON prefixing)
         const cleanedOrders = orders.map(o => {
-            let thumb = o.product_thumbnail || '';
+            // Find the first non-empty image column
+            let thumb = o.thumbnail || o.image_url || o.image_small || o.cover_image || o.photo || '';
             // Handle JSON Array format
             if (typeof thumb === 'string' && thumb.startsWith('[')) {
                 try {
