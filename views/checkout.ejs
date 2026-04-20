@@ -46,15 +46,10 @@
         </div>
 
         <% 
-            let raw = product.image_url || product.thumbnail || '';
-            let thumb = '';
-            try {
-                if (raw && raw.startsWith('[')) {
-                    const arr = JSON.parse(raw);
-                    if (Array.isArray(arr) && arr.length > 0) thumb = arr[0];
-                } else { thumb = raw; }
-            } catch(e) { thumb = raw; }
-            const thumbUrl = thumb && !thumb.startsWith('http') && !thumb.startsWith('/') ? '/uploads/products/' + thumb : (thumb || 'https://via.placeholder.com/150');
+            const thumb = product.processed_thumb;
+            const thumbUrl = thumb && (thumb.startsWith('http') || thumb.startsWith('/')) 
+                ? thumb 
+                : (thumb ? '/uploads/products/' + thumb : 'https://via.placeholder.com/150');
         %>
 
         <div class="product-summary">
