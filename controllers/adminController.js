@@ -433,34 +433,63 @@ exports.sendAccessAction = async (req, res) => {
 exports.getStatistics = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+        const filterDate = req.query.date || new Date().toLocaleString('sv-SE', { timeZone: 'Asia/Jakarta' }).split(' ')[0];
 
-        let totalRevenue = 0, totalOrders = 0, completedOrders = 0, pendingOrders = 0;
-        try {
-            const [rev] = await db.execute("SELECT COALESCE(SUM(total_price),0) as rev, COUNT(*) as cnt FROM orders WHERE user_id = ? AND status='completed'", [userId]);
-            totalRevenue = rev[0].rev;
-            completedOrders = rev[0].cnt;
-        } catch(e) {}
-        try {
-            const [all] = await db.execute("SELECT COUNT(*) as cnt FROM orders WHERE user_id = ?", [userId]);
-            totalOrders = all[0].cnt;
-        } catch(e) {}
-        try {
-            const [pend] = await db.execute("SELECT COUNT(*) as cnt FROM orders WHERE user_id = ? AND status='pending'", [userId]);
-            pendingOrders = pend[0].cnt;
-        } catch(e) {}
+        // Overall Stats (All Time)
+        const [overall] = await db.execute(`
+            SELECT 
+                COALESCE(SUM(CASE WHEN o.status='completed' THEN o.total_price ELSE 0 END), 0) as total_rev,
+                COUNT(o.id) as total_cnt,
+                SUM(CASE WHEN o.status='completed' THEN 1 ELSE 0 END) as comp_cnt,
+                SUM(CASE WHEN o.status='pending' THEN 1 ELSE 0 END) as pend_cnt
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE p.user_id = ?
+        `, [userId]);
+
+        const o = overall[0];
+
+        // Filtered Stats for Chart (Specific Date)
+        const [filtered] = await db.execute(`
+            SELECT 
+                SUM(CASE WHEN o.status='completed' THEN 1 ELSE 0 END) as comp,
+                SUM(CASE WHEN o.status='pending' THEN 1 ELSE 0 END) as pend
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE p.user_id = ? AND DATE(CONVERT_TZ(o.created_at, '+00:00', '+07:00')) = ?
+        `, [userId, filterDate]);
+
+        const f = filtered[0];
+
+        // Best Sellers for this Seller (All Time)
+        const [bestSellers] = await db.execute(`
+            SELECT p.name, COUNT(o.id) as total_sold, SUM(o.total_price) as revenue
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE p.user_id = ? AND o.status = 'completed'
+            GROUP BY p.id
+            ORDER BY total_sold DESC
+            LIMIT 5
+        `, [userId]);
 
         res.render('admin/statistics', {
             title: 'Statistik',
             layout: './layouts/admin',
-            total_revenue: totalRevenue,
-            total_orders: totalOrders,
-            completed_orders: completedOrders,
-            pending_orders: pendingOrders,
+            total_revenue: o.total_rev,
+            total_orders: o.total_cnt,
+            completed_orders: o.comp_cnt,
+            pending_orders: o.pend_cnt,
+            chartData: {
+                completed: f.comp || 0,
+                pending: f.pend || 0,
+                date: filterDate
+            },
+            bestSellers,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
-        console.error(err.message);
-        res.render('admin/statistics', { title: 'Statistik', layout: './layouts/admin', total_revenue: 0, total_orders: 0, completed_orders: 0, pending_orders: 0, user: req.session.user || res.locals.user });
+        console.error('Stats Error:', err.message);
+        res.render('admin/statistics', { title: 'Statistik', layout: './layouts/admin', total_revenue: 0, total_orders: 0, completed_orders: 0, pending_orders: 0, chartData: {completed:0, pending:0, date:''}, bestSellers: [], user: req.session.user || res.locals.user });
     }
 };
 

@@ -1,41 +1,130 @@
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
-.stat-cards {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px;
+/* Stat Cards */
+.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 25px; }
+.stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.stat-card-label { font-size: 10px; font-weight: 900; color: #94a3b8; letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
+.stat-card-value { font-size: 24px; font-weight: 1000; color: #111827; }
+
+/* Filter & Layout */
+.stats-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 14px; border: 1px solid #e5e7eb; }
+.date-input { padding: 10px 15px; border: 1.5px solid #f1f5f9; border-radius: 10px; font-size: 13px; font-weight: 700; color: #1e293b; outline: none; background: #f8fafc; cursor: pointer; transition: 0.2s; }
+.date-input:focus { border-color: #3b82f6; background: #fff; }
+
+.stats-grid { display: grid; grid-template-columns: 1.8fr 1fr; gap: 20px; }
+.stats-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+.stats-box-title { font-size: 12px; font-weight: 850; color: #1e293b; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.5px; border-left: 4px solid #3b82f6; padding-left: 12px; }
+
+/* Best Sellers List */
+.best-seller-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+.best-seller-item:last-child { border-bottom: none; }
+.bs-rank { width: 28px; height: 28px; border-radius: 8px; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 1000; color: #111827; border: 1px solid #e5e7eb; }
+.bs-info { flex: 1; min-width: 0; }
+.bs-name { font-size: 13px; font-weight: 800; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.bs-stats { font-size: 11px; font-weight: 600; color: #64748b; }
+.bs-revenue { font-size: 12px; font-weight: 850; color: #10b981; }
+
+@media (max-width: 1024px) {
+    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .stats-grid { grid-template-columns: 1fr; }
 }
-.stat-card {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-    padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-}
-.stat-card-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 1px; margin-bottom: 8px; }
-.stat-card-value { font-size: 26px; font-weight: 900; color: #111827; }
-.stat-card-sub { font-size: 12px; color: #64748b; margin-top: 4px; }
 </style>
 
 <div class="stat-cards">
-    <div class="stat-card">
-        <div class="stat-card-label" style="color:#10b981;">TOTAL REVENUE</div>
+    <div class="stat-card" style="border-top: 4px solid #10b981;">
+        <div class="stat-card-label">Overall Revenue</div>
         <div class="stat-card-value">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label" style="color:#3b82f6;">TOTAL PESANAN</div>
+    <div class="stat-card" style="border-top: 4px solid #3b82f6;">
+        <div class="stat-card-label">Total Pesanan</div>
         <div class="stat-card-value"><%= total_orders || 0 %></div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label" style="color:#059669;">SELESAI</div>
+    <div class="stat-card" style="border-top: 4px solid #059669;">
+        <div class="stat-card-label">Pesanan Selesai</div>
         <div class="stat-card-value" style="color:#059669;"><%= completed_orders || 0 %></div>
     </div>
-    <div class="stat-card">
-        <div class="stat-card-label" style="color:#d97706;">PENDING</div>
-        <div class="stat-card-value" style="color:#d97706;"><%= pending_orders || 0 %></div>
+    <div class="stat-card" style="border-top: 4px solid #f97316;">
+        <div class="stat-card-label">Pesanan Pending</div>
+        <div class="stat-card-value" style="color:#f97316;"><%= pending_orders || 0 %></div>
     </div>
 </div>
 
-<div class="card" style="padding:28px;">
-    <div style="font-size:12px;font-weight:800;color:#374151;letter-spacing:0.5px;margin-bottom:16px;">RINGKASAN PERFORMA</div>
-    <p style="font-size:14px;color:#64748b;line-height:1.7;">
-        Total pendapatan Anda adalah <strong style="color:#111827;">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></strong>
-        dari <strong style="color:#111827;"><%= total_orders || 0 %> pesanan</strong>.
-        <br>Pesanan selesai: <strong style="color:#059669;"><%= completed_orders || 0 %></strong>,
-        Pending: <strong style="color:#d97706;"><%= pending_orders || 0 %></strong>.
-    </p>
+<div class="stats-controls">
+    <div style="font-size:14px; font-weight:1000; color:#111827;">Analisa Harian</div>
+    <form action="/admin/statistics" method="GET" id="filterForm">
+        <input type="date" name="date" class="date-input" value="<%= chartData.date %>" onchange="document.getElementById('filterForm').submit()">
+    </form>
 </div>
+
+<div class="stats-grid">
+    <div class="stats-box">
+        <div class="stats-box-title">Perbandingan Status (<%= new Date(chartData.date).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) %>)</div>
+        <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+
+    <div class="stats-box">
+        <div class="stats-box-title">Produk Terlaris</div>
+        <div class="best-sellers-list">
+            <% if (bestSellers && bestSellers.length > 0) { %>
+                <% bestSellers.forEach((item, idx) => { %>
+                    <div class="best-seller-item">
+                        <div class="bs-rank"><%= idx + 1 %></div>
+                        <div class="bs-info">
+                            <div class="bs-name"><%= item.name %></div>
+                            <div class="bs-stats"><%= item.total_sold %> terjual</div>
+                        </div>
+                        <div class="bs-revenue">Rp <%= parseFloat(item.revenue || 0).toLocaleString('id-ID') %></div>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <div style="text-align:center; padding:50px 0; color:#94a3b8; font-size:13px; font-weight:600;">Belum ada data penjualan.</div>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<script>
+const ctx = document.getElementById('statusChart').getContext('2d');
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: ['Pesanan Pending', 'Pesanan Selesai'],
+        datasets: [{
+            label: 'Jumlah Pesanan',
+            data: [<%= chartData.pending %>, <%= chartData.completed %>],
+            backgroundColor: [
+                'rgba(249, 115, 22, 0.2)', // Orange for Pending
+                'rgba(16, 185, 129, 0.2)'  // Green for Completed
+            ],
+            borderColor: [
+                '#f97316', 
+                '#10b981'
+            ],
+            borderWidth: 2,
+            borderRadius: 10,
+            barThickness: 50
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: { display: true, color: '#f1f5f9' },
+                ticks: { font: { weight: '600' } }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { font: { weight: '1000' } }
+            }
+        }
+    }
+});
+</script>
