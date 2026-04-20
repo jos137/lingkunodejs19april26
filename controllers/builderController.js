@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
-const { sendPaymentInstructionEmail } = require('../utils/mailer');
+const { sendPaymentInstructionEmail, sendAccessEmail } = require('../utils/mailer');
 
 // Ensure tables exist
 async function ensureTables() {
@@ -620,25 +620,43 @@ exports.ipaymuCallback = async (req, res) => {
                 try { await db.execute("ALTER TABLE orders ADD COLUMN trx_id VARCHAR(100) AFTER reference_id"); } catch(err2) {}
             }
 
-            const [orders] = await db.execute('SELECT * FROM orders WHERE reference_id = ?', [sid]);
+            const [orders] = await db.execute(`
+                SELECT o.*, p.name as product_name, p.access_link 
+                FROM orders o 
+                JOIN products p ON o.product_id = p.id 
+                WHERE o.reference_id = ?
+            `, [sid]);
             
             if (orders.length > 0) {
                 const order = orders[0];
                 
                 if (order.status === 'pending') {
-                    // Update Order Status
+                    // 1. Update Order Status
                     await db.execute(
                         'UPDATE orders SET status = ?, trx_id = ? WHERE id = ?',
                         ['completed', trx_id || null, order.id]
                     );
 
-                    // Add Balance to Merchant
+                    // 2. Add Balance to Merchant
                     await db.execute(
                         'UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id = ?',
                         [parseFloat(order.total_price || 0), order.user_id]
                     );
 
-                    console.log(`[SUCCESS] Order ${sid} completed.`);
+                    // 3. Send Access Email Automatically
+                    if (order.customer_email && order.access_link) {
+                        const baseUrl = `https://${req.get('host')}`;
+                        sendAccessEmail(
+                            order.id, 
+                            order.customer_email, 
+                            order.customer_name, 
+                            order.product_name, 
+                            order.access_link,
+                            baseUrl
+                        ).catch(e => console.error('Error sending access email on callback:', e));
+                    }
+
+                    console.log(`[SUCCESS] Order ${sid} completed & Email sent.`);
                 }
             }
         }
