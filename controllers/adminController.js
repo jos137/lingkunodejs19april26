@@ -513,13 +513,14 @@ exports.requestWithdrawal = async (req, res) => {
 // ===================== GUIDES =====================
 exports.getGuides = async (req, res) => {
     try {
-        // Auto-Heal: Ensure guides table exists
+        // Auto-Heal: Ensure guides table exists and has correct columns
         try {
-            await db.execute('SELECT 1 FROM guides LIMIT 1');
+            await db.execute('SELECT description, icon, icon_bg, icon_color, link FROM guides LIMIT 1');
         } catch (e) {
-            if (e.message.includes("Table") && e.message.includes("doesn't exist")) {
+            // If table doesn't exist, create it
+            if (e.message.includes("doesn't exist")) {
                 await db.execute(`
-                    CREATE TABLE guides (
+                    CREATE TABLE IF NOT EXISTS guides (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         title VARCHAR(255) NOT NULL,
                         description TEXT,
@@ -530,14 +531,17 @@ exports.getGuides = async (req, res) => {
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
-                // Insert default guides
-                const defaults = [
-                    ['Mulai Cepat', 'Panduan langkah demi langkah untuk memulai jualan produk digital pertama Anda.', 'fa-rocket', '#f0fdf4', '#10b981'],
-                    ['Mengelola Produk', 'Cara menambah, mengedit, dan menghapus produk digital.', 'fa-box', '#eff6ff', '#3b82f6'],
-                    ['Pembayaran & WD', 'Cara kerja sistem pembayaran otomatis dan penarikan dana.', 'fa-credit-card', '#fdf4ff', '#a855f7']
+            } else if (e.message.includes("Unknown column")) {
+                // If table exists but columns are missing, add them
+                const cols = [
+                    'ALTER TABLE guides ADD COLUMN IF NOT EXISTS description TEXT',
+                    'ALTER TABLE guides ADD COLUMN IF NOT EXISTS icon VARCHAR(50) DEFAULT "fa-rocket"',
+                    'ALTER TABLE guides ADD COLUMN IF NOT EXISTS icon_bg VARCHAR(20) DEFAULT "#f0fdf4"',
+                    'ALTER TABLE guides ADD COLUMN IF NOT EXISTS icon_color VARCHAR(20) DEFAULT "#10b981"',
+                    'ALTER TABLE guides ADD COLUMN IF NOT EXISTS link VARCHAR(255)'
                 ];
-                for (let d of defaults) {
-                    await db.execute('INSERT INTO guides (title, description, icon, icon_bg, icon_color) VALUES (?, ?, ?, ?, ?)', d);
+                for (let sql of cols) {
+                    try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(err) {}
                 }
             }
         }
