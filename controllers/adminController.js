@@ -277,6 +277,15 @@ exports.getOrders = async (req, res) => {
             }
         }
 
+        // Auto-Heal: Ensure products.thumbnail column exists
+        try {
+            await db.execute("SELECT thumbnail FROM products LIMIT 1");
+        } catch (e) {
+            if (e.message.includes('Unknown column')) {
+                try { await db.execute("ALTER TABLE products ADD COLUMN thumbnail VARCHAR(255) DEFAULT NULL"); } catch(err) {}
+            }
+        }
+
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
