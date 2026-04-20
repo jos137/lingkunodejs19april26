@@ -3,27 +3,41 @@ const db = require('../config/db');
 exports.getDashboardData = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+        const filterDate = req.query.date || null; // Ambil parameter tanggal dari URL
+
+        // Base Query Condition
+        let dateCondition = "WHERE user_id = ?";
+        let queryParams = [userId];
+        
+        if (filterDate) {
+            dateCondition += " AND DATE(created_at) = ?";
+            queryParams.push(filterDate);
+        }
 
         // Total revenue (completed orders)
         let totalRevenue = 0, totalSales = 0;
         try {
             const [revRow] = await db.execute(
-                "SELECT COALESCE(SUM(total_price), 0) as total_revenue, COUNT(*) as total_sales FROM orders WHERE user_id = ? AND status = 'completed'",
-                [userId]
+                `SELECT COALESCE(SUM(total_price), 0) as total_revenue, COUNT(*) as total_sales FROM orders ${dateCondition} AND status = 'completed'`,
+                queryParams
             );
             totalRevenue = revRow[0].total_revenue;
             totalSales = revRow[0].total_sales;
         } catch(e) { console.log('Revenue query skipped:', e.message); }
 
-        // Balance (revenue - withdrawn)
+        // Balance (Always Cumulative - Saldo tidak dipicu per tanggal)
         let balance = 0;
         try {
+            const [allRevRow] = await db.execute(
+                "SELECT COALESCE(SUM(total_price), 0) as total_revenue FROM orders WHERE user_id = ? AND status = 'completed'",
+                [userId]
+            );
             const [wdRow] = await db.execute(
                 "SELECT COALESCE(SUM(amount), 0) as total_wd FROM withdrawals WHERE user_id = ? AND status IN ('completed','pending')",
                 [userId]
             );
-            balance = parseFloat(totalRevenue) - parseFloat(wdRow[0].total_wd);
-        } catch(e) { balance = parseFloat(totalRevenue); }
+            balance = parseFloat(allRevRow[0].total_revenue) - parseFloat(wdRow[0].total_wd);
+        } catch(e) { balance = 0; }
 
         // Total products
         let totalProducts = 0;
@@ -43,15 +57,24 @@ exports.getDashboardData = async (req, res) => {
             }
         } catch(e) { console.log('User query note:', e.message); }
 
-        // Chart data (7 hari terakhir)
+        // Chart data
         let chartData = [];
         try {
-            const [rows] = await db.execute(
-                "SELECT DATE(created_at) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY DATE(created_at) ORDER BY date ASC",
-                [userId]
-            );
+            let chartQuery = "SELECT DATE(created_at) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND status = 'completed'";
+            let chartParams = [userId];
+
+            if (filterDate) {
+                chartQuery += " AND DATE(created_at) = ?";
+                chartParams.push(filterDate);
+            } else {
+                chartQuery += " AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+            }
+
+            chartQuery += " GROUP BY DATE(created_at) ORDER BY date ASC";
+            
+            const [rows] = await db.execute(chartQuery, chartParams);
             chartData = rows;
-        } catch(e) {}
+        } catch(e) { console.log('Chart query error:', e.message); }
 
         res.render('admin/dashboard', {
             title: 'Dashboard',
@@ -65,6 +88,7 @@ exports.getDashboardData = async (req, res) => {
                 slug: slug
             },
             chartData,
+            filterDate,
             user: req.session.user || { name: userName, role: 'admin', roleDisplay: 'Administrator' }
         });
     } catch (err) {

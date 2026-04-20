@@ -132,21 +132,38 @@
 </style>
 
 <!-- YOUR BIO LINK -->
-<div class="bio-card" style="margin-bottom: 24px;">
-    <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">LINK BIO ANDA</div>
-    <div class="bio-input-group">
-        <div class="bio-input-wrap">
-            <span style="color:#94a3b8; font-size:14px; font-weight:600;">lingku.xyz/</span>
-            <input type="text" id="slugInput" value="<%= userSlug %>" 
-                style="border:none; outline:none; background:transparent; font-size:14px; font-weight:800; color:#111827; flex:1; font-family:inherit;">
+<div style="display: flex; gap: 24px; align-items: flex-start; margin-bottom: 24px;">
+    <div class="bio-card" style="flex: 1; margin: 0;">
+        <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">LINK BIO ANDA</div>
+        <div class="bio-input-group">
+            <div class="bio-input-wrap">
+                <span style="color:#94a3b8; font-size:14px; font-weight:600;">lingku.xyz/</span>
+                <input type="text" id="slugInput" value="<%= userSlug %>" 
+                    style="border:none; outline:none; background:transparent; font-size:14px; font-weight:800; color:#111827; flex:1; font-family:inherit;">
+            </div>
+            <button onclick="updateSlug()" class="bio-btn primary">Update</button>
+            <button onclick="window.open('/' + document.getElementById('slugInput').value, '_blank')" class="bio-btn" title="Open Link">
+                <i class="fas fa-external-link-alt"></i>
+            </button>
+            <button onclick="copyLink()" class="bio-btn" title="Copy Link">
+                <i class="fas fa-copy" style="color:#10b981;"></i> Copy
+            </button>
         </div>
-        <button onclick="updateSlug()" class="bio-btn primary">Update</button>
-        <button onclick="window.open('/' + document.getElementById('slugInput').value, '_blank')" class="bio-btn" title="Open Link">
-            <i class="fas fa-external-link-alt"></i>
-        </button>
-        <button onclick="copyLink()" class="bio-btn" title="Copy Link">
-            <i class="fas fa-copy" style="color:#10b981;"></i> Copy
-        </button>
+    </div>
+
+    <!-- DATE FILTER -->
+    <div class="bio-card" style="width: 250px; margin: 0;">
+        <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">FILTER PER TANGGAL</div>
+        <div style="display: flex; gap: 8px;">
+            <input type="date" id="dateFilter" value="<%= locals.filterDate || '' %>" 
+                onchange="window.location.href='/admin?date=' + this.value"
+                style="width:100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 13px; font-weight: 700; color: #334155; outline: none; transition: 0.2s;">
+            <% if (locals.filterDate) { %>
+                <button onclick="window.location.href='/admin'" style="border:none; background:#f1f5f9; color:#64748b; padding:0 12px; border-radius:10px; cursor:pointer;" title="Reset">
+                    <i class="fas fa-times"></i>
+                </button>
+            <% } %>
+        </div>
     </div>
 </div>
 
@@ -177,7 +194,7 @@
 <!-- CHART -->
 <div class="bio-card" style="padding: 28px; margin-top: 24px;">
     <div style="font-size: 12px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE (LAST 7 DAYS)
+        <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE (LAST 30 DAYS)
     </div>
     <div style="height: 340px; position: relative;">
         <canvas id="dashChart"></canvas>
@@ -193,19 +210,23 @@
         dataVals.push(<%= d.revenue || 0 %>);
     <% }); %>
 
+    const chartType = '<%= locals.filterDate %>' ? 'bar' : 'line';
+    
     new Chart(document.getElementById('dashChart').getContext('2d'), {
-        type: 'line',
+        type: chartType,
         data: {
             labels: labels,
             datasets: [{
                 label: 'Revenue',
                 data: dataVals,
                 borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59,130,246,0.04)',
+                backgroundColor: chartType === 'bar' ? '#3b82f6' : 'rgba(59,130,246,0.04)',
                 fill: true,
                 tension: 0.4,
-                borderWidth: 2.5,
-                pointRadius: 5,
+                borderWidth: chartType === 'bar' ? 0 : 2.5,
+                borderRadius: chartType === 'bar' ? 8 : 0,
+                barThickness: chartType === 'bar' ? 50 : 'flex',
+                pointRadius: chartType === 'bar' ? 0 : 5,
                 pointBackgroundColor: '#fff',
                 pointBorderColor: '#3b82f6',
                 pointBorderWidth: 2.5,
