@@ -463,7 +463,16 @@ exports.processCheckout = async (req, res) => {
         `;
 
         try {
-            await db.execute(insertQuery, orderParams);
+            const [orderRes] = await db.execute(insertQuery, orderParams);
+            
+            // Notify Merchant about NEW PENDING ORDER
+            try {
+                await db.execute(
+                    "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                    [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info']
+                );
+            } catch (notifErr) { console.error('Notif Error:', notifErr.message); }
+
         } catch (dbErr) {
             console.error('Initial DB Error:', dbErr.message);
             // Auto-Heal: Add missing columns if they don't exist
@@ -677,7 +686,7 @@ exports.ipaymuCallback = async (req, res) => {
                     // 3. Send Access Email Automatically
                     if (order.customer_email && order.access_link) {
                         const baseUrl = `https://${req.get('host')}`;
-                        const { sendAccessEmail } = require('../utils/email'); // Ensure utility is available
+                        const { sendAccessEmail } = require('../utils/mailer'); // Fixed path: mailer.js
                         sendAccessEmail(
                             order.id, 
                             order.customer_email, 
