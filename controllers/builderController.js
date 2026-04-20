@@ -361,14 +361,18 @@ exports.renderProductPage = async (req, res) => {
         if (products.length === 0) return res.status(404).send('Product not found');
         const product = products[0];
 
-        // Process image
+        // Process image (Robust detection)
+        let thumbValue = product.thumbnail || product.image_url || product.image_small || product.cover_image || product.photo || '';
         let thumb = '';
-        try {
-            if (product.image_url) {
-                const imgs = JSON.parse(product.image_url);
+        
+        if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
+            try {
+                const imgs = JSON.parse(thumbValue);
                 if (Array.isArray(imgs) && imgs.length > 0) thumb = imgs[0];
-            }
-        } catch(e) { thumb = product.image_url || ''; }
+            } catch(e) { thumb = thumbValue; }
+        } else {
+            thumb = thumbValue;
+        }
         product.processed_thumb = thumb;
 
         res.render('product-detail', {
@@ -388,7 +392,23 @@ exports.renderCheckoutPage = async (req, res) => {
         const [products] = await db.execute('SELECT * FROM products WHERE id = ?', [productId]);
         if (products.length === 0) return res.status(404).send('Product not found');
         
-        res.render('checkout', { title: 'Checkout', product: products[0], layout: false });
+        const product = products[0];
+
+        // Process image (Robust detection)
+        let thumbValue = product.thumbnail || product.image_url || product.image_small || product.cover_image || product.photo || '';
+        let thumb = '';
+        
+        if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
+            try {
+                const imgs = JSON.parse(thumbValue);
+                if (Array.isArray(imgs) && imgs.length > 0) thumb = imgs[0];
+            } catch(e) { thumb = thumbValue; }
+        } else {
+            thumb = thumbValue;
+        }
+        product.processed_thumb = thumb;
+
+        res.render('checkout', { title: 'Checkout', product, layout: false });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading checkout');
