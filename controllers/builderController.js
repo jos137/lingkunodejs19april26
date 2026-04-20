@@ -304,15 +304,20 @@ exports.renderUserPage = async (req, res) => {
         try {
             const [rows] = await db.execute('SELECT * FROM products WHERE user_id = ?', [user.id]);
             products = rows.map(p => {
+                // Find the first non-empty image column
+                let thumbValue = p.thumbnail || p.image_url || p.image_small || p.cover_image || p.photo || '';
                 let thumb = '';
-                try {
-                    if (p.image_url) {
-                        const imgs = JSON.parse(p.image_url);
+                
+                // Handle JSON format if exists
+                if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
+                    try {
+                        const imgs = JSON.parse(thumbValue);
                         if (Array.isArray(imgs) && imgs.length > 0) thumb = imgs[0];
-                    }
-                } catch(e) {
-                    thumb = p.image_url || p.image_small || '';
+                    } catch(e) { thumb = thumbValue; }
+                } else {
+                    thumb = thumbValue;
                 }
+                
                 return { ...p, processed_thumb: thumb };
             });
         } catch(e) {}
