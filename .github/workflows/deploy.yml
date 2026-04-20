@@ -21,7 +21,9 @@ jobs:
         script: |
           cd domains/lingku.xyz/nodejs
           git pull origin master
-          export PATH=/opt/alt/alt-nodejs22/root/bin:$PATH
-          npm install --production
-          pkill -9 -u u427900331 node || true
-          nohup node server.js > out.log 2> err.log &
+          /opt/alt/alt-nodejs22/root/bin/npm install --production
+          # Safer restart logic
+          pkill -u u427900331 node || true
+          sleep 2
+          nohup /opt/alt/alt-nodejs22/root/bin/node server.js > out.log 2> err.log &
+          sleep 2
