@@ -312,15 +312,22 @@ exports.getOrders = async (req, res) => {
             [userId, limit, offset]
         );
 
-        // Clean up data (handle JSON product_thumbnail)
+        // Clean up data (handle JSON product_thumbnail and path prefixing)
         const cleanedOrders = orders.map(o => {
             let thumb = o.product_thumbnail || '';
+            // Handle JSON Array format
             if (typeof thumb === 'string' && thumb.startsWith('[')) {
                 try {
                     const arr = JSON.parse(thumb);
                     if (Array.isArray(arr) && arr.length > 0) thumb = arr[0];
                 } catch(e) {}
             }
+            
+            // Add path prefix if not an absolute URL
+            if (thumb && !thumb.startsWith('http') && !thumb.startsWith('/')) {
+                thumb = '/uploads/products/' + thumb;
+            }
+            
             return { ...o, product_thumbnail: thumb };
         });
 
