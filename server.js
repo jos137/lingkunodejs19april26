@@ -45,6 +45,7 @@ app.use(async (req, res, next) => {
         slug: 'admin',
         avatar: '/images/avatar.png'
     };
+    res.locals.isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
     // Fetch Pending WD Count for Red Badge
     try {

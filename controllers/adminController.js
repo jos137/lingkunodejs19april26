@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const axios = require('axios');
+const { exec } = require('child_process');
 const { sendAccessEmail, sendFollowUpEmail } = require('../utils/mailer');
 
 // ===================== DASHBOARD =====================
@@ -789,4 +790,42 @@ exports.updateIpaymuSettings = async (req, res) => {
 exports.uploadProfilePhoto = async (req, res) => {
     // This is now integrated into updateProfile
     res.redirect('/admin/settings');
+};
+
+// ===================== AFFILIATE =====================
+exports.getAffiliate = async (req, res) => {
+    try {
+        res.render('admin/affiliate', {
+            title: 'Affiliate',
+            layout: './layouts/admin',
+            user: req.session.user || res.locals.user,
+            affiliateLink: 'https://lingku.xyz/ref/bangjos'
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error');
+    }
+};
+
+// ===================== DEV TOOLS (LOCAL ONLY) =====================
+exports.autoDeploy = (req, res) => {
+    // Safety check: Only allow if hostname is localhost
+    if (req.hostname !== 'localhost') {
+        return res.status(403).json({ success: false, message: 'Fitur ini hanya untuk Local Dev!' });
+    }
+
+    console.log('--- AUTO DEPLOY STARTED ---');
+    const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
+    
+    // Chain the git commands
+    const command = `git add . && git commit -m "${commitMsg}" && git push origin master`;
+    
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Exec Error: ${error.message}`);
+            return res.json({ success: false, message: error.message });
+        }
+        console.log(`STDOUT: ${stdout}`);
+        res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+    });
 };

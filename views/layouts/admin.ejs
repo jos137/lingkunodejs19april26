@@ -324,12 +324,44 @@
             <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
                 <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>
             </a>
+            <a href="/admin/affiliate" class="sidebar-link <%= title === 'Affiliate' ? 'active' : '' %>">
+                <i class="fas fa-handshake"></i><span>Affiliate</span>
+            </a>
         </nav>
 
         <div class="sidebar-bottom">
-            <!-- Consolidated into Top Header Profile Menu -->
+            <% if (locals.isLocal) { %>
+                <button onclick="triggerDeploy(this)" class="sidebar-link" style="width:100%; border:none; background: #059669; color: white; cursor:pointer;">
+                    <i class="fas fa-rocket"></i><span>Push to Live</span>
+                </button>
+            <% } %>
         </div>
     </aside>
+
+    <script>
+        async function triggerDeploy(btn) {
+            if (!confirm('Yakin mau terbangkan kodingan ke Live (Hostinger)?')) return;
+            
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Deploying...</span>';
+            
+            try {
+                const res = await fetch('/admin/dev/push', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('BERHASIL! Kodingan sedang terbang ke Hostinger. Tunggu 1 menit lalu refresh.');
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error koneksi ke server lokal.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+    </script>
 
     <!-- MAIN -->
     <main class="main-content">

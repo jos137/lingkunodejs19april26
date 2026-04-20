@@ -109,6 +109,11 @@ router.get('/features', adminController.getFeatureControl);
 router.post('/features/create', adminController.createFeature);
 router.post('/features/:id/toggle', adminController.toggleFeature);
 router.post('/features/:id/delete', adminController.deleteFeature);
+// ===== AFFILIATE =====
+router.get('/affiliate', adminController.getAffiliate);
+router.post('/dev/push', adminController.autoDeploy);
+
+
 
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);
