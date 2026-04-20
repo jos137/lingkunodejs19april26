@@ -629,6 +629,25 @@ exports.processCheckout = async (req, res) => {
                             <a href="/" class="back-btn">Selesai & Ke Beranda</a>
                         </div>
                     </div>
+
+                    <script>
+                        // AUTO-REDIRECT MAGIC BY ANTIGRAVITY
+                        const refId = '<%= refId %>'.replace('<%= refId %>', '${refId}'); 
+                        let checkCount = 0;
+                        const interval = setInterval(async () => {
+                            try {
+                                const res = await fetch('/api/order/status/' + refId);
+                                const data = await res.json();
+                                if (data.status === 'completed') {
+                                    clearInterval(interval);
+                                    // Bawa pembeli langsung ke halaman akses produk
+                                    window.location.href = '/access/go/' + data.orderId;
+                                }
+                                checkCount++;
+                                if (checkCount > 200) clearInterval(interval); // Stop setelah kira-kira 15 menit
+                            } catch(e) { console.error('Poller Error:', e); }
+                        }, 5000); // Cek tiap 5 detik
+                    </script>
                 </body>
                 </html>
             `);
@@ -717,6 +736,22 @@ exports.ipaymuCallback = async (req, res) => {
         console.error('--- CALLBACK FATAL ERROR ---');
         console.error(err);
         res.status(500).send('Error');
+    }
+};
+
+// Check Order Status for Auto-Redirect
+exports.checkOrderStatus = async (req, res) => {
+    try {
+        const { refId } = req.params;
+        const [orders] = await db.execute('SELECT id, status FROM orders WHERE reference_id = ?', [refId]);
+        if (orders.length === 0) return res.json({ status: 'not_found' });
+        
+        res.json({ 
+            status: orders[0].status,
+            orderId: orders[0].id
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 };
 

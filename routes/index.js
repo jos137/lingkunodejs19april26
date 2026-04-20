@@ -26,6 +26,7 @@ router.get('/p/:productId', indexController.renderProductPage);
 router.get('/checkout/:productId', indexController.renderCheckoutPage);
 router.post('/checkout/process', indexController.processCheckout);
 router.post('/api/callback/ipaymu', indexController.ipaymuCallback);
+router.get('/api/order/status/:refId', indexController.checkOrderStatus);
 
 // Tracking & Email Events
 router.get('/track/email/:orderId.png', indexController.trackEmailOpen);

@@ -167,8 +167,8 @@
                          onclick="selectOrder(this, <%= idx %>)">
                         <div class="order-info">
                             <div class="order-date">
-                                <%= order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short' }) : '' %>,
-                                <%= order.created_at ? new Date(order.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '' %>
+                                <%= order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', timeZone: 'Asia/Jakarta' }) : '' %>,
+                                <%= order.created_at ? new Date(order.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta' }) : '' %>
                             </div>
                             <div class="order-buyer"><%= order.customer_name || order.buyer_name || 'Pembeli' %></div>
                             <div class="order-product"><%= order.product_name %></div>
@@ -269,7 +269,7 @@ function selectOrder(el, idx) {
     if (!o) return;
 
     const date = o.created_at ? new Date(o.created_at) : null;
-    const dateStr = date ? date.toLocaleDateString('id-ID', { day:'numeric', month:'short' }) + ', ' + date.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) : '-';
+    const dateStr = date ? date.toLocaleDateString('id-ID', { day:'numeric', month:'short', timeZone: 'Asia/Jakarta' }) + ', ' + date.toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta' }) : '-';
     const price = parseFloat(o.total_price || o.amount || 0).toLocaleString('id-ID');
     
     // Conditional Button Logic
@@ -324,7 +324,7 @@ function selectOrder(el, idx) {
                     <%# Check if opened exists in the order object %>
                     <div class="email-step-icon ${o.last_opened_at ? 'done' : ''}"><i class="fas fa-envelope-open"></i></div>
                     <div class="email-step-label">Dibuka</div>
-                    <div class="email-step-time">${o.last_opened_at ? (new Date(o.last_opened_at).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) + ', ' + new Date(o.last_opened_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'})) : '—'}</div>
+                    <div class="email-step-time">${o.last_opened_at ? (new Date(o.last_opened_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', timeZone: 'Asia/Jakarta'}) + ', ' + new Date(o.last_opened_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta'})) : '—'}</div>
                 </div>
             </div>
         </div>
