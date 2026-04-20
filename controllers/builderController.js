@@ -487,9 +487,9 @@ exports.processCheckout = async (req, res) => {
             phone: (phone || '').replace(/[^0-9]/g, ''), // Ensure numeric phone
             email: email,
             amount: Math.floor(product.price),
-            notifyUrl: `${req.protocol}://${req.get('host')}/api/callback/ipaymu`,
-            returnUrl: `${req.protocol}://${req.get('host')}/`,
-            cancelUrl: `${req.protocol}://${req.get('host')}/`,
+            notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
+            returnUrl: `https://lingku.xyz/`,
+            cancelUrl: `https://lingku.xyz/`,
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
