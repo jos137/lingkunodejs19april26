@@ -111,6 +111,7 @@ exports.getBuilder = async (req, res) => {
 };
 
 exports.savePageData = async (req, res) => {
+    let connection;
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
         const { page_slug, blocks } = req.body;
@@ -119,34 +120,47 @@ exports.savePageData = async (req, res) => {
         if (pageRows.length === 0) return res.json({ success: false, message: 'Halaman tidak ditemukan.' });
 
         const pageId = pageRows[0].id;
+        
+        // Use a transaction for maximum speed and safety
+        connection = await db.getConnection();
+        await connection.beginTransaction();
 
-        // Save backup first
+        // 1. Save backup (Silent)
         try {
-            const [currentBlocks] = await db.execute('SELECT * FROM page_blocks WHERE page_id = ? ORDER BY block_order ASC', [pageId]);
-            await db.execute('INSERT INTO page_backups (page_id, blocks_json) VALUES (?, ?)', [pageId, JSON.stringify(currentBlocks)]);
+            const [currentBlocks] = await connection.execute('SELECT type, content, visible, block_order FROM page_blocks WHERE page_id = ? ORDER BY block_order ASC', [pageId]);
+            if (currentBlocks.length > 0) {
+                await connection.execute('INSERT INTO page_backups (page_id, blocks_json) VALUES (?, ?)', [pageId, JSON.stringify(currentBlocks)]);
+            }
         } catch(e) {}
 
-        // Delete old blocks
-        await db.execute('DELETE FROM page_blocks WHERE page_id = ?', [pageId]);
+        // 2. Delete old blocks
+        await connection.execute('DELETE FROM page_blocks WHERE page_id = ?', [pageId]);
 
-        // Insert new blocks
-        if (blocks && Array.isArray(blocks)) {
-            for (let i = 0; i < blocks.length; i++) {
-                const b = blocks[i];
+        // 3. BULK INSERT new blocks (THE SPEED BOOSTER)
+        if (blocks && Array.isArray(blocks) && blocks.length > 0) {
+            const values = [];
+            const placeholders = [];
+            
+            blocks.forEach((b, i) => {
                 let content = b.content || '';
                 if (typeof content === 'object') content = JSON.stringify(content);
+                
+                placeholders.push('(?, ?, ?, ?, ?)');
+                values.push(pageId, b.type, content, (b.visible == 1 || b.visible === true) ? 1 : 0, i);
+            });
 
-                await db.execute(
-                    'INSERT INTO page_blocks (page_id, type, content, visible, block_order) VALUES (?, ?, ?, ?, ?)',
-                    [pageId, b.type, content, (b.visible == 1 || b.visible === true) ? 1 : 0, i]
-                );
-            }
+            const sql = `INSERT INTO page_blocks (page_id, type, content, visible, block_order) VALUES ${placeholders.join(', ')}`;
+            await connection.execute(sql, values);
         }
 
+        await connection.commit();
         res.json({ success: true });
     } catch (err) {
-        console.error(err.message);
-        res.json({ success: false, message: 'Gagal menyimpan.' });
+        if (connection) await connection.rollback();
+        console.error('Save Page Error:', err.message);
+        res.json({ success: false, message: 'Gagal menyimpan cepat.' });
+    } finally {
+        if (connection) connection.release();
     }
 };
 
