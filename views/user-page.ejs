@@ -11,16 +11,38 @@
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
         .container { width: 100%; max-width: 480px; padding: 15px 20px 50px 20px; display: flex; flex-direction: column; align-items: center; }
         .profile { 
-            width: 100%; background: <%= user.profile_box_color || '#ffffff' %>; border-radius: 20px; padding: 20px;
-            display: flex; align-items: center; gap: 20px;
+            width: 100%; background: <%= user.profile_box_color || '#ffffff' %>; 
+            padding: 20px;
+            display: <%= user.show_header == 0 ? 'none' : 'flex' %>; 
+            align-items: center; gap: 20px;
             box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
             margin-bottom: 24px; border: 1.5px solid #f1f5f9;
             box-sizing: border-box; text-align: left;
+            
+            /* Dynamic Shapes */
+            <% if (user.header_type === 'box') { %>
+                border-radius: 0;
+            <% } else if (user.header_type === 'sketch') { %>
+                border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+                border: 2px solid #111827;
+                box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
+            <% } else { %>
+                border-radius: 20px;
+            <% } %>
         }
         .avatar { 
-            width: 70px; height: 70px; border-radius: 16px; 
+            width: 70px; height: 70px; 
             border: 2px solid white; box-shadow: 0 8px 15px rgba(0,0,0,0.08); 
             object-fit: cover; flex-shrink: 0;
+            
+            /* Dynamic Avatar Shape */
+            <% if (user.header_type === 'sketch') { %>
+                border-radius: 20px 5px 18px 7px/7px 18px 5px 20px;
+                border: 2px solid #111827;
+                transform: rotate(-2deg);
+            <% } else { %>
+                border-radius: 16px;
+            <% } %>
         }
         .profile-info { flex: 1; }
         .name { font-size: 18px; font-weight: 850; margin: 0; color: #111827; letter-spacing: -0.3px; }

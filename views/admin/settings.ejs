@@ -107,6 +107,20 @@
                             <input class="s-input" type="text" value="<%= user.theme_color || '#10b981' %>" disabled>
                         </div>
                     </div>
+                </div>
+
+                <div class="s-divider"></div>
+                <div class="settings-title" style="font-size:15px;">Header Profil</div>
+                <div class="settings-desc" style="margin-bottom:20px;">Sesuaikan tampilan box profil di bagian atas halaman Anda.</div>
+
+                <div class="s-group">
+                    <div class="s-check">
+                        <input type="checkbox" name="show_header" id="show_header" <%= user.show_header != 0 ? 'checked' : '' %>>
+                        <label class="s-check-label" for="show_header">Tampilkan Box Profil (Header)</label>
+                    </div>
+                </div>
+
+                <div class="s-row" id="header_custom_options" style="<%= user.show_header == 0 ? 'display:none;' : '' %>">
                     <div class="s-group">
                         <label class="s-label">Warna Box Profil</label>
                         <div style="display:flex; gap:10px;">
@@ -114,7 +128,21 @@
                             <input class="s-input" type="text" value="<%= user.profile_box_color || '#ffffff' %>" disabled>
                         </div>
                     </div>
+                    <div class="s-group">
+                        <label class="s-label">Bentuk Box (Shape)</label>
+                        <select class="s-input s-select" name="header_type">
+                            <option value="box" <%= user.header_type === 'box' ? 'selected' : '' %>>Standard (Box)</option>
+                            <option value="rounded" <%= user.header_type === 'rounded' || !user.header_type ? 'selected' : '' %>>Curvy (Rounded)</option>
+                            <option value="sketch" <%= user.header_type === 'sketch' ? 'selected' : '' %>>Artist (Sketch)</option>
+                        </select>
+                    </div>
                 </div>
+
+                <script>
+                    document.getElementById('show_header').addEventListener('change', function() {
+                        document.getElementById('header_custom_options').style.display = this.checked ? 'grid' : 'none';
+                    });
+                </script>
                 <hr class="s-divider">
                 <button type="submit" class="s-save">Terapkan Tema</button>
             </form>

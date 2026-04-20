@@ -325,7 +325,9 @@ exports.renderUserPage = async (req, res) => {
                 slug: user.slug,
                 profile_photo: user.profile_photo,
                 bio: user.bio,
-                profile_box_color: user.profile_box_color
+                profile_box_color: user.profile_box_color,
+                show_header: user.show_header,
+                header_type: user.header_type
             },
             blocks: mappedBlocks,
             products
