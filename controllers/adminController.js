@@ -810,22 +810,27 @@ exports.getAffiliate = async (req, res) => {
 // ===================== DEV TOOLS (LOCAL ONLY) =====================
 exports.autoDeploy = (req, res) => {
     // Safety check: Only allow if hostname is localhost
-    if (req.hostname !== 'localhost') {
+    if (req.hostname !== 'localhost' && req.hostname !== '127.0.0.1') {
         return res.status(403).json({ success: false, message: 'Fitur ini hanya untuk Local Dev!' });
     }
 
     console.log('--- AUTO DEPLOY STARTED ---');
-    const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
     
-    // Chain the git commands
-    const command = `git add . && git commit -m "${commitMsg}" && git push origin master`;
-    
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Exec Error: ${error.message}`);
-            return res.json({ success: false, message: error.message });
+    // 1. Check if there are any changes first
+    exec('git status --porcelain', (err, stdout) => {
+        if (!stdout.trim()) {
+            return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
         }
-        console.log(`STDOUT: ${stdout}`);
-        res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+
+        const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
+        const command = `git add . && git commit -m "${commitMsg}" && git push origin master`;
+        
+        exec(command, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Git Error: ${stderr || error.message}`);
+                return res.json({ success: false, message: stderr || error.message });
+            }
+            res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+        });
     });
 };
