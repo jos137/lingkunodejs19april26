@@ -753,13 +753,22 @@ exports.updateProfile = async (req, res) => {
 
 exports.updateStoreSettings = async (req, res) => {
     try {
-        const { theme_color, profile_box_color, show_header, header_type } = req.body;
+        const { theme_color, profile_box_color, show_header, header_type, profile_text_color, name_font_size, bio_font_size } = req.body;
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         if (!userId) return res.redirect('/admin/settings');
 
         const isShowHeader = show_header === 'on' ? 1 : 0;
-        const query = 'UPDATE users SET theme_color = ?, profile_box_color = ?, show_header = ?, header_type = ? WHERE id = ?';
-        const params = [theme_color || '#10b981', profile_box_color || '#ffffff', isShowHeader, header_type || 'rounded', userId];
+        const query = 'UPDATE users SET theme_color = ?, profile_box_color = ?, show_header = ?, header_type = ?, profile_text_color = ?, name_font_size = ?, bio_font_size = ? WHERE id = ?';
+        const params = [
+            theme_color || '#10b981', 
+            profile_box_color || '#ffffff', 
+            isShowHeader, 
+            header_type || 'rounded', 
+            profile_text_color || '#111827',
+            parseInt(name_font_size) || 18,
+            parseInt(bio_font_size) || 12,
+            userId
+        ];
 
         try {
             await db.execute(query, params);
@@ -769,7 +778,10 @@ exports.updateStoreSettings = async (req, res) => {
                     'ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_color VARCHAR(20) DEFAULT "#10b981"',
                     'ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_box_color VARCHAR(20) DEFAULT "#ffffff"',
                     'ALTER TABLE users ADD COLUMN IF NOT EXISTS show_header TINYINT(1) DEFAULT 1',
-                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS header_type VARCHAR(20) DEFAULT "rounded"'
+                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS header_type VARCHAR(20) DEFAULT "rounded"',
+                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_text_color VARCHAR(20) DEFAULT "#111827"',
+                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS name_font_size INT DEFAULT 18',
+                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS bio_font_size INT DEFAULT 12'
                 ];
                 for (let sql of cols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(err) {}
@@ -783,6 +795,9 @@ exports.updateStoreSettings = async (req, res) => {
             req.session.user.profile_box_color = profile_box_color;
             req.session.user.show_header = isShowHeader;
             req.session.user.header_type = header_type;
+            req.session.user.profile_text_color = profile_text_color;
+            req.session.user.name_font_size = name_font_size;
+            req.session.user.bio_font_size = bio_font_size;
         }
         res.redirect('/admin/settings?tab=toko&success=1');
     } catch (err) {

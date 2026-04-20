@@ -64,6 +64,16 @@ exports.register = async (req, res) => {
             bio: null
         };
 
+        // Notify Admin about new registration
+        try {
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                [1, '🆘 Registrasi Baru', `${fullname} baru saja mendaftar!`, 'reg']
+            );
+        } catch (e) {
+            console.error('Notification Error:', e.message);
+        }
+
         res.redirect('/admin');
     } catch (err) {
         console.error(err);

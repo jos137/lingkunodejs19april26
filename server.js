@@ -47,11 +47,44 @@ app.use(async (req, res, next) => {
     };
     res.locals.isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
 
-    // Fetch Pending WD Count for Red Badge
+    // Fetch notifications and WD count
     try {
+        // Auto-Heal: Ensure notifications table exists
+        try {
+            await db.execute("SELECT id FROM notifications LIMIT 1");
+        } catch (e) {
+            if (e.message.includes('Unknown table') || e.message.includes('doesn\'t exist')) {
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        title VARCHAR(255),
+                        message TEXT,
+                        type VARCHAR(50) DEFAULT 'info',
+                        is_read TINYINT(1) DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+            }
+        }
+
+        // Fetch unread notifications for current user
+        let notifs = [];
+        if (req.session.user) {
+            const [rows] = await db.execute(
+                "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC LIMIT 5",
+                [req.session.user.id]
+            );
+            notifs = rows;
+        }
+        res.locals.notifications = notifs;
+        res.locals.unreadNotifCount = notifs.filter(n => !n.is_read).length;
+
         const [rows] = await db.execute("SELECT COUNT(*) as count FROM withdrawals WHERE status = 'pending'");
         res.locals.pendingWDCount = rows[0].count || 0;
     } catch (e) {
+        res.locals.notifications = [];
+        res.locals.unreadNotifCount = 0;
         res.locals.pendingWDCount = 0;
     }
 

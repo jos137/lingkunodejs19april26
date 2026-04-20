@@ -327,7 +327,10 @@ exports.renderUserPage = async (req, res) => {
                 bio: user.bio,
                 profile_box_color: user.profile_box_color,
                 show_header: user.show_header,
-                header_type: user.header_type
+                header_type: user.header_type,
+                profile_text_color: user.profile_text_color,
+                name_font_size: user.name_font_size,
+                bio_font_size: user.bio_font_size
             },
             blocks: mappedBlocks,
             products
@@ -645,9 +648,11 @@ exports.ipaymuCallback = async (req, res) => {
                         [parseFloat(order.total_price || 0), order.user_id]
                     );
 
+
                     // 3. Send Access Email Automatically
                     if (order.customer_email && order.access_link) {
                         const baseUrl = `https://${req.get('host')}`;
+                        const { sendAccessEmail } = require('../utils/email'); // Ensure utility is available
                         sendAccessEmail(
                             order.id, 
                             order.customer_email, 
@@ -658,7 +663,18 @@ exports.ipaymuCallback = async (req, res) => {
                         ).catch(e => console.error('Error sending access email on callback:', e));
                     }
 
-                    console.log(`[SUCCESS] Order ${sid} completed & Email sent.`);
+                    // 4. Send Admin/Merchant Notification
+                    try {
+                        const formattedPrice = parseFloat(order.total_price || 0).toLocaleString('id-ID');
+                        await db.execute(
+                            "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                            [order.user_id, '💰 Pembayaran Berhasil!', `Rp ${formattedPrice} masuk dari ${order.customer_name}`, 'pay']
+                        );
+                    } catch (e) {
+                        console.error('Notification Error:', e.message);
+                    }
+
+                    console.log(`[SUCCESS] Order ${sid} completed & Email/Notif sent.`);
                 }
             }
         }

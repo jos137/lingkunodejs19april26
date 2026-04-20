@@ -129,6 +129,16 @@
                         </div>
                     </div>
                     <div class="s-group">
+                        <label class="s-label">Warna Teks Profil</label>
+                        <div style="display:flex; gap:10px;">
+                            <input class="s-input" type="color" name="profile_text_color" value="<%= user.profile_text_color || '#111827' %>" style="width:60px; padding:2px; height:46px;">
+                            <input class="s-input" type="text" value="<%= user.profile_text_color || '#111827' %>" disabled>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="s-row" id="font_custom_options" style="<%= user.show_header == 0 ? 'display:none;' : '' %>">
+                    <div class="s-group">
                         <label class="s-label">Bentuk Box (Shape)</label>
                         <select class="s-input s-select" name="header_type">
                             <option value="box" <%= user.header_type === 'box' ? 'selected' : '' %>>Standard (Box)</option>
@@ -136,11 +146,22 @@
                             <option value="sketch" <%= user.header_type === 'sketch' ? 'selected' : '' %>>Artist (Sketch)</option>
                         </select>
                     </div>
+                    <div class="s-group">
+                        <label class="s-label">Ukuran Font (Nama / Bio)</label>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <input class="s-input" type="number" name="name_font_size" value="<%= user.name_font_size || 18 %>" style="width:80px;" placeholder="Nama">
+                            <span style="font-weight:700; color:#cbd5e1;">/</span>
+                            <input class="s-input" type="number" name="bio_font_size" value="<%= user.bio_font_size || 12 %>" style="width:80px;" placeholder="Bio">
+                            <span style="font-size:11px; font-weight:700; color:#94a3b8;">PX</span>
+                        </div>
+                    </div>
                 </div>
 
                 <script>
                     document.getElementById('show_header').addEventListener('change', function() {
-                        document.getElementById('header_custom_options').style.display = this.checked ? 'grid' : 'none';
+                        const display = this.checked ? 'grid' : 'none';
+                        document.getElementById('header_custom_options').style.display = display;
+                        document.getElementById('font_custom_options').style.display = display;
                     });
                 </script>
                 <hr class="s-divider">
