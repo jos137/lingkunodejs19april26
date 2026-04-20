@@ -607,45 +607,41 @@ exports.processCheckout = async (req, res) => {
 exports.ipaymuCallback = async (req, res) => {
     try {
         console.log('--- IPAYMU CALLBACK DEBUG ---');
-        console.log('Headers:', JSON.stringify(req.headers, null, 2));
-        console.log('Body:', JSON.stringify(req.body, null, 2));
-
         const { trx_id, sid, status, status_code } = req.body;
         
         // Success condition: status 'berhasil' or status_code '1'
         const isSuccess = status === 'berhasil' || String(status_code) === '1';
 
         if (isSuccess && sid) {
+            // Auto-Heal: Ensure trx_id column exists
+            try {
+                await db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS trx_id VARCHAR(100) AFTER reference_id");
+            } catch(e) {
+                try { await db.execute("ALTER TABLE orders ADD COLUMN trx_id VARCHAR(100) AFTER reference_id"); } catch(err2) {}
+            }
+
             const [orders] = await db.execute('SELECT * FROM orders WHERE reference_id = ?', [sid]);
             
             if (orders.length > 0) {
                 const order = orders[0];
                 
                 if (order.status === 'pending') {
-                    // 1. Update Order Status
+                    // Update Order Status
                     await db.execute(
                         'UPDATE orders SET status = ?, trx_id = ? WHERE id = ?',
                         ['completed', trx_id || null, order.id]
                     );
 
-                    // 2. Add Balance to Merchant
-                    // Sum balance column securely (handling possible nulls)
+                    // Add Balance to Merchant
                     await db.execute(
                         'UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id = ?',
-                        [parseFloat(order.total_price), order.user_id]
+                        [parseFloat(order.total_price || 0), order.user_id]
                     );
 
-                    console.log(`[SUCCESS] Order ${sid} completed. Balance updated for user ${order.user_id}`);
-                } else {
-                    console.log(`[IGNORE] Order ${sid} status is already ${order.status}`);
+                    console.log(`[SUCCESS] Order ${sid} completed.`);
                 }
-            } else {
-                console.log(`[ERROR] Order ${sid} not found in database`);
             }
-        } else {
-            console.log(`[IGNORE] Callback status not success: ${status} / ${status_code}`);
         }
-
         res.send('OK');
     } catch (err) {
         console.error('--- CALLBACK FATAL ERROR ---');
