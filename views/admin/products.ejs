@@ -119,8 +119,7 @@
             <div class="prod-card">
                 <div class="prod-thumb">
                     <% if (thumb) { %>
-                        <img src="<%= thumb %>" alt="<%= p.name %>" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                        <i class="fas fa-image prod-thumb-placeholder" style="display:none;"></i>
+                        <img src="<%= img(thumb, 'products') %>" alt="<%= p.name %>" onerror="this.onerror=null; this.src='/images/placeholder.png'">
                     <% } else { %>
                         <i class="fas fa-image prod-thumb-placeholder"></i>
                     <% } %>

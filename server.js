@@ -29,6 +29,7 @@ app.set('layout', './layouts/main');
 app.set('view engine', 'ejs');
 
 const db = require('./config/db');
+const fs = require('fs');
 
 const builderController = require('./controllers/builderController');
 
@@ -38,6 +39,8 @@ app.post('/api/callback/ipaymu', builderController.ipaymuCallback);
 // Global Locals Middleware
 app.use(async (req, res, next) => {
     res.locals.currentPath = req.path;
+    res.locals.isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+    
     res.locals.user = req.session.user || {
         role: 'admin',
         name: 'Admin JOS',
@@ -45,7 +48,28 @@ app.use(async (req, res, next) => {
         slug: 'admin',
         avatar: '/images/avatar.png'
     };
-    res.locals.isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
+
+    // SMART IMAGE HELPER
+    res.locals.img = (filename, folder = 'products') => {
+        if (!filename) return '/images/placeholder.png';
+        if (filename.startsWith('http')) return filename;
+        
+        // Clean filename from any JSON-like strings
+        let cleanFile = filename;
+        if (filename.startsWith('[') && filename.endsWith(']')) {
+            try { cleanFile = JSON.parse(filename)[0]; } catch(e) {}
+        }
+
+        const localFilePath = path.join(__dirname, 'public', 'uploads', folder, cleanFile);
+        
+        // If we are on Localhost but file IS NOT in laptop, pull from Live Site
+        if (res.locals.isLocal && !fs.existsSync(localFilePath)) {
+            return `https://lingku.xyz/uploads/${folder}/${cleanFile}`;
+        }
+        
+        // Normal path
+        return `/uploads/${folder}/${cleanFile}`;
+    };
 
     // Fetch notifications and WD count
     try {

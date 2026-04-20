@@ -85,7 +85,7 @@
 <body>
     <div class="container">
         <div class="profile">
-            <img src="<%= user.profile_photo || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.fullname || 'U') + '&background=2271b1&color=fff' %>" class="avatar" alt="Avatar">
+            <img src="<%= img(user.profile_photo, 'profiles') %>" class="avatar" alt="Avatar" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.fullname || 'U') %>&background=2271b1&color=fff'">
             <div class="profile-info">
                 <h1 class="name"><%= user.fullname || 'User' %></h1>
                 <span class="handle">@<%= user.slug || user.username %></span>
@@ -124,21 +124,10 @@
                     <% 
                         const prod = products.find(p => p.id == block.pid); 
                     %>
-                    <% if (prod) { 
-                        let thumbSrc = '';
-                        if (prod.processed_thumb) {
-                            thumbSrc = (prod.processed_thumb.startsWith('http') || prod.processed_thumb.startsWith('/')) 
-                                ? prod.processed_thumb 
-                                : '/uploads/products/' + prod.processed_thumb;
-                        }
-                    %>
+                    <% if (prod) { %>
                         <a href="/p/<%= prod.id %>" class="block-product">
                             <div class="product-thumb">
-                                <% if (thumbSrc) { %>
-                                    <img src="<%= thumbSrc %>" alt="Product Thumbnail" onerror="this.parentElement.innerHTML='<i class=\'fas fa-shopping-bag\'></i>'">
-                                <% } else { %>
-                                    <i class="fas fa-shopping-bag"></i>
-                                <% } %>
+                                <img src="<%= img(prod.processed_thumb, 'products') %>" alt="Product Thumbnail" onerror="this.onerror=null; this.src='/images/placeholder.png'">
                             </div>
                             <div class="product-info">
                                 <div class="product-name"><%= prod.name %></div>
