@@ -1,106 +1,187 @@
 <style>
+/* Search & Filter Header */
+.u-filters { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; background: #fff; padding: 20px; border-radius: 18px; border: 1px solid #e5e7eb; }
+.search-input-wrap { position: relative; flex: 1; }
+.search-input-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+.search-input { width: 100%; padding: 12px 16px 12px 42px; border: 1.5px solid #f1f5f9; border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc; transition: 0.2s; box-sizing: border-box; }
+.search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+
+.plan-filters { display: flex; gap: 8px; background: #f1f5f9; padding: 5px; border-radius: 12px; }
+.p-filter { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 800; cursor: pointer; color: #64748b; transition: 0.2s; border: none; }
+.p-filter.active { background: #fff; color: #111827; shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* Table Adjustments */
 .users-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-.users-table { width: 100%; border-collapse: collapse; }
+.table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.users-table { width: 100%; border-collapse: collapse; min-width: 900px; }
 .users-table thead th { background: #f9fafb; padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
 .users-table tbody td { padding: 14px 18px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; font-weight: 500; }
-.users-table tbody tr { cursor: pointer; transition: 0.1s; }
-.users-table tbody tr:hover { background: #f0fdf4; }
-.user-avatar-sm { width: 34px; height: 34px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; }
-.role-badge { padding: 3px 10px; border-radius: 100px; font-size: 10px; font-weight: 800; }
+.users-table tbody tr { transition: 0.1s; border-left: 2px solid transparent; }
+.users-table tbody tr:hover { background: #f8fafc; border-left-color: #3b82f6; }
+
+.user-avatar-sm { width: 38px; height: 38px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; color: #fff; object-fit: cover; }
+.role-badge { padding: 4px 12px; border-radius: 100px; font-size: 10px; font-weight: 800; }
 .role-badge.admin { background: #fef2f2; color: #dc2626; }
 .role-badge.user { background: #eff6ff; color: #3b82f6; }
-.role-badge.seller { background: #f0fdf4; color: #059669; }
 
-/* Modal */
-.user-modal-bg { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 500; align-items: center; justify-content: center; }
-.user-modal-bg.show { display: flex; }
-.user-modal {
-    background: #fff; border-radius: 16px; width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.2); padding: 28px;
+/* Plan Badge */
+.plan-badge { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 900; letter-spacing: 0.5px; display: inline-block; }
+.plan-badge.pro { background: #fff7ed; color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+.plan-badge.free { background: #f1f5f9; color: #64748b; }
+
+.btn-action { 
+    padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; 
+    text-decoration: none; display: inline-flex; align-items: center; gap: 6px; 
+    transition: 0.2s; border: none; cursor: pointer;
 }
-.user-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.user-modal-header h3 { font-size: 18px; font-weight: 900; color: #111827; }
-.user-modal-close { background: none; border: none; font-size: 20px; color: #94a3b8; cursor: pointer; padding: 4px 8px; border-radius: 8px; }
-.user-modal-close:hover { background: #f3f4f6; color: #111827; }
-.user-modal-avatar { width: 56px; height: 56px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; color: #fff; margin-bottom: 16px; }
-.user-detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; }
-.user-detail-row:last-child { border-bottom: none; }
-.user-detail-row .label { color: #94a3b8; font-weight: 600; }
-.user-detail-row .value { color: #111827; font-weight: 700; }
+.btn-detail { background: #eff6ff; color: #2563eb; }
+.btn-view-buyers { background: #111827; color: white; }
+
+@media (max-width: 768px) {
+    .u-filters { flex-direction: column; padding: 15px; }
+    .plan-filters { width: 100%; display: grid; grid-template-columns: 1fr 1fr 1fr; }
+    .users-table { min-width: 600px; }
+}
 </style>
 
-<div class="users-table-wrap">
-    <table class="users-table">
-        <thead>
-            <tr><th>#</th><th>Avatar</th><th>Nama</th><th>Email</th><th>Role</th><th>Terdaftar</th></tr>
-        </thead>
-        <tbody>
-            <% if (users.length > 0) { %>
-                <% users.forEach(function(u, idx) { 
-                    const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
-                    const color = colors[idx % colors.length]; 
-                %>
-                    <tr onclick="showUser(<%= idx %>)">
-                        <td><strong><%= u.id %></strong></td>
-                        <td><div class="user-avatar-sm" style="background:<%= color %>"><%= u.name ? u.name.charAt(0).toUpperCase() : '?' %></div></td>
-                        <td><strong><%= u.name || '-' %></strong></td>
-                        <td><%= u.email || '-' %></td>
-                        <td><span class="role-badge <%= u.role || 'user' %>"><%= (u.role || 'user').toUpperCase() %></span></td>
-                        <td><%= u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-' %></td>
-                    </tr>
-                <% }); %>
-            <% } else { %>
-                <tr><td colspan="6" style="text-align:center;padding:40px;color:#94a3b8;">Belum ada user.</td></tr>
-            <% } %>
-        </tbody>
-    </table>
+<div class="u-filters">
+    <div class="search-input-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="userSearch" class="search-input" placeholder="Cari nama atau email..." onkeyup="filterUsers()">
+    </div>
+    <div class="plan-filters">
+        <button class="p-filter active" onclick="setPlanFilter('all', this)">Semua</button>
+        <button class="p-filter" onclick="setPlanFilter('free', this)">Free</button>
+        <button class="p-filter" onclick="setPlanFilter('pro', this)">Pro ✨</button>
+    </div>
 </div>
 
-<!-- User Detail Modal -->
+<div class="users-table-wrap">
+    <div class="table-responsive">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Profil</th>
+                    <th>Nama</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Paket</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="userTableBody">
+                <% if (users.length > 0) { %>
+                    <% users.forEach(function(u, idx) { 
+                        const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
+                        const color = colors[idx % colors.length];
+                    %>
+                        <tr class="user-row" data-name="<%= (u.name || '').toLowerCase() %>" data-email="<%= (u.email || '').toLowerCase() %>" data-plan="<%= (u.plan || 'free').toLowerCase() %>">
+                            <td><strong><%= u.id %></strong></td>
+                            <td>
+                                <% if (u.profile_photo) { %>
+                                    <img src="<%= u.profile_photo %>" class="user-avatar-sm" alt="AV">
+                                <% } else { %>
+                                    <div class="user-avatar-sm" style="background:<%= color %>"><%= u.name ? u.name.charAt(0).toUpperCase() : '?' %></div>
+                                <% } %>
+                            </td>
+                            <td><strong><%= u.name || '-' %></strong></td>
+                            <td><%= u.email || '-' %></td>
+                            <td><span class="role-badge <%= u.role || 'user' %>"><%= (u.role || 'user').toUpperCase() %></span></td>
+                            <td>
+                                <span class="plan-badge <%= u.plan || 'free' %>">
+                                    <%= (u.plan || 'FREE').toUpperCase() %>
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn-action btn-detail" onclick="showUser(<%= idx %>)"><i class="fas fa-eye"></i> Detail</button>
+                                    <a href="/admin/users/detail/<%= u.id %>" class="btn-action btn-view-buyers"><i class="fas fa-shopping-cart"></i> Daftar Pembeli</a>
+                                </div>
+                            </td>
+                        </tr>
+                    <% }); %>
+                <% } else { %>
+                    <tr><td colspan="7" style="text-align:center;padding:40px;color:#94a3b8;">Belum ada user.</td></tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
 <div class="user-modal-bg" id="userModal" onclick="if(event.target===this)closeModal()">
     <div class="user-modal" id="userModalContent"></div>
 </div>
 
 <script>
-const usersData = [];
-<% users.forEach(function(u) { %>
-usersData.push({
-    id: '<%= u.id %>',
-    name: '<%= (u.name || "").replace(/'/g, "\\'") %>',
-    email: '<%= (u.email || "").replace(/'/g, "\\'") %>',
-    role: '<%= u.role || "user" %>',
-    phone: '<%= u.phone || "" %>',
-    slug: '<%= u.slug || u.username || "" %>',
-    balance: '<%= u.balance || 0 %>',
-    created_at: '<%= u.created_at || "" %>'
-});
-<% }); %>
+const usersData = <%- JSON.stringify(users) %>;
+let currentPlanFilter = 'all';
+
+function setPlanFilter(plan, btn) {
+    currentPlanFilter = plan;
+    document.querySelectorAll('.p-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterUsers();
+}
+
+function filterUsers() {
+    const query = document.getElementById('userSearch').value.toLowerCase();
+    const rows = document.querySelectorAll('.user-row');
+    
+    rows.forEach(row => {
+        const name = row.getAttribute('data-name');
+        const email = row.getAttribute('data-email');
+        const plan = row.getAttribute('data-plan');
+        
+        const matchesSearch = name.includes(query) || email.includes(query);
+        const matchesPlan = currentPlanFilter === 'all' || plan === currentPlanFilter;
+        
+        if (matchesSearch && matchesPlan) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
 
 function showUser(idx) {
+    // ... same logic as before but using usersData[idx]
     const u = usersData[idx];
     const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
     const color = colors[idx % colors.length];
-    const date = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-';
+    const date = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric', timeZone: 'Asia/Jakarta'}) : '-';
     
+    const avatarHtml = u.profile_photo 
+        ? `<img src="${u.profile_photo}" class="user-modal-avatar">`
+        : `<div class="user-modal-avatar" style="background:${color}">${u.name ? u.name.charAt(0).toUpperCase() : '?'}</div>`;
+
     document.getElementById('userModalContent').innerHTML = `
         <div class="user-modal-header">
             <h3>Detail User</h3>
             <button class="user-modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div class="user-modal-avatar" style="background:${color}">${u.name ? u.name.charAt(0).toUpperCase() : '?'}</div>
-        <div class="user-detail-row"><span class="label">ID</span><span class="value">#${u.id}</span></div>
-        <div class="user-detail-row"><span class="label">Nama</span><span class="value">${u.name}</span></div>
-        <div class="user-detail-row"><span class="label">Email</span><span class="value">${u.email}</span></div>
-        <div class="user-detail-row"><span class="label">Role</span><span class="value"><span class="role-badge ${u.role}">${u.role.toUpperCase()}</span></span></div>
-        <div class="user-detail-row"><span class="label">Slug</span><span class="value">${u.slug || '-'}</span></div>
-        <div class="user-detail-row"><span class="label">Phone</span><span class="value">${u.phone || '-'}</span></div>
-        <div class="user-detail-row"><span class="label">Terdaftar</span><span class="value">${date}</span></div>
+        
+        <div class="user-main-info">
+            ${avatarHtml}
+            <h2 style="margin: 0; font-size: 20px; font-weight: 900; color: #111827;">${u.name || 'User'}</h2>
+            <p style="margin: 5px 0 0; font-size: 13px; color: #64748b; font-weight: 600;">${u.email || '-'}</p>
+        </div>
+
+        <div class="user-detail-list">
+            <div class="user-detail-row"><span class="label">Paket Aktif</span><span class="value"><span class="plan-badge ${u.plan || 'free'}">${(u.plan || 'FREE').toUpperCase()}</span></span></div>
+            <div class="user-detail-row"><span class="label">Username/Slug</span><span class="value">@${u.username || u.slug || '-'}</span></div>
+            <div class="user-detail-row"><span class="label">WhatsApp</span><span class="value">${u.phone || u.customer_whatsapp || '-'}</span></div>
+            <div class="user-detail-row"><span class="label">Role Member</span><span class="value"><span class="role-badge ${u.role || 'user'}">${(u.role || 'user').toUpperCase()}</span></span></div>
+            <div class="user-detail-row"><span class="label">Tanggal Daftar</span><span class="value">${date}</span></div>
+        </div>
+
+        <a href="/admin/users/detail/${u.id}" class="modal-footer-btn">
+            <i class="fas fa-history"></i> Lihat Semua Pembeli Member
+        </a>
     `;
     document.getElementById('userModal').classList.add('show');
 }
 
-function closeModal() {
-    document.getElementById('userModal').classList.remove('show');
-}
+function closeModal() { document.getElementById('userModal').classList.remove('show'); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>

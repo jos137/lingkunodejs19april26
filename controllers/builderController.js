@@ -322,6 +322,20 @@ exports.renderUserPage = async (req, res) => {
             });
         } catch(e) {}
 
+        // Get social proof data (20 recent orders)
+        let recentOrders = [];
+        try {
+            const [oRows] = await db.execute(`
+                SELECT o.customer_name, o.status, o.created_at, p.name as product_name
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                WHERE p.user_id = ?
+                ORDER BY o.created_at DESC
+                LIMIT 20
+            `, [user.id]);
+            recentOrders = oRows;
+        } catch(e) {}
+
         res.render('user-page', {
             title: page.title || user.fullname || 'Landing Page',
             layout: false, 
@@ -338,7 +352,8 @@ exports.renderUserPage = async (req, res) => {
                 bio_font_size: user.bio_font_size
             },
             blocks: mappedBlocks,
-            products
+            products,
+            recentOrders
         });
     } catch (err) {
         console.error('Render Page Error:', err.message);

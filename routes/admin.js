@@ -97,6 +97,7 @@ router.get('/guides/delete/:id', adminController.deleteGuide);
 
 // ===== USERS (Admin) =====
 router.get('/users', adminController.getUsers);
+router.get('/users/detail/:id', adminController.getUserBuyers);
 
 // ===== GLOBAL ANALYTICS =====
 router.get('/analytics', adminController.getGlobalAnalytics);

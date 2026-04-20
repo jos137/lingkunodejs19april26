@@ -586,10 +586,73 @@ exports.deleteGuide = async (req, res) => {
 exports.getUsers = async (req, res) => {
     try {
         const [users] = await db.execute('SELECT * FROM users ORDER BY id DESC');
-        res.render('admin/users', { title: 'Manajemen User', layout: './layouts/admin', users, user: req.session.user || res.locals.user });
+        res.render('admin/users', { 
+            title: 'Manajemen User', 
+            layout: './layouts/admin', 
+            users, 
+            user: req.session.user || res.locals.user 
+        });
     } catch (err) {
         console.error(err.message);
         res.render('admin/users', { title: 'Manajemen User', layout: './layouts/admin', users: [], user: req.session.user || res.locals.user });
+    }
+};
+
+exports.getUserBuyers = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const status = req.query.status || 'all';
+        const limit = 10;
+        const offset = (page - 1) * limit;
+        
+        // Fetch target user info
+        const [uRows] = await db.execute('SELECT * FROM users WHERE id = ?', [id]);
+        if (uRows.length === 0) return res.redirect('/admin/users');
+        const targetUser = uRows[0];
+
+        // Build filtering query
+        let query = `
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE p.user_id = ?
+        `;
+        let params = [id];
+
+        if (status !== 'all') {
+            query += ` AND o.status = ?`;
+            params.push(status);
+        }
+
+        // Count total for pagination
+        const [countRow] = await db.execute(`SELECT COUNT(*) as total ${query}`, params);
+        const totalItems = countRow[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        // Fetch paginated orders
+        const [orders] = await db.execute(`
+            SELECT o.*, p.name as product_name
+            ${query}
+            ORDER BY o.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [...params, limit, offset]);
+
+        const pageTitle = targetUser.name || targetUser.username || targetUser.email || 'User';
+
+        res.render('admin/user-detail', { 
+            title: 'Daftar Pembeli: ' + pageTitle,
+            layout: './layouts/admin',
+            targetUser,
+            orders,
+            currentPage: page,
+            totalPages,
+            currentStatus: status,
+            totalItems,
+            user: req.session.user || res.locals.user
+        });
+    } catch (err) {
+        console.error('User Detail Error:', err.message);
+        res.redirect('/admin/users');
     }
 };
 
