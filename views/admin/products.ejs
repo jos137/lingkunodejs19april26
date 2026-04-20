@@ -114,12 +114,12 @@
         <% products.forEach(function(p) {
             const type = (p.type || p.product_type || 'digital').toLowerCase();
             const typeLabel = type === 'tiket' ? 'TIKET' : type === 'webinar' ? 'WEBINAR' : type === 'mentoring' ? 'MENTORING' : 'DIGITAL';
-            const thumb = p.thumb || '';
+            const thumbUrl = p.thumbnail || p.thumb || '';
         %>
             <div class="prod-card">
                 <div class="prod-thumb">
-                    <% if (thumb) { %>
-                        <img src="<%= img(thumb, 'products') %>" alt="<%= p.name %>" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                    <% if (thumbUrl) { %>
+                        <img src="<%= img(thumbUrl, 'products') %>" alt="<%= p.name %>" onerror="this.onerror=null; this.src='/images/placeholder.png'">
                     <% } else { %>
                         <i class="fas fa-image prod-thumb-placeholder"></i>
                     <% } %>
