@@ -536,42 +536,35 @@ exports.processCheckout = async (req, res) => {
             return res.status(500).send('Konfigurasi iPaymu (VA/APIKey) belum disetting di database atau .env (' + (isSandbox ? 'SANDBOX' : 'LIVE') + ')');
         }
 
-        // Logic fix for paymentMethod/Channel mapping
-        // Logic fix for paymentMethod/Channel mapping
+        // Logic fix for paymentMethod/Channel mapping based on official iPaymu sample
         let method = (payment_method || 'va').toLowerCase();
         let chan = (payment_channel || 'qris').toLowerCase();
-        const banks = ['bca', 'mandiri', 'bni', 'bri'];
         
-        if (banks.includes(chan)) {
+        if (chan === 'bca' || chan === 'mandiri' || chan === 'bni' || chan === 'bri') {
             method = 'va';
         } else if (chan === 'qris') {
-            method = 'qr';
+            method = 'qris'; // Sample uses qris for both
+            chan = 'qris';
         } else if (chan === 'alfamart' || chan === 'indomaret') {
             method = 'cstore';
         }
 
-        // Fixed: Timestamp must be in 'yyyyMMddHHmmss' format
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
+        const finalAmount = Math.floor(product.price);
 
-        // Fixed: Ensure all numeric values are strings for iPaymu API
-        const cleanProductName = product.name.replace(/[^a-zA-Z0-9 ]/g, '').trim() || 'Produk';
-        const finalAmount = Math.floor(product.price).toString();
-
+        // Official Direct Payment Body Structure
         const body = {
             name: name.replace(/[^a-zA-Z0-9 ]/g, '') || 'Customer',
             phone: (phone || '081234567890').replace(/[^0-9]/g, ''), 
             email: email,
-            amount: finalAmount,
+            amount: finalAmount, // Must be NUMBER
             notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
             returnUrl: `https://lingku.xyz/`,
             cancelUrl: `https://lingku.xyz/`,
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            product: [cleanProductName], 
-            qty: ["1"],
-            price: [finalAmount],
-            expired: "1"
+            comments: `Pembelian ${product.name}`
         };
 
         const jsonBody = JSON.stringify(body);
@@ -582,12 +575,13 @@ exports.processCheckout = async (req, res) => {
         try {
             const response = await axios.post(url, jsonBody, {
                 headers: {
+                    'Accept': 'application/json',
                     'Content-Type': 'application/json',
                     'va': va,
                     'signature': signature,
                     'timestamp': timestamp
                 },
-                timeout: 10000 
+                timeout: 15000 
             });
 
             if (response.data && response.data.Status === 200) {
@@ -604,16 +598,16 @@ exports.processCheckout = async (req, res) => {
                     qrUrl: ipayData.QrUrl || ipayData.Url || ''
                 }).catch(e => console.error('Email Error:', e));
 
-                // Handle Redirect for QRIS (Direct URL)
-                if (ipayData.Url && method === 'qr') {
+                // Handle Redirect for QRIS
+                if (ipayData.Url && method === 'qris') {
                     return res.redirect(ipayData.Url);
                 } 
                 
                 // Handle Direct Instruction Page (VA/CStore)
-                if (ipayData.PaymentNo) {
+                if (ipayData.PaymentNo || ipayData.QrUrl) {
                     const isQR = chan === 'qris';
-                    const payNo = ipayData.PaymentNo;
-                    const qrImageUrl = isQR ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payNo)}` : '';
+                    const payNo = ipayData.PaymentNo || ipayData.SessionID;
+                    const qrImageUrl = ipayData.QrUrl || (isQR ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payNo)}` : '');
                     
                     return res.send(`
                         <!DOCTYPE html>
@@ -630,14 +624,15 @@ exports.processCheckout = async (req, res) => {
                                 .content { padding: 40px 30px; }
                                 .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
                                 .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
-                                .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; }
-                                .qr-img { width: 200px; height: 200px; margin: 0 auto; display: block; border-radius: 12px; background: white; padding: 10px; }
+                                .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
+                                .qr-img { width: 220px; height: 220px; margin: 0 auto; display: block; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                                 .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
                                 .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
                                 .detail-label { color: #64748b; font-weight: 600; }
                                 .detail-val { font-weight: 800; color: #1e293b; }
                                 .footer { padding: 0 30px 40px; text-align: center; }
-                                .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; }
+                                .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; transition: 0.2s; }
+                                .back-btn:hover { background: #000; transform: translateY(-2px); }
                             </style>
                         </head>
                         <body>
@@ -645,12 +640,12 @@ exports.processCheckout = async (req, res) => {
                                 <div class="header"></div>
                                 <div class="content">
                                     <div class="info-box">
-                                        <div class="pay-label">${isQR ? 'SCA QRIS BERIKUT' : 'NOMOR VA ' + chan.toUpperCase()}</div>
+                                        <div class="pay-label">${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
                                         ${isQR ? `<img src="${qrImageUrl}" class="qr-img">` : `<h1 class="pay-no">${payNo}</h1>`}
                                     </div>
                                     <div class="details">
                                         <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${product.name}</span></div>
-                                        <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val">Rp ${Number(product.price).toLocaleString('id-ID')}</span></div>
+                                        <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp ${Number(product.price).toLocaleString('id-ID')}</span></div>
                                     </div>
                                 </div>
                                 <div class="footer">
@@ -658,12 +653,12 @@ exports.processCheckout = async (req, res) => {
                                 </div>
                             </div>
                             <script>
-                                const refId = '${refId}';
+                                const rid = '${refId}';
                                 setInterval(async () => {
                                     try {
-                                        const res = await fetch('/api/order/status/' + refId);
-                                        const data = await res.json();
-                                        if (data.status === 'completed') window.location.href = '/access/go/' + data.orderId;
+                                        const r = await fetch('/api/order/status/' + rid);
+                                        const d = await r.json();
+                                        if (d.status === 'completed') window.location.href = '/access/go/' + d.orderId;
                                     } catch(e) {}
                                 }, 5000);
                             </script>
@@ -671,6 +666,10 @@ exports.processCheckout = async (req, res) => {
                         </html>
                     `);
                 }
+
+                // If somehow nothing matched but Status was 200
+                return res.redirect(ipayData.Url || '/');
+
             } else {
                 console.error('iPaymu Error:', response.data);
                 return res.status(500).send('Gagal memproses pembayaran: ' + (response.data.Message || 'Kesalahan iPaymu'));
@@ -678,11 +677,11 @@ exports.processCheckout = async (req, res) => {
 
         } catch (err) {
             console.error('Checkout Critical Error:', err.message);
-            res.status(500).send('Terjadi kesalahan pada sistem: ' + err.message);
+            res.status(500).send('Terjadi kesalahan pada sistem: ' + (err.response ? JSON.stringify(err.response.data) : err.message));
         }
     } catch (globalErr) {
-        console.error('Global Checkout Error:', globalErr.message);
-        res.status(500).send('Error: ' + globalErr.message);
+        console.error('Global Error:', globalErr);
+        res.status(500).send('Sistem Error: ' + globalErr.message);
     }
 };
 
