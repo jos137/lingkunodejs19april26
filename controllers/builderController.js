@@ -537,6 +537,7 @@ exports.processCheckout = async (req, res) => {
         }
 
         // Logic fix for paymentMethod/Channel mapping
+        // Logic fix for paymentMethod/Channel mapping
         let method = (payment_method || 'va').toLowerCase();
         let chan = (payment_channel || 'qris').toLowerCase();
         const banks = ['bca', 'mandiri', 'bni', 'bri'];
@@ -544,8 +545,7 @@ exports.processCheckout = async (req, res) => {
         if (banks.includes(chan)) {
             method = 'va';
         } else if (chan === 'qris') {
-            method = 'qr'; // Fixed: iPaymu expects 'qr' for QRIS
-            chan = 'qris';
+            method = 'qr';
         } else if (chan === 'alfamart' || chan === 'indomaret') {
             method = 'cstore';
         }
@@ -553,21 +553,25 @@ exports.processCheckout = async (req, res) => {
         // Fixed: Timestamp must be in 'yyyyMMddHHmmss' format
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
 
+        // Fixed: Ensure all numeric values are strings for iPaymu API
+        const cleanProductName = product.name.replace(/[^a-zA-Z0-9 ]/g, '').trim() || 'Produk';
+        const finalAmount = Math.floor(product.price).toString();
+
         const body = {
-            name: name.replace(/[^a-zA-Z0-9 ]/g, ''), // Clean customer name
-            phone: (phone || '').replace(/[^0-9]/g, ''), 
+            name: name.replace(/[^a-zA-Z0-9 ]/g, '') || 'Customer',
+            phone: (phone || '081234567890').replace(/[^0-9]/g, ''), 
             email: email,
-            amount: Math.floor(product.price),
+            amount: finalAmount,
             notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
             returnUrl: `https://lingku.xyz/`,
             cancelUrl: `https://lingku.xyz/`,
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            product: [product.name.replace(/[^a-zA-Z0-9 ]/g, '')], 
-            qty: [1],
-            price: [Math.floor(product.price)],
-            expired: 1
+            product: [cleanProductName], 
+            qty: ["1"],
+            price: [finalAmount],
+            expired: "1"
         };
 
         const jsonBody = JSON.stringify(body);
@@ -575,120 +579,110 @@ exports.processCheckout = async (req, res) => {
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
 
-        const response = await axios.post(url, jsonBody, {
-            headers: {
-                'Content-Type': 'application/json',
-                'va': va,
-                'signature': signature,
-                'timestamp': timestamp
+        try {
+            const response = await axios.post(url, jsonBody, {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'va': va,
+                    'signature': signature,
+                    'timestamp': timestamp
+                },
+                timeout: 10000 
+            });
+
+            if (response.data && response.data.Status === 200) {
+                const ipayData = response.data.Data || {};
+                
+                // 5. Send Payment Instruction Email
+                sendPaymentInstructionEmail({
+                    customerEmail: email,
+                    customerName: name,
+                    productName: product.name,
+                    totalPrice: product.price,
+                    channel: chan,
+                    paymentNo: ipayData.PaymentNo || '',
+                    qrUrl: ipayData.QrUrl || ipayData.Url || ''
+                }).catch(e => console.error('Email Error:', e));
+
+                // Handle Redirect for QRIS (Direct URL)
+                if (ipayData.Url && method === 'qr') {
+                    return res.redirect(ipayData.Url);
+                } 
+                
+                // Handle Direct Instruction Page (VA/CStore)
+                if (ipayData.PaymentNo) {
+                    const isQR = chan === 'qris';
+                    const payNo = ipayData.PaymentNo;
+                    const qrImageUrl = isQR ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payNo)}` : '';
+                    
+                    return res.send(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <meta charset="UTF-8">
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                            <title>Instruksi Pembayaran</title>
+                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                            <style>
+                                body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+                                .card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); overflow: hidden; }
+                                .header { background: #10b981; height: 5px; }
+                                .content { padding: 40px 30px; }
+                                .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
+                                .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
+                                .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; }
+                                .qr-img { width: 200px; height: 200px; margin: 0 auto; display: block; border-radius: 12px; background: white; padding: 10px; }
+                                .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
+                                .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+                                .detail-label { color: #64748b; font-weight: 600; }
+                                .detail-val { font-weight: 800; color: #1e293b; }
+                                .footer { padding: 0 30px 40px; text-align: center; }
+                                .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="card">
+                                <div class="header"></div>
+                                <div class="content">
+                                    <div class="info-box">
+                                        <div class="pay-label">${isQR ? 'SCA QRIS BERIKUT' : 'NOMOR VA ' + chan.toUpperCase()}</div>
+                                        ${isQR ? `<img src="${qrImageUrl}" class="qr-img">` : `<h1 class="pay-no">${payNo}</h1>`}
+                                    </div>
+                                    <div class="details">
+                                        <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${product.name}</span></div>
+                                        <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val">Rp ${Number(product.price).toLocaleString('id-ID')}</span></div>
+                                    </div>
+                                </div>
+                                <div class="footer">
+                                    <a href="/" class="back-btn">Selesai & Ke Beranda</a>
+                                </div>
+                            </div>
+                            <script>
+                                const refId = '${refId}';
+                                setInterval(async () => {
+                                    try {
+                                        const res = await fetch('/api/order/status/' + refId);
+                                        const data = await res.json();
+                                        if (data.status === 'completed') window.location.href = '/access/go/' + data.orderId;
+                                    } catch(e) {}
+                                }, 5000);
+                            </script>
+                        </body>
+                        </html>
+                    `);
+                }
+            } else {
+                console.error('iPaymu Error:', response.data);
+                return res.status(500).send('Gagal memproses pembayaran: ' + (response.data.Message || 'Kesalahan iPaymu'));
             }
-        });
 
-        // 5. Send Payment Instruction Email
-        if (response.data && response.data.Status === 200) {
-            const ipayData = response.data.Data || {};
-            sendPaymentInstructionEmail({
-                customerEmail: email,
-                customerName: name,
-                productName: product.name,
-                totalPrice: product.price,
-                channel: payment_channel,
-                paymentNo: ipayData.PaymentNo || '',
-                qrUrl: ipayData.QrUrl || ipayData.Url || ''
-            }).catch(e => console.error('Email Error:', e));
+        } catch (err) {
+            console.error('Checkout Critical Error:', err.message);
+            res.status(500).send('Terjadi kesalahan pada sistem: ' + err.message);
         }
-
-        if (response.data && response.data.Data && response.data.Data.Url && payment_method === 'qr') {
-            res.redirect(response.data.Data.Url);
-        } else if (response.data && response.data.Status === 200 && response.data.Data && response.data.Data.PaymentNo) {
-            // Direct payment handled (VA/Convenience Store) - Elegant Instruction Page
-            const isQR = payment_channel.toLowerCase() === 'qris';
-            const payNo = response.data.Data.PaymentNo;
-            const qrImageUrl = isQR ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payNo)}` : '';
-            
-            res.send(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Instruksi Pembayaran</title>
-                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-                    <style>
-                        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-                        .card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); overflow: hidden; }
-                        .header { background: #10b981; height: 5px; padding: 0; border-radius: 24px 24px 0 0; }
-                        .content { padding: 40px 30px; }
-                        .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
-                        .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
-                        .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: ${isQR ? '600' : '900'}; color: #065f46; letter-spacing: 1px; word-break: break-all; margin: ${isQR ? '15px 0 0' : '0'}; }
-                        .qr-img { width: 200px; height: 200px; margin: 0 auto; display: block; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                        .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
-                        .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
-                        .detail-label { color: #64748b; font-weight: 600; }
-                        .detail-val { font-weight: 800; color: #1e293b; }
-                        .timer { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; font-weight: 800; color: #ef4444; margin-top: 25px; background: #fef2f2; padding: 10px; border-radius: 10px; }
-                        .footer { padding: 0 30px 40px; text-align: center; }
-                        .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; font-size: 14px; transition: 0.2s; }
-                        .back-btn:hover { background: #0f172a; transform: translateY(-2px); }
-                        .copy-hint { font-size: 10px; color: #10b981; font-weight: 700; margin-top: 12px; cursor: pointer; display: inline-block; }
-                    </style>
-                </head>
-                <body>
-                    <div class="card">
-                        <div class="header"></div>
-                        <div class="content">
-                            <div class="info-box">
-                                <div class="pay-label">${isQR ? 'QRIS UNTUK PEMBAYARAN' : 'NOMOR ' + payment_channel.toUpperCase() + ' VA'}</div>
-                                ${isQR ? `<img src="${qrImageUrl}" class="qr-img" alt="QRIS Code">` : `<h1 class="pay-no">${payNo}</h1>`}
-                                ${isQR ? 
-                                    `<a href="${qrImageUrl}" target="_blank" class="copy-hint" style="text-decoration:none;"><i class="fas fa-download"></i> SIMPAN QRIS</a>` : 
-                                    `<div class="copy-hint" onclick="navigator.clipboard.writeText('${payNo}')"><i class="far fa-copy"></i> SALIN NOMOR</div>`
-                                }
-                            </div>
-                            <div class="details">
-                                <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${product.name}</span></div>
-                                <div class="detail-row"><span class="detail-label">Total Bayar</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp ${parseFloat(product.price).toLocaleString('id-ID')}</span></div>
-                                <div class="detail-row"><span class="detail-label">Channel</span><span class="detail-val">${payment_channel.toUpperCase()}</span></div>
-                            </div>
-                            <div class="timer">
-                                <i class="far fa-clock"></i> BAYAR SEBELUM ${expiryMins} MENIT
-                            </div>
-                        </div>
-                        <div class="footer">
-                            <a href="/" class="back-btn">Selesai & Ke Beranda</a>
-                        </div>
-                    </div>
-
-                    <script>
-                        // AUTO-REDIRECT MAGIC BY ANTIGRAVITY
-                        const refId = '<%= refId %>'.replace('<%= refId %>', '${refId}'); 
-                        let checkCount = 0;
-                        const interval = setInterval(async () => {
-                            try {
-                                const res = await fetch('/api/order/status/' + refId);
-                                const data = await res.json();
-                                if (data.status === 'completed') {
-                                    clearInterval(interval);
-                                    // Bawa pembeli langsung ke halaman akses produk
-                                    window.location.href = '/access/go/' + data.orderId;
-                                }
-                                checkCount++;
-                                if (checkCount > 200) clearInterval(interval); // Stop setelah kira-kira 15 menit
-                            } catch(e) { console.error('Poller Error:', e); }
-                        }, 5000); // Cek tiap 5 detik
-                    </script>
-                </body>
-                </html>
-            `);
-        } else {
-            console.error('iPaymu Error Response:', response.data);
-            res.status(500).send('Gagal memproses pembayaran ke iPaymu: ' + (response.data.Message || 'Detail tidak tersedia'));
-        }
-
-    } catch (err) {
-        console.error('Checkout Critical Error:', err.message);
-        res.status(500).send('Terjadi kesalahan pada sistem: ' + err.message);
+    } catch (globalErr) {
+        console.error('Global Checkout Error:', globalErr.message);
+        res.status(500).send('Error: ' + globalErr.message);
     }
 };
 
