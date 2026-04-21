@@ -822,6 +822,12 @@ exports.deleteFeature = async (req, res) => {
 // ===================== SETTINGS =====================
 exports.getSettings = async (req, res) => {
     try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        
+        // Always fetch LATEST user data from DB for settings
+        const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
+        const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
+
         const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%'");
         const smtp = {};
         rows.forEach(r => { smtp[r.setting_key] = r.setting_value; });
@@ -829,10 +835,13 @@ exports.getSettings = async (req, res) => {
         res.render('admin/settings', { 
             title: 'Pengaturan', 
             layout: './layouts/admin', 
-            user: req.session.user || res.locals.user,
-            smtp: smtp
+            user: user,
+            smtp: smtp,
+            success: req.query.success,
+            tab: req.query.tab || 'profil'
         });
     } catch (err) {
+        console.error('Get Settings Error:', err);
         res.render('admin/settings', { title: 'Pengaturan', layout: './layouts/admin', user: req.session.user || res.locals.user, smtp: {} });
     }
 };
@@ -962,8 +971,11 @@ exports.updateIpaymuSettings = async (req, res) => {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         if (!userId) return res.redirect('/admin/settings');
 
+        const sandboxVal = parseInt(ipaymu_sandbox) || 0;
+        const expiryVal = parseInt(ipaymu_expiry) || 60;
+
         const query = 'UPDATE users SET ipaymu_sandbox = ?, ipaymu_expiry = ? WHERE id = ?';
-        const params = [ipaymu_sandbox || 0, ipaymu_expiry || 60, userId];
+        const params = [sandboxVal, expiryVal, userId];
 
         try {
             await db.execute(query, params);

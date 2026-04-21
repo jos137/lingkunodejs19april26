@@ -28,7 +28,9 @@ exports.login = async (req, res) => {
             profile_photo: user.profile_photo,
             slug: user.slug,
             whatsapp: user.whatsapp || user.phone,
-            bio: user.bio
+            bio: user.bio,
+            ipaymu_sandbox: user.ipaymu_sandbox,
+            ipaymu_expiry: user.ipaymu_expiry
         };
 
         res.redirect('/admin');
@@ -61,7 +63,9 @@ exports.register = async (req, res) => {
             profile_photo: null,
             slug: null,
             whatsapp: whatsapp,
-            bio: null
+            bio: null,
+            ipaymu_sandbox: 1, // Default sandbox for new users
+            ipaymu_expiry: 60
         };
 
         // Notify Admin about new registration
