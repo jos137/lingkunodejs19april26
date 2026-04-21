@@ -131,9 +131,9 @@
 .bio-btn.primary:hover { background: #2563eb; }
 </style>
 
-<!-- YOUR BIO LINK -->
-<div style="display: flex; gap: 24px; align-items: flex-start; margin-bottom: 24px;">
-    <div class="bio-card" style="flex: 1; margin: 0;">
+<!-- YOUR BIO LINK RE-WORKED FOR RESPONSIVE -->
+<div class="bio-row-container" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-bottom: 24px;">
+    <div class="bio-card" style="flex: 1; min-width: 300px; margin: 0;">
         <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">LINK BIO ANDA</div>
         <div class="bio-input-group">
             <div class="bio-input-wrap">
@@ -152,7 +152,7 @@
     </div>
 
     <!-- DATE FILTER -->
-    <div class="bio-card" style="width: 250px; margin: 0;">
+    <div class="bio-card" style="width: 250px; min-width: 250px; margin: 0;">
         <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">FILTER PER TANGGAL</div>
         <div style="display: flex; gap: 8px;">
             <input type="date" id="dateFilter" value="<%= locals.filterDate || '' %>" 
@@ -166,6 +166,20 @@
         </div>
     </div>
 </div>
+
+<style>
+    @media (max-width: 640px) {
+        .bio-card { width: 100% !important; min-width: 100% !important; padding: 18px !important; }
+        .bio-input-group { flex-direction: column; align-items: stretch; gap: 10px !important; }
+        .bio-input-wrap { padding: 8px 12px !important; }
+        .bio-input-wrap span { font-size: 11px !important; }
+        .bio-input-wrap input { font-size: 13px !important; }
+        .bio-btn { justify-content: center; width: 100%; padding: 10px !important; font-size: 12px !important; }
+        .bio-row-container { gap: 12px !important; margin-bottom: 16px !important; }
+        .dash-stat-value { font-size: 16px !important; }
+        .dash-stat-label { font-size: 9px !important; }
+    }
+</style>
 
 <!-- STAT CARDS -->
 <div class="dash-cards-row">
@@ -196,10 +210,16 @@
     <div style="font-size: 12px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
         <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE (LAST 30 DAYS)
     </div>
-    <div style="height: 340px; position: relative;">
+    <div class="dash-chart-container" style="height: 340px; position: relative;">
         <canvas id="dashChart"></canvas>
     </div>
 </div>
+
+<style>
+    @media (max-width: 640px) {
+        .dash-chart-container { height: 260px !important; }
+    }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>

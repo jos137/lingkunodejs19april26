@@ -268,24 +268,82 @@
         }
 
         /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .sidebar { width: 60px; }
-            .sidebar .logo-text, .sidebar-user-info, .sidebar-section-label, .sidebar-link span { display: none; }
-            .sidebar-link { justify-content: center; padding: 14px 0; }
-            .sidebar-link i { width: auto; }
-            .main-content { margin-left: 60px; }
-            .page-body { padding: 16px; }
+        /* ===== RESPONSIVE & MOBILE ENHANCEMENTS ===== */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 90;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+        .mobile-menu-toggle {
+            display: none;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            color: #1e293b;
+            align-items: center; justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        @media (max-width: 1024px) {
+            .sidebar {
+                left: -240px;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                width: 240px;
+            }
+            .sidebar.show {
+                transform: translateX(240px);
+            }
+            .main-content {
+                margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw;
+                overflow-x: hidden;
+            }
+            .mobile-menu-toggle {
+                display: flex;
+            }
+            .sidebar-overlay.show {
+                display: block;
+            }
+            .page-header {
+                padding: 12px 14px 0;
+            }
+            .page-body {
+                padding: 12px 14px 14px;
+            }
+            .page-header h1 {
+                font-size: 18px;
+            }
+            .header-actions {
+                gap: 8px;
+            }
+            .action-btn {
+                width: 34px;
+                height: 34px;
+            }
+            .profile-trigger {
+                width: 34px;
+                height: 34px;
+            }
         }
     </style>
 </head>
 <body>
 
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- SIDEBAR -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <img src="/images/logo.png" alt="Logo" style="height: 35px;">
         </div>
-
+        
         <nav class="sidebar-nav">
             <div class="sidebar-section-label">Main Menu</div>
             <a href="/admin" class="sidebar-link <%= title === 'Dashboard' ? 'active' : '' %>">
@@ -340,35 +398,15 @@
         </div>
     </aside>
 
-    <script>
-        async function triggerDeploy(btn) {
-            if (!confirm('Yakin mau terbangkan kodingan ke Live (Hostinger)?')) return;
-            
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Deploying...</span>';
-            
-            try {
-                const res = await fetch('/admin/dev/push', { method: 'POST' });
-                const data = await res.json();
-                if (data.success) {
-                    alert('BERHASIL! Kodingan sedang terbang ke Hostinger. Tunggu 1 menit lalu refresh.');
-                } else {
-                    alert('Gagal: ' + data.message);
-                }
-            } catch (e) {
-                alert('Error koneksi ke server lokal.');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalHtml;
-            }
-        }
-    </script>
-
     <!-- MAIN -->
     <main class="main-content">
         <div class="page-header">
-            <h1><%= title || 'Dashboard' %></h1>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button class="mobile-menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1><%= title || 'Dashboard' %></h1>
+            </div>
             <div class="header-actions">
                 <div class="profile-container">
                     <button class="action-btn" id="notifBtn">
@@ -436,18 +474,52 @@
             <%- body %>
         </div>
         <footer class="page-footer">
-            <div>&copy; 2026 <strong>Lingku.xyz</strong> <span style="color:#94a3b8; margin-left:8px; font-size:10px;">v1.0 — Powered by Antigravity</span></div>
+            <div>&copy; 2026 <strong>Lingku.xyz</strong> <span style="color:#94a3b8; margin-left:8px; font-size:10px;">v1.0</span></div>
             <div>
-                <a href="#">Privacy</a>
-                <a href="#">Terms</a>
                 <a href="#">Help</a>
             </div>
         </footer>
     </main>
 
-
     <script>
-        // Profile Menu Logic
+        // Sidebar Toggle Logic
+        const menuToggle = document.getElementById('menuToggle');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            if (sidebar) sidebar.classList.toggle('show');
+            if (overlay) overlay.classList.toggle('show');
+        }
+
+        if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
+        if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+        // Push to Live Function
+        async function triggerDeploy(btn) {
+            if (!confirm('Yakin mau terbangkan kodingan ke Live (Hostinger)?')) return;
+            
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Deploying...</span>';
+            
+            try {
+                const res = await fetch('/admin/dev/push', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('BERHASIL! Kodingan sedang terbang ke Hostinger. Tunggu 1 menit lalu refresh.');
+                } else {
+                    alert('Gagal: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error koneksi ke server lokal.');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        // Profile & Notif Menu Logic
         const profileBtn = document.getElementById('profileBtn');
         const profileMenu = document.getElementById('profileMenu');
         const notifBtn = document.getElementById('notifBtn');
@@ -457,7 +529,6 @@
             if (btn && menu) {
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // Close other menus first
                     document.querySelectorAll('.dropdown-menu').forEach(m => {
                         if (m !== menu) m.classList.remove('show');
                     });
