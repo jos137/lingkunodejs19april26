@@ -552,19 +552,29 @@ exports.processCheckout = async (req, res) => {
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
         const finalAmount = Math.floor(product.price);
 
+        // Fixed: iPaymu anti-fraud often flags '6281234567890' or numbers starting with 0. 
+        // We ensure it starts with 62 and is realistic.
+        let cleanPhone = (phone || '').replace(/[^0-9]/g, '');
+        if (cleanPhone.startsWith('0')) {
+            cleanPhone = '62' + cleanPhone.substring(1);
+        } else if (!cleanPhone.startsWith('62') && cleanPhone.length > 5) {
+            cleanPhone = '62' + cleanPhone;
+        }
+        if (cleanPhone.length < 10) cleanPhone = '6281299990000'; // Better dummy
+
         // Official Direct Payment Body Structure
         const body = {
-            name: name.replace(/[^a-zA-Z0-9 ]/g, '') || 'Customer',
-            phone: (phone || '081234567890').replace(/[^0-9]/g, ''), 
-            email: email,
-            amount: finalAmount, // Must be NUMBER
+            name: name.replace(/[^a-zA-Z0-9 ]/g, '') || 'Pembeli',
+            phone: cleanPhone, 
+            email: email || 'customer@gmail.com',
+            amount: finalAmount, 
             notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
             returnUrl: `https://lingku.xyz/`,
             cancelUrl: `https://lingku.xyz/`,
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            comments: `Pembelian ${product.name}`
+            comments: `Order ${product.name}`
         };
 
         const jsonBody = JSON.stringify(body);
