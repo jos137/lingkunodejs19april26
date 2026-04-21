@@ -453,7 +453,8 @@ exports.getStatistics = async (req, res) => {
         const [filtered] = await db.execute(`
             SELECT 
                 SUM(CASE WHEN o.status='completed' THEN 1 ELSE 0 END) as comp,
-                SUM(CASE WHEN o.status='pending' THEN 1 ELSE 0 END) as pend
+                SUM(CASE WHEN o.status='pending' THEN 1 ELSE 0 END) as pend,
+                SUM(CASE WHEN o.status='completed' THEN o.total_price ELSE 0 END) as daily_rev
             FROM orders o
             JOIN products p ON o.product_id = p.id
             WHERE p.user_id = ? AND DATE(CONVERT_TZ(o.created_at, '+00:00', '+07:00')) = ?
@@ -482,6 +483,7 @@ exports.getStatistics = async (req, res) => {
             chartData: {
                 completed: f.comp || 0,
                 pending: f.pend || 0,
+                daily_revenue: f.daily_rev || 0,
                 date: filterDate
             },
             bestSellers,

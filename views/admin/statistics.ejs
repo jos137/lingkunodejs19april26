@@ -59,8 +59,23 @@
 
 <div class="stats-grid">
     <div class="stats-box">
-        <div class="stats-box-title">Perbandingan Status (<%= new Date(chartData.date).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'}) %>)</div>
-        <div style="height: 300px; display: flex; align-items: center; justify-content: center;">
+        <div class="daily-box-header">
+            <div class="stats-box-title">Perbandingan Status (<%= new Date(chartData.date).toLocaleDateString('id-ID', {day:'numeric', month:'long'}) %>)</div>
+            <div class="daily-mini-cards">
+                <div class="mini-stat-card orange">
+                    <div class="mini-label">Pending</div>
+                    <div class="mini-value"><%= chartData.pending %></div>
+                </div>
+                <div class="mini-stat-card green">
+                    <div class="mini-label">Paid</div>
+                    <div class="mini-value">
+                        <%= chartData.completed %> 
+                        <span class="mini-subtext">Rp <%= parseFloat(chartData.daily_revenue || 0).toLocaleString('id-ID') %></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="chart-wrapper">
             <canvas id="statusChart"></canvas>
         </div>
     </div>
@@ -86,18 +101,49 @@
     </div>
 </div>
 
+<style>
+/* Responsive Fixes */
+.daily-box-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; gap: 15px; }
+.daily-mini-cards { display: flex; gap: 10px; }
+.mini-stat-card { background: #fff; padding: 8px 16px; border-radius: 12px; text-align: left; min-width: 100px; }
+.mini-stat-card.orange { border: 1.5px solid #f97316; }
+.mini-stat-card.green { border: 1.5px solid #10b981; }
+.mini-label { font-size: 9px; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+.mini-stat-card.orange .mini-label { color: #f97316; }
+.mini-stat-card.green .mini-label { color: #10b981; }
+.mini-value { font-size: 14px; font-weight: 900; color: #1e293b; display: flex; align-items: baseline; gap: 5px; }
+.mini-subtext { font-size: 10px; font-weight: 700; color: #64748b; }
+.chart-wrapper { height: 300px; position: relative; }
+
+@media (max-width: 768px) {
+    .stats-controls { flex-direction: column; align-items: stretch; gap: 12px; }
+    .daily-box-header { flex-direction: column; align-items: stretch; }
+    .daily-mini-cards { display: grid; grid-template-columns: 1fr 1fr; }
+    .mini-stat-card { min-width: 0; }
+    .mini-value { flex-direction: column; gap: 0; }
+    .page-header h1 { font-size: 18px; }
+    .stat-card-value { font-size: 20px; }
+    .chart-wrapper { height: 250px; }
+}
+
+@media (max-width: 480px) {
+    .daily-mini-cards { grid-template-columns: 1fr; }
+    .stat-cards { grid-template-columns: 1fr; }
+}
+</style>
+
 <script>
 const ctx = document.getElementById('statusChart').getContext('2d');
 new Chart(ctx, {
     type: 'bar',
     data: {
-        labels: ['Pesanan Pending', 'Pesanan Selesai'],
+        labels: ['Pending', 'Selesai'],
         datasets: [{
             label: 'Jumlah Pesanan',
             data: [<%= chartData.pending %>, <%= chartData.completed %>],
             backgroundColor: [
-                'rgba(249, 115, 22, 0.2)', // Orange for Pending
-                'rgba(16, 185, 129, 0.2)'  // Green for Completed
+                'rgba(249, 115, 22, 0.2)', // Orange
+                'rgba(16, 185, 129, 0.2)'  // Green
             ],
             borderColor: [
                 '#f97316', 
@@ -105,12 +151,14 @@ new Chart(ctx, {
             ],
             borderWidth: 2,
             borderRadius: 10,
-            barThickness: 50
+            maxBarThickness: 35 // Biar gak kegedean di HP
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
+        categoryPercentage: 0.8, // Kasih ruang antar kategori
+        barPercentage: 0.9,     // Proporsi batang dalem kategori
         plugins: {
             legend: { display: false }
         },
@@ -122,7 +170,10 @@ new Chart(ctx, {
             },
             x: {
                 grid: { display: false },
-                ticks: { font: { weight: '1000' } }
+                ticks: { 
+                    autoSkip: false, // Force all labels to show
+                    font: { weight: '800', size: 11 } 
+                }
             }
         }
     }
