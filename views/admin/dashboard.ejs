@@ -81,7 +81,11 @@
 @media (max-width: 1400px) { .dash-cards-row { grid-template-columns: repeat(5, 1fr); gap: 8px; } }
 @media (max-width: 1200px) { .dash-cards-row { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 1024px) { .dash-cards-row { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .dash-cards-row { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .dash-cards-row { grid-template-columns: repeat(2, 1fr); gap: 8px; } }
+@media (max-width: 480px) { 
+    .dash-stat-value { font-size: 15px !important; } 
+    .dash-stat-card { padding: 12px; }
+}
 
 /* BIO LINK CARD ENHANCEMENT */
 .bio-card {
@@ -150,21 +154,6 @@
             </button>
         </div>
     </div>
-
-    <!-- DATE FILTER -->
-    <div class="bio-card" style="width: 250px; min-width: 250px; margin: 0;">
-        <div style="font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 1px; margin-bottom: 12px; text-transform: uppercase;">FILTER PER TANGGAL</div>
-        <div style="display: flex; gap: 8px;">
-            <input type="date" id="dateFilter" value="<%= locals.filterDate || '' %>" 
-                onchange="window.location.href='/admin?date=' + this.value"
-                style="width:100%; padding: 10px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; font-size: 13px; font-weight: 700; color: #334155; outline: none; transition: 0.2s;">
-            <% if (locals.filterDate) { %>
-                <button onclick="window.location.href='/admin'" style="border:none; background:#f1f5f9; color:#64748b; padding:0 12px; border-radius:10px; cursor:pointer;" title="Reset">
-                    <i class="fas fa-times"></i>
-                </button>
-            <% } %>
-        </div>
-    </div>
 </div>
 
 <style>
@@ -207,8 +196,20 @@
 
 <!-- CHART -->
 <div class="bio-card" style="padding: 28px; margin-top: 24px;">
-    <div style="font-size: 12px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
-        <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE (LAST 30 DAYS)
+    <div style="font-size: 12px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE (LAST 30 DAYS)
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="date" id="dateFilter" value="<%= locals.filterDate || '' %>" 
+                onchange="window.location.href='/admin?date=' + this.value"
+                style="padding: 6px 12px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 12px; font-weight: 700; color: #334155; outline: none; background: #f8fafc;">
+            <% if (locals.filterDate) { %>
+                <button onclick="window.location.href='/admin'" style="border:none; background:#f1f5f9; color:#64748b; width:30px; height:30px; border-radius:8px; cursor:pointer; display: flex; align-items: center; justify-content: center;" title="Reset">
+                    <i class="fas fa-times"></i>
+                </button>
+            <% } %>
+        </div>
     </div>
     <div class="dash-chart-container" style="height: 340px; position: relative;">
         <canvas id="dashChart"></canvas>

@@ -131,17 +131,19 @@
 @media (max-width: 768px) {
     .stats-controls { flex-direction: column; align-items: stretch; gap: 12px; }
     .daily-box-header { flex-direction: column; align-items: stretch; }
-    .daily-mini-cards { display: grid; grid-template-columns: 1fr 1fr; }
-    .mini-stat-card { min-width: 0; }
-    .mini-value { flex-direction: column; gap: 0; }
+    .daily-mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mini-stat-card { padding: 8px 10px; }
+    .mini-value { font-size: 13px; }
     .page-header h1 { font-size: 18px; }
-    .stat-card-value { font-size: 20px; }
+    .stat-card-value { font-size: 16px; } /* Angka dikecilin dikit biar muat 2 kolom */
+    .stat-card { padding: 12px; }
+    .stat-cards { grid-template-columns: 1fr 1fr !important; gap: 10px; } /* PAKSA 2 KOLOM */
     .chart-wrapper { height: 250px; }
 }
 
 @media (max-width: 480px) {
-    .daily-mini-cards { grid-template-columns: 1fr; }
-    .stat-cards { grid-template-columns: 1fr; }
+    .daily-mini-cards { grid-template-columns: 1fr 1fr; } /* Tetep 2 kolom biar kompak */
+    .stat-cards { grid-template-columns: 1fr 1fr !important; } /* Tetep 2 kolom */
 }
 </style>
 

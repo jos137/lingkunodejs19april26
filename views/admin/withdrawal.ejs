@@ -1,9 +1,9 @@
 <style>
 /* Balance Card */
-.wd-balance { background: #111827; color: #fff; border-radius: 14px; padding: 28px; margin-bottom: 18px; }
-.wd-balance-label { font-size: 11px; font-weight: 800; color: #10b981; letter-spacing: 1.5px; margin-bottom: 6px; }
-.wd-balance-value { font-size: 32px; font-weight: 900; }
-.wd-balance-sub { font-size: 12px; color: #64748b; margin-top: 6px; }
+.wd-balance { background: #111827; color: #fff; border-radius: 14px; padding: 18px 20px; margin-bottom: 0; width: 100%; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+.wd-balance-label { font-size: 10px; font-weight: 800; color: #10b981; letter-spacing: 1px; margin-bottom: 4px; opacity: 0.9; }
+.wd-balance-value { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+.wd-balance-sub { font-size: 10px; color: #94a3b8; margin-top: 6px; font-weight: 600; }
 
 .wd-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 24px; }
 .wd-sum-card { background: #fff; border-radius: 12px; padding: 18px; border-left: 4px solid; }
@@ -48,7 +48,10 @@
 .wd-table .badge.rejected { background: #fef2f2; color: #dc2626; }
 .wd-empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
 
-@media (max-width: 768px) { .wd-content, .wd-summary { grid-template-columns: 1fr; } }
+@media (max-width: 768px) { 
+    .wd-content, .wd-summary { grid-template-columns: 1fr; } 
+    .wd-balance { width: 100%; min-width: 0; padding: 20px; }
+}
 </style>
 
 <%
@@ -59,10 +62,12 @@ const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, 
 const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
 %>
 
-<div class="wd-balance">
-    <div class="wd-balance-label">SALDO TERSEDIA</div>
-    <div class="wd-balance-value"><%= fmt(bal) %></div>
-    <div class="wd-balance-sub">Limit Harian: Rp 100.000.000 &nbsp;|&nbsp; Terpakai: Rp 0</div>
+<div class="wd-summary" style="margin-bottom: 14px;">
+    <div class="wd-balance">
+        <div class="wd-balance-label">SALDO TERSEDIA</div>
+        <div class="wd-balance-value"><%= fmt(bal) %></div>
+        <div class="wd-balance-sub">Limit Harian: Rp 100.000.000 &nbsp;|&nbsp; Terpakai: Rp 0</div>
+    </div>
 </div>
 
 <div class="wd-summary">
