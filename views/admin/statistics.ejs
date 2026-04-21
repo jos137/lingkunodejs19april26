@@ -26,8 +26,21 @@
 .bs-revenue { font-size: 12px; font-weight: 850; color: #10b981; }
 
 @media (max-width: 1024px) {
-    .stat-cards { grid-template-columns: 1fr 1fr; }
+    .stat-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
     .stats-grid { grid-template-columns: 1fr; }
+    .stats-box { padding: 15px; border-radius: 12px; width: 100%; overflow: hidden; }
+    .page-body { padding: 10px; }
+    .stat-card { padding: 15px; }
+}
+
+@media (max-width: 640px) {
+    .stat-cards { grid-template-columns: 1fr; }
+    .stats-controls { flex-direction: column; align-items: stretch; padding: 12px; gap: 10px; }
+    .daily-box-header { flex-direction: column; align-items: stretch; gap: 12px; }
+    .daily-mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .mini-stat-card { padding: 8px 10px; }
+    .mini-value { font-size: 13px; }
+    .chart-wrapper { height: 260px; width: 100%; }
 }
 </style>
 
@@ -140,10 +153,10 @@ new Chart(ctx, {
         labels: ['Pending', 'Selesai'],
         datasets: [{
             label: 'Jumlah Pesanan',
-            data: [<%= chartData.pending %>, <%= chartData.completed %>],
+            data: [<%= chartData.pending || 0 %>, <%= chartData.completed || 0 %>],
             backgroundColor: [
-                'rgba(249, 115, 22, 0.2)', // Orange
-                'rgba(16, 185, 129, 0.2)'  // Green
+                'rgba(249, 115, 22, 0.2)', 
+                'rgba(16, 185, 129, 0.2)'
             ],
             borderColor: [
                 '#f97316', 
@@ -151,28 +164,36 @@ new Chart(ctx, {
             ],
             borderWidth: 2,
             borderRadius: 10,
-            maxBarThickness: 35 // Biar gak kegedean di HP
+            maxBarThickness: 40
         }]
     },
     options: {
         responsive: true,
         maintainAspectRatio: false,
-        categoryPercentage: 0.8, // Kasih ruang antar kategori
-        barPercentage: 0.9,     // Proporsi batang dalem kategori
+        indexAxis: 'x',
+        categoryPercentage: 0.8, 
+        barPercentage: 0.9,
         plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return ' ' + context.dataset.label + ': ' + context.raw;
+                    }
+                }
+            }
         },
         scales: {
             y: {
                 beginAtZero: true,
                 grid: { display: true, color: '#f1f5f9' },
-                ticks: { font: { weight: '600' } }
+                ticks: { stepSize: 1, font: { weight: '600' } }
             },
             x: {
                 grid: { display: false },
                 ticks: { 
-                    autoSkip: false, // Force all labels to show
-                    font: { weight: '800', size: 11 } 
+                    autoSkip: false,
+                    font: { weight: '800', size: 10 } 
                 }
             }
         }
