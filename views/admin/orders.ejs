@@ -35,14 +35,13 @@
 .filter-item.active { background: #f59e0b; color: #fff; border-radius: 8px; }
 
 /* Order Cards */
-.order-list { display: flex; flex-direction: column; gap: 0; }
+.order-list { display: flex; flex-direction: column; gap: 12px; }
 .order-card {
     display: flex; align-items: flex-start; gap: 24px;
     padding: 28px 32px; background: #fff; border: 1.5px solid #e5e7eb;
-    border-bottom: none; cursor: pointer; transition: 0.15s; position: relative;
+    border-radius: 16px !important; cursor: pointer; transition: 0.15s; position: relative;
 }
-.order-card:first-child { border-radius: 16px 16px 0 0; }
-.order-card:last-child { border-bottom: 1.5px solid #e5e7eb; border-radius: 0 0 16px 16px; }
+.order-card:first-child, .order-card:last-child { border-radius: 16px !important; }
 .order-card:only-child { border-radius: 16px; border-bottom: 1.5px solid #e5e7eb; }
 .order-card:hover { background: #f8fafc; }
 .order-card.active { border-color: #10b981; background: #f0fdf4; z-index: 1; border-bottom: 1.5px solid #10b981; box-shadow: 0 4px 15px rgba(16,185,129,0.06); }
@@ -63,13 +62,13 @@
 .order-status.expired { color: #dc2626; background: rgba(220,38,38,0.1); }
 
 .order-thumb-wrap {
-    width: 72px; height: 72px; border-radius: 14px; background: #f1f5f9;
+    width: 60px; height: 60px; border-radius: 14px; background: #f1f5f9;
     border: 1.5px solid #e2e8f0; flex-shrink: 0; overflow: hidden;
     display: flex; align-items: center; justify-content: center;
-    margin-top: 15px;
+    margin-top: 25px;
 }
 .order-thumb-wrap img { width: 100%; height: 100%; object-fit: cover; }
-.order-thumb-wrap i { color: #cbd5e1; font-size: 28px; }
+.order-thumb-wrap i { color: #cbd5e1; font-size: 24px; }
 
 /* PREMIUM PAGINATION */
 .pagination-container {
@@ -99,7 +98,7 @@
 }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
 .detail-ref-label { font-size: 11px; font-weight: 900; color: #94a3b8; letter-spacing: 1.5px; margin-bottom: 8px; }
-.detail-ref-id { font-size: 28px; font-weight: 1000; color: #111827; letter-spacing: -0.8px; }
+.detail-ref-id { font-size: 14px; font-weight: 500; color: #111827; letter-spacing: -0.2px; }
 .detail-status { padding: 8px 20px; border-radius: 12px; font-size: 12px; font-weight: 1000; letter-spacing: 0.8px; }
 .detail-status.completed { background: #f0fdf4; color: #059669; border: 1.5px solid rgba(5,150,105,0.1); }
 .detail-status.pending { background: #fffbeb; color: #d97706; border: 1.5px solid rgba(217,119,6,0.1); }
@@ -137,7 +136,44 @@
 .email-step-time { font-size: 10px; color: #64748b; margin-top: 6px; font-weight: 700; white-space: nowrap; }
 
 .orders-empty { text-align: center; padding: 100px 20px; color: #cbd5e1; }
-@media (max-width: 1100px) { .orders-wrap { grid-template-columns: 1fr; } .detail-panel { display: none; } }
+
+/* MOBILE ACCORDION - ONLY FOR PHONE */
+.order-detail-mobile { display: none; width: 100%; border-top: 1.5px solid #f1f5f9; margin-top: 20px; padding-top: 25px; }
+
+@media (max-width: 1100px) { 
+    .orders-wrap { grid-template-columns: 1fr; } 
+    .detail-panel { display: none; }
+    .order-card { display: flex; flex-wrap: wrap; align-items: flex-start; padding: 22px 20px 27px 20px; min-height: auto; }
+    .order-info { flex: 1; padding-right: 85px; }
+    .order-price { display: none; } /* Hapus harga di kiri sesuai request */
+    .order-date { white-space: nowrap; font-size: 10px; margin-bottom: 4px; }
+    
+    .order-status { 
+        position: absolute; top: 22px; right: 20px; 
+        font-size: 8px; font-weight: 900; padding: 2px 8px; border-radius: 4px;
+        width: auto; min-width: 60px; text-align: center;
+    }
+    .order-thumb-wrap { 
+        position: absolute; top: 48px; right: 20px;
+        width: 48px; height: 48px; margin-top: 0;
+    }
+
+    /* DETIL ACCORDION REFINEMENT: FULL WIDTH */
+    .order-detail-mobile { display: none; width: 100% !important; margin: 15px 0 0 0 !important; padding: 15px 0 0 0 !important; border-top: 1px solid #f1f5f9; }
+    .order-detail-mobile .detail-status { display: none; } /* Hapus status di detail sesuai request */
+    .order-detail-mobile .detail-ref-id { font-size: 13px; font-weight: 500; }
+    .order-detail-mobile .detail-sections { display: block; width: 100%; margin: 0; }
+    .order-detail-mobile .detail-section { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; }
+    
+    .order-detail-mobile .detail-row { 
+        display: flex; justify-content: space-between; align-items: center;
+        font-size: 13px; line-height: 1.4; color: #64748b; margin-bottom: 8px;
+    }
+    .order-detail-mobile .detail-total { font-size: 16px; font-weight: 700; color: #10b981; margin-top: 0; }
+    .order-detail-mobile .mini-followup { width: 100%; border-radius: 10px; padding: 12px; }
+    
+    .order-card.active .order-detail-mobile { display: block; }
+}
 </style>
 
 <div class="orders-wrap">
@@ -189,6 +225,7 @@
                         <div class="order-status <%= order.status || 'pending' %>">
                             <%= (order.status || 'pending').toUpperCase() %>
                         </div>
+                        <div class="order-detail-mobile"></div>
                     </div>
                 <% }); %>
             <% } else { %>
@@ -263,8 +300,7 @@ function filterOrders() {
 
 function selectOrder(el, idx) {
     if(!el) return;
-    document.querySelectorAll('.order-card').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
+    const isMobile = window.innerWidth <= 1100;
     const o = ordersData[idx];
     if (!o) return;
 
@@ -277,29 +313,25 @@ function selectOrder(el, idx) {
     let btnColor = '#f59e0b';
     let merchantUsername = '<%= merchantUsername %>';
     let merchantLink = window.location.origin + '/' + merchantUsername;
-    let mailSubject = encodeURIComponent(`Menunggu Pembayaran: ${o.product_name}`);
-    let mailBody = encodeURIComponent(`Halo ${o.customer_name || o.buyer_name || ''},\n\nKami melihat Anda belum menyelesaikan pembayaran untuk ${o.product_name}. Karena batas waktu pembayaran kami cukup singkat, silakan lakukan pendaftaran ulang melalui link di bawah ini:\n\n${merchantLink}\n\nTerima kasih.`);
 
     if (o.status === 'completed') {
         btnLabel = 'Kirim Akses';
         btnColor = '#3b82f6';
-        mailSubject = encodeURIComponent(`Akses Produk: ${o.product_name}`);
-        mailBody = encodeURIComponent(`Halo ${o.customer_name || o.buyer_name || ''},\n\nTerima kasih atas pembayaran Anda. Berikut adalah link akses untuk produkt ${o.product_name}:\n\n${o.access_link || 'Silakan cek di member area'}\n\nTerima kasih!`);
     }
 
-    document.getElementById('detailPanel').innerHTML = `
+    const detailHtml = `
         <div class="detail-header">
             <div><div class="detail-ref-label">INVOICE REFERENCE</div><div class="detail-ref-id">#${o.reference_id || o.trx_id || ('INV' + o.id)}</div></div>
             <span class="detail-status ${o.status || 'pending'}">${(o.status || 'pending').toUpperCase()}</span>
         </div>
-        <div class="detail-sections">
+        <div class="detail-sections" style="${isMobile ? 'display:block;' : ''}">
             <div class="detail-section">
                 <div class="detail-section-title">DETAIL TRANSAKSI</div>
                 <div class="detail-row">Produk: <strong>${o.product_name}</strong></div>
                 <div class="detail-row">Metode: <strong style="color:#3b82f6;">${(o.payment_channel || 'N/A').toUpperCase()}</strong></div>
                 <div class="detail-row">Total: <div class="detail-total">Rp ${price}</div></div>
             </div>
-            <div class="detail-section">
+            <div class="detail-section" style="${isMobile ? 'margin-top:20px;' : ''}">
                 <div class="detail-section-title">INFORMASI PEMBELI</div>
                 <div class="detail-row"><strong>${o.customer_name || o.buyer_name || 'N/A'}</strong></div>
                 <div class="detail-row" style="font-size:12px;">${o.customer_email || o.buyer_email || ''}</div>
@@ -321,7 +353,6 @@ function selectOrder(el, idx) {
                     <div class="email-step-label">Terkirim</div><div class="email-step-time">${o.status === 'completed' ? dateStr : '—'}</div>
                 </div>
                 <div class="email-step">
-                    <%# Check if opened exists in the order object %>
                     <div class="email-step-icon ${o.last_opened_at ? 'done' : ''}"><i class="fas fa-envelope-open"></i></div>
                     <div class="email-step-label">Dibuka</div>
                     <div class="email-step-time">${o.last_opened_at ? (new Date(o.last_opened_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', timeZone: 'Asia/Jakarta'}) + ', ' + new Date(o.last_opened_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta'})) : '—'}</div>
@@ -329,6 +360,28 @@ function selectOrder(el, idx) {
             </div>
         </div>
     `;
+
+    if (isMobile) {
+        const mDetail = el.querySelector('.order-detail-mobile');
+        const wasActive = el.classList.contains('active');
+        
+        document.querySelectorAll('.order-card').forEach(c => {
+            c.classList.remove('active');
+            const inner = c.querySelector('.order-detail-mobile');
+            if(inner) inner.innerHTML = '';
+        });
+
+        if (!wasActive) {
+            el.classList.add('active');
+            mDetail.innerHTML = detailHtml;
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        }
+    } else {
+        document.querySelectorAll('.order-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+        const p = document.getElementById('detailPanel');
+        if (p) p.innerHTML = detailHtml;
+    }
 }
 
 async function sendOrderEmail(id, status) {
