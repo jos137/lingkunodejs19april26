@@ -537,22 +537,25 @@ exports.processCheckout = async (req, res) => {
         }
 
         // Logic fix for paymentMethod/Channel mapping
-        let method = payment_method || 'va';
-        let chan = payment_channel || 'qris';
+        let method = (payment_method || 'va').toLowerCase();
+        let chan = (payment_channel || 'qris').toLowerCase();
         const banks = ['bca', 'mandiri', 'bni', 'bri'];
         
-        if (banks.includes(chan.toLowerCase())) {
+        if (banks.includes(chan)) {
             method = 'va';
-        } else if (chan.toLowerCase() === 'qris') {
-            method = 'qris'; // Search results suggest qris for both
+        } else if (chan === 'qris') {
+            method = 'qr'; // Fixed: iPaymu expects 'qr' for QRIS
             chan = 'qris';
-        } else if (chan.toLowerCase() === 'alfamart' || chan.toLowerCase() === 'indomaret') {
+        } else if (chan === 'alfamart' || chan === 'indomaret') {
             method = 'cstore';
         }
 
+        // Fixed: Timestamp must be in 'yyyyMMddHHmmss' format
+        const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
+
         const body = {
-            name: name,
-            phone: (phone || '').replace(/[^0-9]/g, ''), // Ensure numeric phone
+            name: name.replace(/[^a-zA-Z0-9 ]/g, ''), // Clean customer name
+            phone: (phone || '').replace(/[^0-9]/g, ''), 
             email: email,
             amount: Math.floor(product.price),
             notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
@@ -561,13 +564,11 @@ exports.processCheckout = async (req, res) => {
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            product: [product.name],
+            product: [product.name.replace(/[^a-zA-Z0-9 ]/g, '')], 
             qty: [1],
             price: [Math.floor(product.price)],
-            expired: Math.ceil(expiryMins / 60)
+            expired: 1
         };
-
-        console.log('Sending to iPaymu:', JSON.stringify(body, null, 2));
 
         const jsonBody = JSON.stringify(body);
         const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex').toLowerCase();
@@ -579,7 +580,7 @@ exports.processCheckout = async (req, res) => {
                 'Content-Type': 'application/json',
                 'va': va,
                 'signature': signature,
-                'timestamp': Date.now()
+                'timestamp': timestamp
             }
         });
 
