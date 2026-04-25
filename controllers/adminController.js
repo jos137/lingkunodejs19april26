@@ -713,6 +713,34 @@ exports.getUserBuyers = async (req, res) => {
     }
 };
 
+exports.updateUserRole = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { role } = req.body;
+        
+        // Safety check
+        if (!['user', 'pro', 'admin'].includes(role)) {
+            return res.status(400).json({ success: false, message: 'Role tidak valid' });
+        }
+
+        // To keep it consistent with the UI (Paket column & Badge), 
+        // we update both 'role' and 'plan' columns.
+        const planValue = (role === 'pro') ? 'pro' : 'free';
+        await db.execute('UPDATE users SET role = ?, plan = ? WHERE id = ?', [role, planValue, id]);
+        
+        // Update current session if the admin is updating themselves
+        if (req.session.user && req.session.user.id == id) {
+            req.session.user.role = role;
+            req.session.user.plan = planValue;
+        }
+
+        res.json({ success: true, newRole: role, newPlan: planValue });
+    } catch (err) {
+        console.error('Update Role Error:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+};
+
 // ===================== GLOBAL ANALYTICS =====================
 exports.getGlobalAnalytics = async (req, res) => {
     const defaults = { title: 'Analisa Global', layout: './layouts/admin', customer_count: 0, total_income: 0, total_orders: 0, total_products: 0, platform_income: 0, dana_mengendap: 0, total_wd: 0, pending_payouts: 0, stock_alerts: 0, chartData: [], user: req.session.user || res.locals.user };

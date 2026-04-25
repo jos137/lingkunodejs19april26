@@ -41,6 +41,28 @@ app.use(async (req, res, next) => {
     res.locals.currentPath = req.path;
     res.locals.isLocal = req.hostname === 'localhost' || req.hostname === '127.0.0.1';
     
+    // FRESH USER DATA (Refresh from DB every request to ensure role/plan changes reflect immediately)
+    if (req.session.userId) {
+        try {
+            const [uRows] = await db.execute('SELECT * FROM users WHERE id = ?', [req.session.userId]);
+            if (uRows[0]) {
+                const u = uRows[0];
+                req.session.user = {
+                    id: u.id,
+                    name: u.fullname || u.name || 'Admin',
+                    role: u.role,
+                    plan: u.plan,
+                    profile_photo: u.profile_photo,
+                    slug: u.slug,
+                    whatsapp: u.whatsapp || u.phone,
+                    bio: u.bio,
+                    ipaymu_sandbox: u.ipaymu_sandbox,
+                    ipaymu_expiry: u.ipaymu_expiry
+                };
+            }
+        } catch(e) { console.error('Session refresh error:', e.message); }
+    }
+
     res.locals.user = req.session.user || {
         role: 'admin',
         name: 'Admin JOS',

@@ -462,7 +462,10 @@
             </div>
             <div class="header-actions">
                 <% 
-                    let planLabel = (user && user.role === 'admin') ? 'ADMIN' : ((user && user.plan) || 'FREE').toUpperCase();
+                    let planLabel = 'FREE';
+                    if (user && user.role === 'admin') planLabel = 'ADMIN';
+                    else if (user && (user.role === 'pro' || user.plan === 'pro')) planLabel = 'PRO';
+                    
                     let badgeBg = 'linear-gradient(135deg, #cbd5e1, #94a3b8)'; // Default Silver
                     if (planLabel === 'ADMIN') {
                         badgeBg = 'linear-gradient(135deg, #facc15, #eab308)'; // Gold

@@ -87,14 +87,24 @@
                             </td>
                             <td><strong><%= u.name || '-' %></strong></td>
                             <td><%= u.email || '-' %></td>
-                            <td><span class="role-badge <%= u.role || 'user' %>"><%= (u.role || 'user').toUpperCase() %></span></td>
+                            <td>
+                                <!-- ROLE DROPDOWN -->
+                                <select class="ef-input" style="width: 80px; padding: 4px 6px; font-size: 10px; font-weight: 800; border-radius: 6px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: <%= (u.role === 'admin') ? '#dc2626' : ((u.role === 'pro') ? '#10b981' : '#3b82f6') %>;" 
+                                        onchange="changeRole(<%= u.id %>, this)">
+                                    <option value="user" <%= (u.role || 'user') === 'user' ? 'selected' : '' %>>USER</option>
+                                    <option value="pro" <%= u.role === 'pro' ? 'selected' : '' %>>PRO ✨</option>
+                                    <% if (user.role === 'admin') { %>
+                                        <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>ADMIN</option>
+                                    <% } %>
+                                </select>
+                            </td>
                             <td>
                                 <span class="plan-badge <%= u.plan || 'free' %>">
                                     <%= (u.plan || 'FREE').toUpperCase() %>
                                 </span>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 8px;">
+                                <div style="display: flex; gap: 8px; align-items: center;">
                                     <button class="btn-action btn-detail" onclick="showUser(<%= idx %>)"><i class="fas fa-eye"></i> Detail</button>
                                     <a href="/admin/users/detail/<%= u.id %>" class="btn-action btn-view-buyers"><i class="fas fa-shopping-cart"></i> Daftar Pembeli</a>
                                 </div>
@@ -183,5 +193,51 @@ function showUser(idx) {
 }
 
 function closeModal() { document.getElementById('userModal').classList.remove('show'); }
+
+async function changeRole(userId, select) {
+    const originalRole = select.value;
+    const newRole = select.value;
+    
+    select.style.opacity = '0.5';
+    select.disabled = true;
+
+    try {
+        const res = await fetch(`/admin/users/${userId}/update-role`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: newRole })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            // Update the badge in the row
+            const row = select.closest('tr');
+            
+            // 1. Update Role Badge Color (if you still have it, or just the select color)
+            if (data.newRole === 'admin') select.style.color = '#dc2626';
+            else if (data.newRole === 'pro') select.style.color = '#10b981';
+            else select.style.color = '#3b82f6';
+            
+            // 2. Update Paket Column Badge (Consistency)
+            const planBadge = row.querySelector('.plan-badge');
+            if (planBadge) {
+                planBadge.className = `plan-badge ${data.newPlan.toLowerCase()}`;
+                planBadge.innerText = data.newPlan.toUpperCase();
+            }
+            
+            alert('Sukses! Role user berhasil diubah menjadi ' + data.newRole.toUpperCase());
+        } else {
+            alert('Gagal: ' + data.message);
+            select.value = originalRole;
+        }
+    } catch (e) {
+        alert('Terjadi kesalahan koneksi.');
+        select.value = originalRole;
+    } finally {
+        select.style.opacity = '1';
+        select.disabled = false;
+    }
+}
+
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 </script>
