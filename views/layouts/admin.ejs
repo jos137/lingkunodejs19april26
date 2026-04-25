@@ -461,6 +461,21 @@
                 <h1><%= title || 'Dashboard' %></h1>
             </div>
             <div class="header-actions">
+                <% 
+                    let planLabel = (user && user.role === 'admin') ? 'ADMIN' : ((user && user.plan) || 'FREE').toUpperCase();
+                    let badgeBg = 'linear-gradient(135deg, #cbd5e1, #94a3b8)'; // Default Silver
+                    if (planLabel === 'ADMIN') {
+                        badgeBg = 'linear-gradient(135deg, #facc15, #eab308)'; // Gold
+                    } else if (planLabel === 'PRO') {
+                        badgeBg = 'linear-gradient(135deg, #34d399, #10b981)'; // Green
+                    }
+                %>
+                <!-- USER STATUS BADGE -->
+                <div style="padding: 5px 12px; border-radius: 50px; background: <%= badgeBg %>; color: white; font-size: 9px; font-weight: 900; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2);">
+                    <i class="fas fa-crown"></i>
+                    <span><%= planLabel %></span>
+                </div>
+
                 <div class="profile-container">
                     <button class="action-btn" id="notifBtn">
                         <i class="fas fa-bell"></i>
