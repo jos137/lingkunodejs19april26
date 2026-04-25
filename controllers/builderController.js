@@ -76,9 +76,23 @@ exports.getBuilder = async (req, res) => {
         // Get all user products for dropdown - safe query
         let products = [];
         try {
-            const [rows] = await db.execute('SELECT id, name, price FROM products WHERE user_id = ? ORDER BY name ASC', [userId]);
+            const [rows] = await db.execute('SELECT id, name, price, thumbnail, image_url, image_small, cover_image, photo FROM products WHERE user_id = ? ORDER BY name ASC', [userId]);
             products = rows;
         } catch(e) {}
+
+        // NEW: Get Marketplace Products (Affiliate Enabled Products from others)
+        let marketplaceProducts = [];
+        try {
+            const [rows] = await db.execute(`
+                SELECT p.id, p.name, p.price, p.commission_percent, u.fullname as seller_name, 
+                       p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo
+                FROM products p 
+                JOIN users u ON p.user_id = u.id 
+                WHERE p.is_affiliate = 1 AND p.user_id != ?
+                ORDER BY p.id DESC
+            `, [userId]);
+            marketplaceProducts = rows;
+        } catch(e) { console.error('Marketplace Fetch Error:', e.message); }
 
         // Get user info
         let userSlug = 'username';
@@ -93,6 +107,7 @@ exports.getBuilder = async (req, res) => {
             pages,
             blocks: rawBlocks,
             products,
+            marketplaceProducts,
             activeSlug: currentPage.slug,
             user: req.session.user || { name: 'Admin', slug: userSlug, role: 'admin', roleDisplay: 'Administrator' }
         });
@@ -104,6 +119,7 @@ exports.getBuilder = async (req, res) => {
             pages: [],
             blocks: [],
             products: [],
+            marketplaceProducts: [],
             activeSlug: 'home',
             user: req.session.user || { name: 'Admin', slug: 'username', role: 'admin', roleDisplay: 'Administrator' }
         });
@@ -281,7 +297,7 @@ exports.renderUserPage = async (req, res) => {
                     mapped.url = imgData.url || b.content;
                 } catch(e) { mapped.url = b.content; }
             }
-            if (b.type === 'product') mapped.pid = b.content;
+            if (b.type === 'product' || b.type === 'affiliate') mapped.pid = b.content;
             if (b.type === 'button') {
                 try {
                     const btnData = typeof b.content === 'object' ? b.content : JSON.parse(b.content);
@@ -313,28 +329,45 @@ exports.renderUserPage = async (req, res) => {
             return mapped;
         });
 
-        // Get Products for blocks - Parse JSON image_url
+        // Get Products for blocks (Including Affiliate products from marketplace)
+        // Get Products for blocks (Including Affiliate products from marketplace)
         let products = [];
         try {
-            const [rows] = await db.execute('SELECT * FROM products WHERE user_id = ?', [user.id]);
-            products = rows.map(p => {
-                // Find the first non-empty image column
+            // 1. Get all products owned by the page owner (Baseline)
+            const [ownerRows] = await db.query('SELECT * FROM products WHERE user_id = ?', [user.id]);
+            
+            // 2. Get all unique product IDs from blocks
+            const pids = blocks
+                .filter(b => (b.type === 'product' || b.type === 'affiliate') && b.content)
+                .map(b => parseInt(b.content))
+                .filter(id => !isNaN(id)); 
+
+            // 3. Get extra products from marketplace if referenced
+            let extraRows = [];
+            if (pids.length > 0) {
+                const ownerPids = ownerRows.map(p => p.id);
+                const marketplacePids = pids.filter(id => !ownerPids.includes(id));
+                
+                if (marketplacePids.length > 0) {
+                    // Use db.query for dynamic IN clause
+                    const [rows] = await db.query(`SELECT * FROM products WHERE id IN (${marketplacePids.join(',')})`);
+                    extraRows = rows;
+                }
+            }
+            
+            const allRows = [...ownerRows, ...extraRows];
+            products = allRows.map(p => {
                 let thumbValue = p.thumbnail || p.image_url || p.image_small || p.cover_image || p.photo || '';
                 let thumb = '';
-                
-                // Handle JSON format if exists
                 if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
                     try {
                         const imgs = JSON.parse(thumbValue);
                         if (Array.isArray(imgs) && imgs.length > 0) thumb = imgs[0];
                     } catch(e) { thumb = thumbValue; }
-                } else {
-                    thumb = thumbValue;
-                }
-                
+                } else { thumb = thumbValue; }
                 return { ...p, processed_thumb: thumb };
             });
-        } catch(e) {}
+        } catch(e) { console.error('Render Page Products Error:', e.message); }
 
         // Get social proof data (20 recent orders)
         let recentOrders = [];

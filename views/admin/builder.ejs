@@ -327,6 +327,19 @@
                                     </select>
                                 </div>
                             </div>
+                        <% } else if (block.type === 'affiliate') { %>
+                            <label class="b-label">Pilih Produk Affiliate (Marketplace)</label>
+                            <select class="b-input b-select b-content" onchange="triggerAutoSave()">
+                                <option value="">-- Pilih Produk dari Marketplace --</option>
+                                <% (marketplaceProducts || []).forEach(function(prod) { %>
+                                    <option value="<%= prod.id %>" <%= block.content == prod.id ? 'selected' : '' %>>
+                                        <%= prod.name %> - Komisi <%= prod.commission_percent %>% (dari <%= prod.seller_name %>)
+                                    </option>
+                                <% }); %>
+                            </select>
+                            <div style="font-size:11px; color:#94a3b8; margin-top:8px; font-style:italic;">
+                                * Produk ini berasal dari user lain yang membuka program affiliate.
+                            </div>
                         <% } %>
                     </div>
                 </div>
@@ -341,6 +354,7 @@
             <button class="btn-add-block" onclick="addBlock('video')"><i class="fas fa-play-circle"></i> + Video</button>
             <button class="btn-add-block" onclick="addBlock('button')"><i class="fas fa-link"></i> + Button</button>
             <button class="btn-add-block" onclick="addBlock('divider')"><i class="fas fa-minus"></i> + Divider</button>
+            <button class="btn-add-block" onclick="addBlock('affiliate')" style="border-color:#f59e0b; color:#f59e0b;"><i class="fas fa-handshake"></i> + Affiliate</button>
         </div>
     </div>
 
@@ -359,6 +373,7 @@
 <script>
 const currentPageSlug = '<%= pageSlug %>';
 const productList = <%- JSON.stringify(products || []) %>;
+const marketplaceList = <%- JSON.stringify(marketplaceProducts || []) %>;
 let saveTimeout;
 
 // Initialize Sortable
@@ -482,6 +497,14 @@ function addBlock(type) {
                     </select>
                 </div>
             </div>`;
+    } else if (type === 'affiliate') {
+        bodyHTML = `
+            <label class="b-label">Pilih Produk Affiliate (Marketplace)</label>
+            <select class="b-input b-select b-content" onchange="triggerAutoSave()">
+                <option value="">-- Pilih Produk Marketplace --</option> 
+                ${marketplaceList.map(p => `<option value="${p.id}">${p.name} (${p.seller_name})</option>`).join('')} 
+            </select>
+            <div style="font-size:11px; color:#94a3b8; margin-top:8px; font-style:italic;">* Hanya menampilkan produk yang membuka program affiliate.</div>`;
     }
 
     div.innerHTML = `
@@ -593,6 +616,24 @@ function updatePreview() {
             let border = `${thickness} ${style} #e2e8f0`;
             if (style === 'gradient') border = 'none; height:' + thickness + '; background:linear-gradient(90deg, transparent, #cbd5e1, transparent)';
             html += `<div style="width:100%;margin:20px 0; border-top:${border}"></div>`;
+        } else if (type === 'affiliate') {
+            const pid = item.querySelector('.b-content').value;
+            const prod = marketplaceList.find(p => p.id == pid);
+            if (prod) {
+                let thumbRaw = prod.thumbnail || prod.image_url || '';
+                let thumbSrc = thumbRaw && (thumbRaw.startsWith('/') ? thumbRaw : '/uploads/products/' + thumbRaw);
+                html += `
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1.5px solid #f59e0b;border-radius:12px;margin-bottom:12px;background:#fff;">
+                        <div style="width:40px;height:40px;border-radius:8px;background:#fff7ed;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #ffedd5;flex-shrink:0;">
+                            ${thumbSrc ? `<img src="${thumbSrc}" style="width:100%;height:100%;object-fit:cover;">` : `<i class="fas fa-handshake" style="color:#f59e0b"></i>`}
+                        </div>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:13px;font-weight:800;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${prod.name}</div>
+                            <div style="font-size:11px;font-weight:700;color:#f59e0b;">Komisi: ${prod.commission_percent}% <span style="color:#94a3b8; font-weight:600;">(Marketplace)</span></div>
+                        </div>
+                        <div style="font-size:13px;font-weight:900;color:#1e293b;">Rp ${Number(prod.price).toLocaleString('id-ID')}</div>
+                    </div>`;
+            }
         }
     });
 
