@@ -62,7 +62,7 @@ exports.getDashboardData = async (req, res) => {
         try {
             const [userRow] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
             if (userRow[0]) {
-                userName = userRow[0].name || 'Admin';
+                userName = userRow[0].fullname || userRow[0].name || 'Admin';
                 slug = userRow[0].slug || userRow[0].username || 'username';
             }
         } catch(e) { console.log('User query note:', e.message); }

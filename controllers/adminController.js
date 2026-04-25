@@ -755,7 +755,7 @@ exports.getGlobalAnalytics = async (req, res) => {
 exports.getWithdrawalQueue = async (req, res) => {
     try {
         const [withdrawals] = await db.execute(
-            `SELECT w.*, u.name as user_name, u.email as user_email 
+            `SELECT w.*, u.fullname as user_name, u.email as user_email 
              FROM withdrawals w 
              LEFT JOIN users u ON w.user_id = u.id 
              ORDER BY w.id DESC`

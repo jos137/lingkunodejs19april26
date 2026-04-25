@@ -249,11 +249,11 @@ let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '
                 <div style="margin-left: 28px;">
                     <p style="font-weight:400; font-size:11px; color:#166534; margin-bottom:12px; opacity:0.8;">Ijinkan orang lain menjual produk ini dan berikan komisi sesuai persentase di bawah.</p>
                     <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="font-size:14px; font-weight:700; color:#166534;">Besar Komisi:</span>
+                        <span style="font-size:14px; font-weight:600; color:#374151;">Besar Komisi:</span>
                         <div style="position:relative; display:flex; align-items:center;">
-                            <input type="number" name="commission_percent" class="ef-input" value="<%= p.commission_percent || 20 %>" step="1" min="0" max="100" 
-                                style="width: 100px; padding: 10px 15px; margin:0; border: 2px solid #bbf7d0; border-radius: 8px; font-weight: 800; color: #166534; font-size: 16px; -moz-appearance: textfield; appearance: none;">
-                            <span style="margin-left: 10px; font-weight:900; color:#166534; font-size: 16px;">%</span>
+                            <input type="number" name="commission_percent" class="ef-input" value="<%= parseFloat(p.commission_percent || 20) %>" step="1" min="0" max="100" 
+                                style="width: 80px; padding: 10px 12px; margin:0; font-weight: 500; font-size: 14px;">
+                            <span style="margin-left: 8px; font-weight:600; color:#374151; font-size: 14px;">%</span>
                         </div>
                     </div>
                 </div>
