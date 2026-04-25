@@ -435,7 +435,7 @@
         <div class="sidebar-bottom">
             <% if (locals.isLocal) { %>
                 <button onclick="triggerDeploy(this)" class="sidebar-link" style="width:100%; border:none; background: #059669; color: white; cursor:pointer;">
-                    <i class="fas fa-rocket"></i><span>Push to Live</span>
+                    <i class="fas fa-code-branch"></i><span>Push to Git</span>
                 </button>
             <% } %>
         </div>
@@ -623,24 +623,30 @@
         if (menuToggle) menuToggle.addEventListener('click', toggleSidebar);
         if (overlay) overlay.addEventListener('click', toggleSidebar);
 
-        // Push to Live Function
+        // Push to Git Function
         async function triggerDeploy(btn) {
-            if (!confirm('Yakin mau terbangkan kodingan ke Live (Hostinger)?')) return;
+            console.log('Push to Git triggered...');
+            if (!confirm('Yakin mau Push kodingan ke Git Repository?')) return;
             
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Deploying...</span>';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Pushing...</span>';
             
             try {
-                const res = await fetch('/admin/dev/push', { method: 'POST' });
+                const res = await fetch('/admin/dev/push', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 const data = await res.json();
+                console.log('Push Result:', data);
                 if (data.success) {
-                    alert('BERHASIL! Kodingan sedang terbang ke Hostinger. Tunggu 1 menit lalu refresh.');
+                    alert('BERHASIL! Kodingan sudah ter-push ke Git Repository.');
                 } else {
                     alert('Gagal: ' + data.message);
                 }
             } catch (e) {
-                alert('Error koneksi ke server lokal.');
+                console.error('Push Error:', e);
+                alert('Error koneksi ke server: ' + e.message);
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

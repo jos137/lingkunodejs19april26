@@ -35,6 +35,10 @@ async function ensureTables() {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
+        // AUTO-HEAL: Ensure 'type' is VARCHAR and can hold 'affiliate'
+        try {
+            await db.execute("ALTER TABLE page_blocks MODIFY COLUMN type VARCHAR(50) DEFAULT 'product'");
+        } catch(e) {}
     } catch(e) { /* tables already exist */ }
 }
 
@@ -161,8 +165,12 @@ exports.savePageData = async (req, res) => {
                 let content = b.content || '';
                 if (typeof content === 'object') content = JSON.stringify(content);
                 
-                placeholders.push('(?, ?, ?, ?, ?)');
-                values.push(pageId, b.type, content, (b.visible == 1 || b.visible === true) ? 1 : 0, i);
+                // Whitelist allowed types to prevent database errors
+                const allowed = ['image', 'text', 'video', 'product', 'button', 'divider', 'affiliate'];
+                if (allowed.includes(b.type)) {
+                    placeholders.push('(?, ?, ?, ?, ?)');
+                    values.push(pageId, b.type, content, (b.visible == 1 || b.visible === true) ? 1 : 0, i);
+                }
             });
 
             const sql = `INSERT INTO page_blocks (page_id, type, content, visible, block_order) VALUES ${placeholders.join(', ')}`;
@@ -174,7 +182,7 @@ exports.savePageData = async (req, res) => {
     } catch (err) {
         if (connection) await connection.rollback();
         console.error('Save Page Error:', err.message);
-        res.json({ success: false, message: 'Gagal menyimpan cepat.' });
+        res.json({ success: false, message: 'Gagal menyimpan: ' + err.message });
     } finally {
         if (connection) connection.release();
     }
@@ -349,8 +357,12 @@ exports.renderUserPage = async (req, res) => {
                 const marketplacePids = pids.filter(id => !ownerPids.includes(id));
                 
                 if (marketplacePids.length > 0) {
-                    // Use db.query for dynamic IN clause
-                    const [rows] = await db.query(`SELECT * FROM products WHERE id IN (${marketplacePids.join(',')})`);
+                    // Filter out duplicates and ensure numbers
+                    const uniqueMarketplacePids = [...new Set(marketplacePids)];
+                    const [rows] = await db.execute(
+                        `SELECT * FROM products WHERE id IN (${uniqueMarketplacePids.map(() => '?').join(',')})`,
+                        uniqueMarketplacePids
+                    );
                     extraRows = rows;
                 }
             }

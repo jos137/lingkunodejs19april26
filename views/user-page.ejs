@@ -120,22 +120,7 @@
                         </div>
                     <% } %>
                 
-                <% } else if (block.type === 'product' && block.pid) { %>
-                    <% 
-                        const prod = products.find(p => p.id == block.pid); 
-                    %>
-                    <% if (prod) { %>
-                        <a href="/p/<%= prod.id %>" class="block-product">
-                            <div class="product-thumb">
-                                <img src="<%= img(prod.processed_thumb, 'products') %>" alt="Product Thumbnail" onerror="this.onerror=null; this.src='/images/placeholder.png'">
-                            </div>
-                            <div class="product-info">
-                                <div class="product-name"><%= prod.name %></div>
-                                <div class="product-price">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
-                            </div>
-                            <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 12px;"></i>
-                        </a>
-                    <% } %>
+                
                 <% } else if (block.type === 'divider') { %>
                     <% 
                         let thickness = block.size === 'thick' ? '4px' : (block.size === 'medium' ? '2px' : '1px');
@@ -156,20 +141,24 @@
                         const bgColor = colorMap[block.color] || colorMap.default;
                     %>
                     <a href="<%= block.link %>" class="block-button" target="_blank" style="background: <%= bgColor %>; box-shadow: 0 6px 15px -3px <%= bgColor %>44;"><%= block.label %></a>
-                <% } else if (block.type === 'affiliate' && block.pid) { %>
+                <% } else if ((block.type === 'product' || block.type === 'affiliate') && block.pid) { %>
                     <% 
                         const prod = products.find(p => p.id == block.pid); 
+                        const isAff = block.type === 'affiliate';
                     %>
                     <% if (prod) { %>
-                        <a href="/p/<%= prod.id %>?aff=<%= user.slug %>" class="block-product" style="border-color: #f59e0b;">
-                            <div class="product-thumb" style="background: #fff7ed; color: #f59e0b; border-color: #ffedd5;">
-                                <img src="<%= img(prod.processed_thumb, 'products') %>" alt="Affiliate Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                        <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product" style="<%= isAff ? 'border-color: #f59e0b;' : '' %>">
+                            <div class="product-thumb" style="<%= isAff ? 'background: #fff7ed; color: #f59e0b; border-color: #ffedd5;' : '' %>">
+                                <img src="<%= img(prod.processed_thumb, 'products') %>" alt="Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
                             </div>
                             <div class="product-info">
                                 <div class="product-name"><%= prod.name %></div>
-                                <div class="product-price" style="color: #f59e0b;">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                                <div class="product-price" style="<%= isAff ? 'color: #f59e0b;' : '' %>">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
                             </div>
-                            <div style="background: #f59e0b; color: white; font-size: 8px; font-weight: 800; padding: 4px 8px; border-radius: 20px; text-transform: uppercase;">Promote</div>
+                            <% if (isAff) { %>
+                                <div style="background: #f59e0b; color: white; font-size: 8px; font-weight: 800; padding: 4px 8px; border-radius: 20px; text-transform: uppercase;">Promote</div>
+                            <% } %>
+                            <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 12px;"></i>
                         </a>
                     <% } %>
                 <% } %>

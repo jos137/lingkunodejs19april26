@@ -1285,12 +1285,8 @@ exports.getAffiliateStats = async (req, res) => {
 
 // ===================== DEV TOOLS (LOCAL ONLY) =====================
 exports.autoDeploy = async (req, res) => {
+    const { exec } = require('child_process');
     try {
-        // Safety check: Only allow if hostname is localhost
-        if (req.hostname !== 'localhost' && req.hostname !== '127.0.0.1') {
-            return res.status(403).json({ success: false, message: 'Fitur ini hanya untuk Local Dev!' });
-        }
-
         console.log('--- AUTO DEPLOY STARTED ---');
         
         // 1. Check if there are any changes first
@@ -1304,7 +1300,7 @@ exports.autoDeploy = async (req, res) => {
                 return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
             }
 
-            const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
+            const commitMsg = `Push to Git: ${new Date().toLocaleString()}`;
             // Use GIT_TERMINAL_PROMPT=0 to prevent hanging on password prompts
             const command = `export GIT_TERMINAL_PROMPT=0 && git add . && git commit -m "${commitMsg}" && git push origin master`;
             
@@ -1318,7 +1314,7 @@ exports.autoDeploy = async (req, res) => {
                     return res.json({ success: false, message: msg });
                 }
                 console.log('--- AUTO DEPLOY SUCCESS ---');
-                res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+                res.json({ success: true, message: 'BERHASIL! Kodingan sudah ter-push ke Git Repository.' });
             });
         });
     } catch (globalErr) {

@@ -226,7 +226,7 @@
                 <div class="block-item" data-type="<%= block.type %>" data-id="<%= block.id %>">
                     <div class="block-header">
                         <i class="fas fa-grip-lines block-drag"></i>
-                        <span class="block-type-label">≡ <%= block.type.toUpperCase() %></span>
+                        <span class="block-type-label">≡ <%= (block.type && block.type !== '-' ? block.type : 'ELEMENT').toUpperCase() %></span>
                         <button class="block-action visibility <%= block.visible === 0 ? 'hidden' : '' %>" onclick="toggleBlockVisibility(this)" title="Toggle visibility">
                             <i class="fas fa-eye<%= block.visible === 0 ? '-slash' : '' %>"></i>
                         </button>
@@ -500,7 +500,7 @@ function addBlock(type) {
     } else if (type === 'affiliate') {
         bodyHTML = `
             <label class="b-label">Pilih Produk Affiliate (Marketplace)</label>
-            <select class="b-input b-select b-content" onchange="triggerAutoSave()">
+            <select class="b-input b-select b-content" onchange="triggerAutoSave(); updatePreview();">
                 <option value="">-- Pilih Produk Marketplace --</option> 
                 ${marketplaceList.map(p => `<option value="${p.id}">${p.name} (${p.seller_name})</option>`).join('')} 
             </select>
@@ -655,16 +655,18 @@ async function saveBuilder() {
             const existing = item.querySelector('.block-image-preview img')?.src;
             content = uploaded || existing || '';
         } else if (type === 'button') {
-            const label = item.querySelector('.b-btn-label').value;
-            const link = item.querySelector('.b-btn-link').value;
-            const color = item.querySelector('.b-btn-color').value;
+            const label = item.querySelector('.b-btn-label')?.value || '';
+            const link = item.querySelector('.b-btn-link')?.value || '';
+            const color = item.querySelector('.b-btn-color')?.value || 'default';
             content = JSON.stringify({ label, link, color });
         } else if (type === 'divider') {
-            const style = item.querySelector('.b-div-style').value;
-            const size = item.querySelector('.b-div-size').value;
+            const style = item.querySelector('.b-div-style')?.value || 'solid';
+            const size = item.querySelector('.b-div-size')?.value || 'thin';
             content = JSON.stringify({ style, size });
         } else if (type === 'text') {
             content = item.querySelector('.custom-editor')?.innerHTML || '';
+        } else if (type === 'affiliate' || type === 'product') {
+            content = item.querySelector('.b-content')?.value || '';
         } else {
             content = item.querySelector('.b-content')?.value || '';
         }
@@ -680,9 +682,11 @@ async function saveBuilder() {
         });
         const d = await res.json();
         const status = document.getElementById('saveStatus');
+        
         if (d.success) {
             status.innerHTML = '<i class="fas fa-check-circle"></i> Tersimpan';
             status.classList.add('saved');
+            status.classList.add('show');
             setTimeout(() => status.classList.remove('show'), 2000);
         }
     } catch(e) {}
