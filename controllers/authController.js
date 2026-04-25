@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+const mailer = require('../utils/mailer');
 
 exports.login = async (req, res) => {
     const { email, password } = req.body;
@@ -48,10 +50,21 @@ exports.register = async (req, res) => {
             return res.render('register', { error: 'Email sudah terdaftar', layout: false });
         }
 
+        // Check for referral cookie
+        let referredBy = null;
+        if (req.cookies.ref_by) {
+            const [referrers] = await db.execute("SELECT id FROM users WHERE affiliate_code = ?", [req.cookies.ref_by]);
+            if (referrers.length > 0) referredBy = referrers[0].id;
+        }
+
+        // Generate Affiliate Code for new user
+        const cleanName = (fullname || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
+        const affiliateCode = cleanName + Math.floor(1000 + Math.random() * 9000);
+
         const hashedPassword = await bcrypt.hash(password, 10);
         const [result] = await db.execute(
-            'INSERT INTO users (fullname, email, password, whatsapp, role, plan) VALUES (?, ?, ?, ?, ?, ?)',
-            [fullname, email, hashedPassword, whatsapp || '628123456789', 'user', 'free']
+            'INSERT INTO users (fullname, email, password, whatsapp, role, plan, affiliate_code, referred_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [fullname, email, hashedPassword, whatsapp || '628123456789', 'user', 'free', affiliateCode, referredBy]
         );
 
         req.session.userId = result.insertId;
@@ -60,6 +73,7 @@ exports.register = async (req, res) => {
             name: fullname,
             role: 'user',
             plan: 'free',
+            affiliate_code: affiliateCode, // Add this to session
             profile_photo: null,
             slug: null,
             whatsapp: whatsapp,
@@ -87,5 +101,68 @@ exports.register = async (req, res) => {
 
 exports.logout = (req, res) => {
     req.session.destroy();
-    res.redirect('/login');
+    res.redirect('/auth/login');
+};
+
+exports.getForgotPassword = (req, res) => {
+    res.render('forgot-password', { layout: false, error: null, success: null });
+};
+
+exports.postForgotPassword = async (req, res) => {
+    const { email } = req.body;
+    try {
+        const [users] = await db.execute('SELECT id, fullname FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.render('forgot-password', { layout: false, error: 'Email tidak ditemukan', success: null });
+        }
+
+        const token = crypto.randomBytes(32).toString('hex');
+        const expiry = new Date(Date.now() + 3600000); // 1 hour
+
+        await db.execute('UPDATE users SET reset_token = ?, token_expiry = ? WHERE id = ?', [token, expiry, users[0].id]);
+
+        const resetLink = `${req.protocol}://${req.get('host')}/auth/reset-password/${token}`;
+        const sent = await mailer.sendResetPasswordEmail(email, users[0].fullname, resetLink);
+
+        if (sent) {
+            res.render('forgot-password', { layout: false, error: null, success: 'Link reset password telah dikirim ke email Anda' });
+        } else {
+            res.render('forgot-password', { layout: false, error: 'Gagal mengirim email. Pastikan SMTP sudah benar.', success: null });
+        }
+    } catch (err) {
+        console.error(err);
+        res.render('forgot-password', { layout: false, error: 'Terjadi kesalahan sistem', success: null });
+    }
+};
+
+exports.getResetPassword = async (req, res) => {
+    const { token } = req.params;
+    try {
+        const [users] = await db.execute('SELECT id FROM users WHERE reset_token = ? AND token_expiry > NOW()', [token]);
+        if (users.length === 0) {
+            return res.send('Token tidak valid atau sudah kadaluarsa.');
+        }
+        res.render('reset-password', { layout: false, token, error: null });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Kesalahan sistem');
+    }
+};
+
+exports.postResetPassword = async (req, res) => {
+    const { token, password } = req.body;
+    try {
+        const [users] = await db.execute('SELECT id FROM users WHERE reset_token = ? AND token_expiry > NOW()', [token]);
+        if (users.length === 0) {
+            return res.render('reset-password', { layout: false, token, error: 'Token tidak valid atau kadaluarsa' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await db.execute('UPDATE users SET password = ?, reset_token = NULL, token_expiry = NULL WHERE id = ?', [hashedPassword, users[0].id]);
+
+        res.render('login', { error: null, success: 'Password berhasil diubah. Silakan login.', layout: false });
+    } catch (err) {
+        console.error(err);
+        res.render('reset-password', { layout: false, token, error: 'Gagal mengubah password' });
+    }
 };

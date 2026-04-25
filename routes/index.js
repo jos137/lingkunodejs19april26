@@ -12,12 +12,8 @@ router.get('/', (req, res) => {
     res.render('index', { layout: false });
 });
 
-// Logout shortcut - redirect to auth/logout
-router.get('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        res.redirect('/');
-    });
-});
+// Affiliate / Referral Tracking
+router.get('/ref/:affiliateCode', indexController.handleReferral);
 
 // Product Detail Page
 router.get('/p/:productId', indexController.renderProductPage);

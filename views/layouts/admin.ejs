@@ -98,6 +98,32 @@
         .sidebar-link.logout { color: #ef4444; }
         .sidebar-link.logout:hover { background: rgba(239,68,68,0.08); }
 
+        /* ===== SUBMENU ===== */
+        .sidebar-submenu {
+            display: none;
+            background: rgba(0,0,0,0.2);
+            padding-left: 12px;
+        }
+        .sidebar-submenu.show { display: block; }
+        .sidebar-submenu .sidebar-link {
+            padding: 9px 22px;
+            font-size: 12px;
+        }
+        .dropdown-arrow {
+            margin-left: auto;
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+        .sidebar-dropdown.active .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+        .sidebar-dropdown.active .sidebar-submenu {
+            display: block;
+        }
+        .dropdown-trigger {
+            cursor: pointer;
+        }
+
         /* ===== MAIN CONTENT ===== */
         .main-content {
             margin-left: 230px;
@@ -368,25 +394,42 @@
                 <i class="fas fa-book"></i><span>Panduan</span>
             </a>
 
-            <div class="sidebar-section-label">Admin Area</div>
-            <a href="/admin/users" class="sidebar-link <%= title === 'Manajemen User' ? 'active' : '' %>">
-                <i class="fas fa-users"></i><span>Manajemen User</span>
-            </a>
-            <a href="/admin/analytics" class="sidebar-link <%= title === 'Analisa Global' ? 'active' : '' %>">
-                <i class="fas fa-globe-asia"></i><span>Analisa Global</span>
-            </a>
-            <a href="/admin/withdrawal-queue" class="sidebar-link <%= title === 'WD Antrian' ? 'active' : '' %>">
-                <i class="fas fa-layer-group"></i><span>WD Antrian</span>
-                <% if (locals.pendingWDCount && pendingWDCount > 0) { %>
-                    <span class="notif-badge"><%= pendingWDCount %></span>
-                <% } %>
-            </a>
-            <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
-                <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>
-            </a>
-            <a href="/admin/affiliate" class="sidebar-link <%= title === 'Affiliate' ? 'active' : '' %>">
-                <i class="fas fa-handshake"></i><span>Affiliate</span>
-            </a>
+            <div class="sidebar-dropdown <%= (title === 'Affiliate' || title === 'Marketplace' || title === 'Statistik Affiliate') ? 'active' : '' %>">
+                <a href="javascript:void(0)" class="sidebar-link dropdown-trigger">
+                    <i class="fas fa-handshake"></i><span>Affiliate</span>
+                    <i class="fas fa-chevron-down dropdown-arrow"></i>
+                </a>
+                <div class="sidebar-submenu">
+                    <a href="/admin/affiliate" class="sidebar-link <%= title === 'Affiliate' ? 'active' : '' %>">
+                        <i class="fas fa-link"></i><span>Link Affiliate</span>
+                    </a>
+                    <a href="/admin/marketplace" class="sidebar-link <%= title === 'Marketplace' ? 'active' : '' %>">
+                        <i class="fas fa-store"></i><span>Marketplace</span>
+                    </a>
+                    <a href="/admin/affiliate-stats" class="sidebar-link <%= title === 'Statistik Affiliate' ? 'active' : '' %>">
+                        <i class="fas fa-chart-line"></i><span>Statistik</span>
+                    </a>
+                </div>
+            </div>
+
+            <% if (user && user.role === 'admin') { %>
+                <div class="sidebar-section-label">Admin Area</div>
+                <a href="/admin/users" class="sidebar-link <%= title === 'Manajemen User' ? 'active' : '' %>">
+                    <i class="fas fa-users"></i><span>Manajemen User</span>
+                </a>
+                <a href="/admin/analytics" class="sidebar-link <%= title === 'Analisa Global' ? 'active' : '' %>">
+                    <i class="fas fa-globe-asia"></i><span>Analisa Global</span>
+                </a>
+                <a href="/admin/withdrawal-queue" class="sidebar-link <%= title === 'WD Antrian' ? 'active' : '' %>">
+                    <i class="fas fa-layer-group"></i><span>WD Antrian</span>
+                    <% if (locals.pendingWDCount && pendingWDCount > 0) { %>
+                        <span class="notif-badge"><%= pendingWDCount %></span>
+                    <% } %>
+                </a>
+                <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
+                    <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>
+                </a>
+            <% } %>
         </nav>
 
         <div class="sidebar-bottom">
@@ -400,6 +443,16 @@
 
     <!-- MAIN -->
     <main class="main-content">
+        <% if (locals.features && features.enable_announcement) { %>
+            <!-- FEATURE FLAG TEST: ANNOUNCEMENT BANNER -->
+            <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 12px 32px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <div style="width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bullhorn"></i>
+                </div>
+                <span>PENGUMUMAN: Fitur Kontrol Sekarang Aktif! Coba matikan flag "enable_announcement" di menu Kontrol Fitur untuk menyembunyikan banner ini.</span>
+                <button onclick="this.parentElement.style.display='none'" style="margin-left: auto; background: transparent; border: none; color: white; cursor: pointer; font-size: 18px; line-height: 1;">&times;</button>
+            </div>
+        <% } %>
         <div class="page-header">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <button class="mobile-menu-toggle" id="menuToggle">
@@ -539,6 +592,14 @@
 
         setupDropdown(profileBtn, profileMenu);
         setupDropdown(notifBtn, notifMenu);
+
+        // Sidebar Submenu Toggle
+        document.querySelectorAll('.dropdown-trigger').forEach(trigger => {
+            trigger.addEventListener('click', (e) => {
+                const parent = trigger.closest('.sidebar-dropdown');
+                parent.classList.toggle('active');
+            });
+        });
 
         document.addEventListener('click', (e) => {
             document.querySelectorAll('.dropdown-menu').forEach(m => {

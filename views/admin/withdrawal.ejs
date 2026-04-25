@@ -62,11 +62,16 @@ const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, 
 const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
 %>
 
-<div class="wd-summary" style="margin-bottom: 14px;">
+<div class="wd-summary" style="margin-bottom: 14px; grid-template-columns: 1fr 1fr;">
     <div class="wd-balance">
         <div class="wd-balance-label">SALDO TERSEDIA</div>
         <div class="wd-balance-value"><%= fmt(bal) %></div>
         <div class="wd-balance-sub">Limit Harian: Rp 100.000.000 &nbsp;|&nbsp; Terpakai: Rp 0</div>
+    </div>
+    <div class="wd-balance" style="background: linear-gradient(135deg, #10b981, #059669);">
+        <div class="wd-balance-label" style="color: rgba(255,255,255,0.8);">KOMISI AFFILIATE</div>
+        <div class="wd-balance-value"><%= fmt(locals.affiliate_commission || 0) %></div>
+        <div class="wd-balance-sub" style="color: rgba(255,255,255,0.7);">Total akumulasi dari referral Anda</div>
     </div>
 </div>
 

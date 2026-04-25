@@ -1,100 +1,142 @@
 <style>
-    .affiliate-panel { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 28px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-    .settings-title { font-size: 18px; font-weight: 900; color: #111827; margin-bottom: 6px; }
-    .settings-desc { font-size: 13px; color: #64748b; margin-bottom: 24px; border-bottom: 1.5px solid #f8fafc; padding-bottom: 16px; }
+    .aff-container { max-width: 1200px; margin: 0 auto; padding-bottom: 60px; }
     
-    .s-group { margin-bottom: 24px; }
-    .s-label { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; display: block; }
-    .s-input { width: 100%; padding: 12px 16px; border: 1.5px solid #e5e7eb; border-radius: 12px; font-family: inherit; font-size: 14px; color: #111827; outline: none; transition: 0.2s; }
-    .s-input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,0.05); }
+    /* Stats Row */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-bottom: 32px; }
+    .stat-card { background: #fff; padding: 24px; border-radius: 16px; border: 1px solid #e5e7eb; position: relative; overflow: hidden; }
+    .stat-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .stat-value { font-size: 26px; font-weight: 900; color: #1e293b; }
+    .stat-icon { position: absolute; top: 20px; right: 20px; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    
+    /* Main Link Box */
+    .link-box { background: #fff; padding: 32px; border-radius: 20px; border: 1px solid #e5e7eb; margin-bottom: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
+    .link-title { font-size: 18px; font-weight: 900; color: #111827; margin-bottom: 6px; }
+    .link-desc { font-size: 13px; color: #64748b; margin-bottom: 20px; }
+    .input-group { position: relative; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 14px; padding: 4px; display: flex; align-items: center; }
+    .ref-input { flex: 1; background: transparent; border: none; padding: 12px 18px; font-family: 'Monaco', monospace; font-size: 14px; color: #1e293b; outline: none; }
+    .btn-copy { background: #111827; color: #fff; border: none; padding: 10px 24px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
 
-    .aff-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 32px; }
-    .aff-stat-card { padding: 20px; border: 1.5px solid #f1f5f9; border-radius: 16px; transition: 0.2s; }
-    .aff-stat-card:hover { border-color: #e2e8f0; background: #fbfcfd; }
-    .aff-stat-label { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .aff-stat-value { font-size: 20px; font-weight: 900; color: #111827; }
+    /* Generic Card Style */
+    .market-card { background: #fff; border-radius: 18px; border: 1px solid #e5e7eb; overflow: hidden; margin-bottom: 32px; }
+    .market-header { padding: 22px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fafafa; }
+    .market-title { font-size: 16px; font-weight: 950; color: #1e293b; }
+    
+    /* Search & Filter Bar */
+    .filter-bar { padding: 18px 24px; background: #fff; border-bottom: 1px solid #f1f5f9; display: flex; gap: 12px; flex-wrap: wrap; }
+    .f-input { padding: 10px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 13px; outline: none; min-width: 200px; }
+    .f-price { width: 130px; }
+    .btn-filter { background: #2563eb; color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; }
 
-    .btn-copy { padding: 12px 24px; border: none; border-radius: 12px; background: #111827; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; flex-shrink: 0; }
-    .btn-copy:hover { background: #000; transform: translateY(-1px); }
+    /* Product Items */
+    .prod-list { padding: 0; margin: 0; }
+    .prod-item { list-style: none; padding: 18px 24px; border-bottom: 1px solid #f8fafc; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    .prod-item:last-child { border-bottom: none; }
+    .prod-info { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 180px; }
+    .prod-img { width: 44px; height: 44px; border-radius: 10px; background: #f1f5f9; object-fit: cover; border: 1.5px solid #e5e7eb; }
+    .prod-name { font-size: 14px; font-weight: 800; color: #334155; margin-bottom: 2px; }
+    .prod-price { font-size: 12px; font-weight: 600; color: #94a3b8; }
+    .prod-comm { text-align: right; min-width: 90px; }
+    .comm-label { font-size: 9px; font-weight: 900; color: #10b981; text-transform: uppercase; margin-bottom: 2px; }
+    .comm-value { font-size: 14px; font-weight: 900; color: #1e293b; }
+    .btn-p-copy { background: #fff; border: 1.5px solid #e2e8f0; color: #64748b; padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 850; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+    .btn-p-copy:hover { border-color: #10b981; color: #10b981; }
 
-    .aff-link-container { display: flex; gap: 12px; }
+    /* Pagination */
+    .pagination { padding: 18px 24px; display: flex; justify-content: center; gap: 6px; border-top: 1px solid #f1f5f9; }
+    .page-link { padding: 8px 14px; border-radius: 8px; border: 1.5px solid #e2e8f0; font-size: 13px; font-weight: 700; color: #64748b; text-decoration: none; transition: 0.2s; }
+    .page-link:hover { border-color: #cbd5e1; background: #f8fafc; }
+    .page-link.active { background: #111827; border-color: #111827; color: #fff; }
 
     @media (max-width: 768px) {
-        .aff-card-grid { grid-template-columns: 1fr; gap: 12px; }
-        .aff-link-container { flex-direction: column; }
-        .btn-copy { width: 100%; padding: 14px; }
-        .affiliate-panel { padding: 20px; }
-        .settings-title { font-size: 16px; }
-        .settings-desc { font-size: 12px; }
-        .aff-stat-card { padding: 16px; }
+        .prod-item { gap: 12px; }
+        .prod-info { flex: 1; }
+        .prod-comm { text-align: right; }
+        .prod-btn-w { width: 100%; margin-top: 4px; }
+        .btn-p-copy { width: 100%; text-align: center; }
+        .filter-bar { flex-direction: column; }
+        .f-input, .f-price { width: 100%; }
     }
 </style>
 
-<div class="affiliate-panel">
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 12px;">
-        <div style="flex: 1;">
-            <div class="settings-title">Program Affiliate Lingku.xyz</div>
-            <div class="settings-desc" style="border:none; margin:0; padding:0;">Ajak temanmu bergabung dan dapatkan komisi Rp 50.000 dari setiap transaksi Pro mereka!</div>
+<div class="aff-container">
+    <!-- LINK REFERRAL PLATFORM -->
+    <div class="link-box">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+                <h2 class="link-title">Program Affiliate Lingku.xyz</h2>
+                <p class="link-desc">Referalkan member baru ke platform kami dan dapatkan bagi hasil otomatis.</p>
+            </div>
+            <div style="width: 44px; height: 44px; background: #f0fdf4; border-radius: 12px; display:flex; align-items:center; justify-content:center; color: #10b981;">
+                <i class="fas fa-handshake"></i>
+            </div>
         </div>
-        <div style="width: 50px; height: 50px; background: #f0fdf4; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #10b981; font-size: 20px; flex-shrink: 0;">
-            <i class="fas fa-handshake"></i>
-        </div>
-    </div>
-
-    <hr style="border: none; border-top: 1.5px solid #f8fafc; margin: 24px 0;">
-
-    <div class="s-group">
-        <label class="s-label">Link Referal Kamu</label>
-        <div class="aff-link-container">
-            <input type="text" class="s-input" value="<%= affiliateLink %>" id="affLink" readonly style="background: #f9fafb; font-family: monospace; font-weight: 600; text-overflow: ellipsis;">
-            <button class="btn-copy" onclick="copyAffLink()">
-                <i class="fas fa-copy"></i> Salin Link
-            </button>
-        </div>
-        <div style="font-size: 12px; color: #94a3b8; margin-top: 10px;">* Bagikan link ini di sosial media atau grup WA kamu.</div>
-    </div>
-
-    <hr style="border: none; border-top: 1.5px solid #f8fafc; margin: 32px 0;">
-
-    <div class="settings-title" style="font-size: 15px;">Statistik Performa</div>
-    <div class="aff-card-grid">
-        <div class="aff-stat-card">
-            <div class="aff-stat-label">Total Klik</div>
-            <div class="aff-stat-value">1,284</div>
-        </div>
-        <div class="aff-stat-card">
-            <div class="aff-stat-label">Member Baru</div>
-            <div class="aff-stat-value">56 User</div>
-        </div>
-        <div class="aff-stat-card" style="background: #f0fdf4; border-color: #dcfce7;">
-            <div class="aff-stat-label" style="color: #10b981;">Total Komisi</div>
-            <div class="aff-stat-value" style="color: #15803d;">Rp 250.000</div>
+        <div class="input-group">
+            <input type="text" class="ref-input" readonly value="<%= protocol %>://<%= host %>/ref/<%= affCode %>" id="platLink">
+            <button class="btn-copy" onclick="copyValue('platLink')">Salin Link</button>
         </div>
     </div>
 
-    <div style="margin-top: 40px; padding: 20px; background: #fffcf0; border: 1.5px solid #fef3c7; border-radius: 16px; display: flex; gap: 16px; align-items: center;">
-        <i class="fas fa-info-circle" style="color: #d97706; font-size: 20px; flex-shrink: 0;"></i>
-        <div style="font-size: 12px; color: #92400e; font-weight: 600; line-height: 1.5;">
-            Komisi akan dicairkan otomatis ke Saldo Utama kamu setiap tanggal 1 setiap bulannya jika akun yang kamu ajak melakukan pembayaran sukses.
+    <!-- STATS -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#eff6ff; color:#3b82f6;"><i class="fas fa-users"></i></div>
+            <div class="stat-label">Total Referan Member</div>
+            <div class="stat-value"><%= totalReferrals %></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#f0fdf4; color:#10b981;"><i class="fas fa-wallet"></i></div>
+            <div class="stat-label">Estimasi Komisi</div>
+            <div class="stat-value">Rp 0</div>
         </div>
     </div>
+
+    <!-- 1. AFFILIATE PRODUK (Milik Anda) -->
+    <div class="market-card">
+        <div class="market-header">
+            <h3 class="market-title">Affiliate Produk (Milik Anda)</h3>
+            <span style="font-size: 10px; padding: 4px 10px; background: #3b82f6; color: #fff; border-radius: 50px; font-weight: 800;">PRODUK ANDA</span>
+        </div>
+        <ul class="prod-list">
+            <% if (myProducts && myProducts.length > 0) { %>
+                <% myProducts.forEach((p, idx) => { %>
+                    <li class="prod-item">
+                        <div class="prod-info">
+                            <img src="<%= img(p.thumbnail) %>" class="prod-img">
+                            <div>
+                                <div class="prod-name"><%= p.name %></div>
+                                <div class="prod-price"><%= new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(p.price) %></div>
+                            </div>
+                        </div>
+                        <div class="prod-comm">
+                            <div class="comm-label">Komisi (<%= p.commission_percent || 20 %>%)</div>
+                            <div class="comm-value">Rp <%= new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(p.commission_value) %></div>
+                        </div>
+                        <div class="prod-btn-w">
+                            <input type="hidden" id="myPLink<%= idx %>" value="<%= protocol %>://<%= host %>/p/<%= p.id %>?ref=<%= affCode %>">
+                            <button class="btn-p-copy" onclick="copyValue('myPLink<%= idx %>')">Salin Link</button>
+                        </div>
+                    </li>
+                <% }) %>
+            <% } else { %>
+                <li style="padding: 40px; text-align: center; color: #94a3b8; font-size: 13px;">Belum ada produk pribadi.</li>
+            <% } %>
+        </ul>
+    </div>
+
+
 </div>
 
+<div id="toast" style="position:fixed; bottom:40px; left:50%; transform:translateX(-50%); background:#111827; color:#fff; padding:12px 24px; border-radius:50px; font-size:12px; font-weight:700; visibility:hidden; opacity:0; transition:0.3s; z-index:9999;">Link disalin!</div>
+
 <script>
-    function copyAffLink() {
-        const copyText = document.getElementById("affLink");
-        copyText.select();
-        copyText.setSelectionRange(0, 99999);
-        navigator.clipboard.writeText(copyText.value);
-        
-        const btn = document.querySelector('.btn-copy');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fas fa-check"></i> Tersalin!';
-        btn.style.background = '#10b981';
-        
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.style.background = '#111827';
-        }, 2000);
-    }
+function copyValue(id) {
+    const el = document.getElementById(id);
+    const val = el.value || el.innerText;
+    navigator.clipboard.writeText(val).then(() => {
+        const t = document.getElementById('toast');
+        t.style.visibility = 'visible';
+        t.style.opacity = '1';
+        setTimeout(() => { t.style.visibility = 'hidden'; t.style.opacity = '0'; }, 2000);
+    });
+}
 </script>

@@ -46,6 +46,16 @@ exports.getDashboardData = async (req, res) => {
             totalProducts = prodRow[0].total;
         } catch(e) {}
 
+        // Today's Sales
+        let todaySales = 0;
+        try {
+            const [todayRow] = await db.execute(
+                "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND status = 'completed' AND DATE(created_at) = CURDATE()",
+                [userId]
+            );
+            todaySales = todayRow[0].total;
+        } catch(e) { todaySales = 0; }
+
         // User info (handle missing slug column gracefully)
         let slug = 'username';
         let userName = 'Admin';
@@ -84,6 +94,7 @@ exports.getDashboardData = async (req, res) => {
                 balance: balance,
                 total_sales: totalSales,
                 total_products: totalProducts,
+                today_sales: todaySales,
                 platform_sales: 0,
                 slug: slug
             },

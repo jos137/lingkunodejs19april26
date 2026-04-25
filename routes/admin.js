@@ -24,6 +24,13 @@ function isAuth(req, res, next) {
     res.redirect('/auth/login');
 }
 
+function isAdmin(req, res, next) {
+    if (req.session && req.session.user && req.session.user.role === 'admin') {
+        return next();
+    }
+    res.status(403).send('Akses dilarang: Hanya Admin yang bisa mengakses halaman ini.');
+}
+
 // Multer setup for image uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -96,24 +103,26 @@ router.post('/guides/add', adminController.addGuide);
 router.get('/guides/delete/:id', adminController.deleteGuide);
 
 // ===== USERS (Admin) =====
-router.get('/users', adminController.getUsers);
-router.get('/users/detail/:id', adminController.getUserBuyers);
+router.get('/users', isAdmin, adminController.getUsers);
+router.get('/users/detail/:id', isAdmin, adminController.getUserBuyers);
 
 // ===== GLOBAL ANALYTICS =====
-router.get('/analytics', adminController.getGlobalAnalytics);
+router.get('/analytics', isAdmin, adminController.getGlobalAnalytics);
 
 // ===== WITHDRAWAL QUEUE (Admin) =====
-router.get('/withdrawal-queue', adminController.getWithdrawalQueue);
-router.post('/withdrawal-queue/:id/approve', adminController.approveWD);
-router.post('/withdrawal-queue/:id/reject', adminController.rejectWD);
+router.get('/withdrawal-queue', isAdmin, adminController.getWithdrawalQueue);
+router.post('/withdrawal-queue/:id/approve', isAdmin, adminController.approveWD);
+router.post('/withdrawal-queue/:id/reject', isAdmin, adminController.rejectWD);
 
 // ===== FEATURE FLAGS =====
-router.get('/features', adminController.getFeatureControl);
-router.post('/features/create', adminController.createFeature);
-router.post('/features/:id/toggle', adminController.toggleFeature);
-router.post('/features/:id/delete', adminController.deleteFeature);
+router.get('/features', isAdmin, adminController.getFeatureControl);
+router.post('/features/create', isAdmin, adminController.createFeature);
+router.post('/features/:id/toggle', isAdmin, adminController.toggleFeature);
+router.post('/features/:id/delete', isAdmin, adminController.deleteFeature);
 // ===== AFFILIATE =====
 router.get('/affiliate', adminController.getAffiliate);
+router.get('/marketplace', adminController.getMarketplace);
+router.get('/affiliate-stats', adminController.getAffiliateStats);
 router.post('/dev/push', adminController.autoDeploy);
 
 
@@ -138,6 +147,7 @@ router.post('/settings/update-profile', uploadProfile.single('profile_photo'), a
 router.post('/settings/update-store', adminController.updateStoreSettings);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
+router.post('/settings/update-affiliate', adminController.updateAffiliateSettings);
 router.post('/settings/upload-photo', uploadProfile.single('profile_photo'), adminController.uploadProfilePhoto);
 
 module.exports = router;

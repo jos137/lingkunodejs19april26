@@ -4,6 +4,7 @@
     const balance = parseFloat(s.balance || 0);
     const totalSales = parseInt(s.total_sales || 0);
     const totalProducts = parseInt(s.total_products || 0);
+    const todaySales = parseFloat(s.today_sales || 0);
     const platformSales = parseFloat(s.platform_sales || 0);
     const userSlug = s.slug || 'username';
 %>
@@ -154,16 +155,41 @@
             </button>
         </div>
     </div>
+
+    <% if (locals.features && features.show_today_sales) { %>
+        <!-- FEATURE: PENJUALAN HARI INI (Controlled by Feature Flag) -->
+        <div class="bio-card" style="width: 320px; background: linear-gradient(135deg, #10b981, #059669); border: none; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 120px;">
+            <!-- ORNAMEN UANG (SILUET) -->
+            <i class="fas fa-money-bill-wave" style="position: absolute; right: -20px; bottom: -20px; font-size: 120px; color: rgba(255,255,255,0.12); transform: rotate(-15deg);"></i>
+            
+            <div style="position: relative; z-index: 2;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <div style="width: 32px; height: 32px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div style="font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase;">PENJUALAN HARI INI</div>
+                </div>
+                <div style="font-size: 26px; font-weight: 900; color: white; display: flex; align-items: baseline; gap: 4px;">
+                    <small style="font-size: 14px; opacity: 0.8; font-weight: 700;">Rp</small>
+                    <%= todaySales.toLocaleString('id-ID') %>
+                </div>
+                <div style="margin-top: 4px; font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.6);">
+                    <i class="fas fa-history"></i> Update otomatis
+                </div>
+            </div>
+        </div>
+    <% } %>
 </div>
 
 <style>
     @media (max-width: 640px) {
         .bio-card { width: 100% !important; min-width: 100% !important; padding: 18px !important; }
-        .bio-input-group { flex-direction: column; align-items: stretch; gap: 10px !important; }
-        .bio-input-wrap { padding: 8px 12px !important; }
+        .bio-input-group { flex-wrap: wrap; gap: 8px !important; }
+        .bio-input-wrap { width: 100% !important; flex: none !important; padding: 8px 12px !important; }
+        .bio-btn { flex: 1; justify-content: center; padding: 10px 5px !important; font-size: 11px !important; }
+        .bio-btn.primary { flex: 2; } /* Update button gets more space */
         .bio-input-wrap span { font-size: 11px !important; }
         .bio-input-wrap input { font-size: 13px !important; }
-        .bio-btn { justify-content: center; width: 100%; padding: 10px !important; font-size: 12px !important; }
         .bio-row-container { gap: 12px !important; margin-bottom: 16px !important; }
         .dash-stat-value { font-size: 16px !important; }
         .dash-stat-label { font-size: 9px !important; }

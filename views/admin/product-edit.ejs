@@ -103,10 +103,10 @@ let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '
 
 <div class="edit-header">
     <a href="/admin/products" class="edit-back"><i class="fas fa-arrow-left"></i> Kembali</a>
-    <div class="edit-title">Edit Digital</div>
+    <div class="edit-title"><%= p.id ? 'Edit Produk' : 'Tambah Produk Baru' %></div>
 </div>
 
-<form action="/admin/products/<%= p.id %>/update" method="POST" enctype="multipart/form-data" id="editorForm">
+<form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="editorForm">
 <div class="edit-grid">
     <!-- LEFT COLUMN -->
     <div>
@@ -241,6 +241,28 @@ let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '
             <label class="ef-checkbox">
                 <input type="checkbox" name="show_forever" <%= p.show_forever ? 'checked' : '' %>> Tampilkan di rak produk selamanya
             </label>
+            <label class="ef-checkbox" style="margin-top:12px; padding: 16px; background: #f0fdf4; border-radius: 12px; border: 1.5px solid #dcfce7; display: block;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                    <input type="checkbox" name="is_affiliate" <%= p.is_affiliate !== 0 ? 'checked' : '' %> style="width:18px; height:18px;"> 
+                    <span style="color:#166534; font-weight:800; font-size:14px;">BUKA PROGRAM AFFILIATE</span>
+                </div>
+                <div style="margin-left: 28px;">
+                    <p style="font-weight:400; font-size:11px; color:#166534; margin-bottom:12px; opacity:0.8;">Ijinkan orang lain menjual produk ini dan berikan komisi sesuai persentase di bawah.</p>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:14px; font-weight:700; color:#166534;">Besar Komisi:</span>
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <input type="number" name="commission_percent" class="ef-input" value="<%= p.commission_percent || 20 %>" step="1" min="0" max="100" 
+                                style="width: 100px; padding: 10px 15px; margin:0; border: 2px solid #bbf7d0; border-radius: 8px; font-weight: 800; color: #166534; font-size: 16px; -moz-appearance: textfield; appearance: none;">
+                            <span style="margin-left: 10px; font-weight:900; color:#166534; font-size: 16px;">%</span>
+                        </div>
+                    </div>
+                </div>
+            </label>
+            <style>
+                /* Hilangkan panah input number */
+                input::-webkit-outer-spin-button,
+                input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+            </style>
         </div>
 
         <!-- Jadwal -->
@@ -264,7 +286,7 @@ let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '
         
         <div class="edit-footer">
             <button type="submit" class="save-btn">
-                <i class="fas fa-save"></i> Perbarui Produk
+                <i class="fas fa-save"></i> <%= p.id ? 'Perbarui Produk' : 'Buat Produk Baru' %>
             </button>
         </div>
     </div>

@@ -833,3 +833,30 @@ exports.handleAccessLink = async (req, res) => {
         res.redirect('/');
     }
 };
+
+exports.handleReferral = async (req, res) => {
+    try {
+        const { affiliateCode } = req.params;
+        
+        // 1. Verify code exists
+        const [users] = await db.execute("SELECT id FROM users WHERE affiliate_code = ?", [affiliateCode]);
+        if (users.length === 0) return res.redirect('/');
+
+        // 2. Get cookie duration
+        const [settings] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'aff_cookie_duration'");
+        const days = settings.length > 0 ? parseInt(settings[0].setting_value) : 30;
+
+        // 3. Set Cookie
+        res.cookie('ref_by', affiliateCode, { 
+            maxAge: 1000 * 60 * 60 * 24 * days, 
+            httpOnly: true, 
+            path: '/' 
+        });
+
+        // 4. Redirect to Home
+        res.redirect('/');
+    } catch (err) {
+        console.error('Handle Referral Error:', err);
+        res.redirect('/');
+    }
+};

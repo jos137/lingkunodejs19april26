@@ -188,3 +188,45 @@ exports.sendPaymentInstructionEmail = async (orderData) => {
         return false;
     }
 };
+
+exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
+    try {
+        const transporter = await getTransporter();
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="background: #111827; padding: 40px 30px; text-align: center;">
+                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Atur Ulang Password</h2>
+                    </div>
+                    <div style="padding: 40px 30px; text-align: center;">
+                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${fullname}</strong>,<br>Kami menerima permintaan untuk mengatur ulang password akun Lingku Anda. Klik tombol di bawah ini untuk melanjutkan:</p>
+                        
+                        <div style="margin: 32px 0;">
+                            <a href="${resetLink}" style="display: inline-block; background-color: #111827; color: #ffffff; padding: 18px 36px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 16px;">ATUR ULANG PASSWORD</a>
+                        </div>
+
+                        <p style="margin: 32px 0 0; color: #94a3b8; font-size: 13px; line-height: 1.6;">Link ini hanya berlaku selama 1 jam. Jika Anda tidak merasa melakukan permintaan ini, abaikan saja email ini.</p>
+                    </div>
+                    <div style="padding: 24px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Lingku.xyz — Kelola Link dengan Percaya Diri</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku" <${fromEmail}>`,
+            to: email,
+            subject: 'Permintaan Atur Ulang Password - Lingku.xyz',
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email reset:", err);
+        return false;
+    }
+};

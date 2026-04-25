@@ -129,15 +129,19 @@ exports.updateProduct = async (req, res) => {
             thumbUpdate = ', thumbnail = ?';
             params.push('/uploads/products/' + req.file.filename);
         }
-        params.push(req.params.id);
-        
         const query = `UPDATE products SET 
             name = ?, description = ?, price = ?, stock = ?, download_url = ?, 
             normal_price = ?, promo_enabled = ?, promo_duration = ?, 
             min_price = ?, sale_start_date = ?, sale_start_time = ?, 
-            sale_end_date = ?, sale_end_time = ?, show_forever = ?
+            sale_end_date = ?, sale_end_time = ?, show_forever = ?,
+            is_affiliate = ?, commission_percent = ?, product_type = ?
             ${thumbUpdate} WHERE id = ?`;
             
+        params.push(req.body.is_affiliate === 'on' ? 1 : 0);
+        params.push(req.body.commission_percent || 20);
+        params.push(req.body.type || 'digital');
+        params.push(req.params.id);
+
         try {
             await db.execute(query, params);
         } catch (dbErr) {
@@ -153,7 +157,9 @@ exports.updateProduct = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_start_time TIME',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_date DATE',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_time TIME',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_affiliate TINYINT(1) DEFAULT 1',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
@@ -183,18 +189,19 @@ exports.createProductPost = async (req, res) => {
         if (req.file) thumbnail = '/uploads/products/' + req.file.filename;
         
         const query = `INSERT INTO products (
-            user_id, name, description, price, stock, type, download_url, 
+            user_id, name, description, price, stock, product_type, download_url, 
             normal_price, promo_enabled, promo_duration, min_price, 
             sale_start_date, sale_start_time, sale_end_date, sale_end_time, 
-            show_forever, thumbnail
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            show_forever, is_affiliate, commission_percent, thumbnail
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
         const params = [
             userId, name, description || '', price || 0, stock || 999, type || 'digital', 
             download_url || '', normal_price || null, promo_enabled === 'on' ? 1 : 0, 
             promo_duration || 0, min_price || null, sale_start_date || null, 
             sale_start_time || null, sale_end_date || null, sale_end_time || null, 
-            show_forever === 'on' ? 1 : 0, thumbnail
+            show_forever === 'on' ? 1 : 0, req.body.is_affiliate === 'on' ? 1 : 0, 
+            req.body.commission_percent || 20, thumbnail
         ];
 
         try {
@@ -212,7 +219,9 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_start_time TIME',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_date DATE',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_time TIME',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_affiliate TINYINT(1) DEFAULT 1',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
@@ -513,10 +522,27 @@ exports.getWithdrawal = async (req, res) => {
             withdrawals = rows;
         } catch(e) {}
 
+        // Affiliate Commission Calculation
+        let affiliate_commission = 0;
+        try {
+            const [commStats] = await db.execute(`
+                SELECT 
+                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as total_commissions
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN users u ON o.user_id = u.id
+                WHERE o.status = 'completed' AND u.referred_by = ?
+            `, [userId]);
+            affiliate_commission = parseFloat(commStats[0].total_commissions);
+        } catch(e) {
+            console.error('Affiliate Commission Calc Error:', e);
+        }
+
         res.render('admin/withdrawal', {
             title: 'Tarik Dana',
             layout: './layouts/admin',
             balance,
+            affiliate_commission,
             withdrawals,
             user: req.session.user || res.locals.user
         });
@@ -778,6 +804,7 @@ exports.getFeatureControl = async (req, res) => {
             title: 'Kontrol Fitur',
             layout: './layouts/admin',
             features,
+            query: req.query,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
@@ -804,10 +831,10 @@ exports.createFeature = async (req, res) => {
     try {
         const { flag_key, description } = req.body;
         await db.execute('INSERT INTO feature_flags (flag_key, description, is_enabled) VALUES (?,?,?)', [flag_key, description, 0]);
-        res.redirect('/admin/features');
+        res.redirect('/admin/features?success=1');
     } catch (err) {
-        console.error(err.message);
-        res.redirect('/admin/features');
+        console.error('Create Feature Error:', err.message);
+        res.redirect('/admin/features?error=' + encodeURIComponent(err.message));
     }
 };
 
@@ -830,15 +857,20 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%'");
         const smtp = {};
-        rows.forEach(r => { smtp[r.setting_key] = r.setting_value; });
+        const affiliate = {};
+        rows.forEach(r => { 
+            if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
+            if (r.setting_key.startsWith('aff_')) affiliate[r.setting_key] = r.setting_value;
+        });
 
         res.render('admin/settings', { 
             title: 'Pengaturan', 
             layout: './layouts/admin', 
             user: user,
             smtp: smtp,
+            affiliate: affiliate,
             success: req.query.success,
             tab: req.query.tab || 'profil'
         });
@@ -863,6 +895,88 @@ exports.updateSMTPSettings = async (req, res) => {
     } catch (err) {
         console.error('SMTP update error:', err.message);
         res.redirect('/admin/settings?tab=smtp&error=true');
+    }
+};
+
+exports.updateAffiliateSettings = async (req, res) => {
+    try {
+        const { aff_commission_percent, aff_cookie_duration } = req.body;
+        const keys = { aff_commission_percent, aff_cookie_duration };
+
+        for (const [key, val] of Object.entries(keys)) {
+            await db.execute(
+                "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+                [key, val || '', val || '']
+            );
+        }
+        res.redirect('/admin/settings?tab=affiliate&success=true');
+    } catch (err) {
+        console.error('Affiliate settings update error:', err.message);
+        res.redirect('/admin/settings?tab=affiliate&error=true');
+    }
+};
+
+exports.getAffiliate = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.redirect('/auth/login');
+
+        // 1. Get User Affiliate Info
+        const [users] = await db.execute("SELECT affiliate_code FROM users WHERE id = ?", [userId]);
+        const affCode = users[0].affiliate_code;
+
+        // 2. Count Total Referrals
+        const [referrals] = await db.execute("SELECT COUNT(*) as count FROM users WHERE referred_by = ?", [userId]);
+        const totalReferrals = referrals[0].count;
+
+        // 3. Get OWN Products (Affiliate Produk)
+        let myProducts = [];
+        const myProductsQuery = "SELECT id, name, price, thumbnail, product_type, is_affiliate, commission_percent FROM products WHERE user_id = ? ORDER BY id DESC";
+        try {
+            const [myProductsRaw] = await db.execute(myProductsQuery, [userId]);
+            myProducts = myProductsRaw.map(p => {
+                let thumb = p.thumbnail || '';
+                if (thumb && thumb.startsWith('[')) { try { thumb = JSON.parse(thumb)[0]; } catch(e) {} }
+                return { 
+                    ...p, 
+                    thumb,
+                    commission_value: (p.price * (p.commission_percent || 20)) / 100
+                };
+            });
+        } catch (dbErr) {
+            if (dbErr.message.includes('Unknown column')) {
+                await db.execute('ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00');
+                const [myProductsRaw] = await db.execute(myProductsQuery, [userId]);
+                myProducts = myProductsRaw.map(p => {
+                    let thumb = p.thumbnail || '';
+                    if (thumb && thumb.startsWith('[')) { try { thumb = JSON.parse(thumb)[0]; } catch(e) {} }
+                    return { 
+                        ...p, 
+                        thumb,
+                        commission_value: (p.price * (p.commission_percent || 20)) / 100
+                    };
+                });
+            } else throw dbErr;
+        }
+
+        // 4. Get Commission Settings
+        const [settings] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'aff_commission_percent'");
+        const commPercent = settings.length > 0 ? settings[0].setting_value : '20';
+
+        res.render('admin/affiliate', {
+            title: 'Affiliate',
+            layout: './layouts/admin',
+            user: req.session.user || res.locals.user,
+            affCode,
+            totalReferrals,
+            myProducts,
+            commPercent,
+            host: req.get('host'),
+            protocol: req.protocol
+        });
+    } catch (err) {
+        console.error('Get Affiliate Error:', err);
+        res.redirect('/admin');
     }
 };
 
@@ -1005,45 +1119,182 @@ exports.uploadProfilePhoto = async (req, res) => {
     res.redirect('/admin/settings');
 };
 
-// ===================== AFFILIATE =====================
-exports.getAffiliate = async (req, res) => {
+// ===================== ADMIN: MARKETPLACE =====================
+exports.getMarketplace = async (req, res) => {
     try {
-        res.render('admin/affiliate', {
-            title: 'Affiliate',
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+        const search = req.query.search || '';
+
+        let whereClause = "WHERE is_affiliate = 1";
+        let params = [];
+
+        if (search) {
+            whereClause += " AND name LIKE ?";
+            params.push(`%${search}%`);
+        }
+
+        const [countRow] = await db.execute(`SELECT COUNT(*) as total FROM products ${whereClause}`, params);
+        const totalItems = countRow[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const [products] = await db.execute(
+            `SELECT p.*, u.fullname as seller_name, u.slug as seller_slug 
+             FROM products p 
+             LEFT JOIN users u ON p.user_id = u.id 
+             ${whereClause} 
+             ORDER BY p.id DESC 
+             LIMIT ? OFFSET ?`,
+            [...params, limit, offset]
+        );
+
+        const cleanedProducts = products.map(p => {
+            let thumb = p.thumbnail || p.image_url || '';
+            if (thumb && thumb.startsWith('[')) { try { thumb = JSON.parse(thumb)[0]; } catch(e) {} }
+            return { ...p, thumb };
+        });
+
+        res.render('admin/marketplace', {
+            title: 'Marketplace',
             layout: './layouts/admin',
-            user: req.session.user || res.locals.user,
-            affiliateLink: 'https://lingku.xyz/ref/bangjos'
+            products: cleanedProducts,
+            pagination: { page, totalPages, totalItems, search },
+            user: req.session.user || res.locals.user
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Error');
+        console.error('Marketplace Error:', err);
+        res.redirect('/admin');
+    }
+};
+
+// ===================== ADMIN/USER: AFFILIATE STATS =====================
+exports.getAffiliateStats = async (req, res) => {
+    try {
+        const user = req.session.user || res.locals.user;
+        const isAdmin = user.role === 'admin';
+
+        if (isAdmin) {
+            // Platform wide affiliate stats
+            const [stats] = await db.execute(`
+                SELECT 
+                    COUNT(DISTINCT referred_by) as total_affiliates,
+                    COUNT(id) as total_users
+                FROM users 
+                WHERE referred_by IS NOT NULL
+            `);
+
+            const [commStats] = await db.execute(`
+                SELECT 
+                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as total_commissions,
+                    COUNT(o.id) as total_affiliate_orders
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN users u ON o.user_id = u.id
+                WHERE o.status = 'completed' AND u.referred_by IS NOT NULL
+            `);
+
+            const [topAffiliates] = await db.execute(`
+                SELECT 
+                    u.fullname, u.email, 
+                    COUNT(ref.id) as total_referrals,
+                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as earnings
+                FROM users u
+                LEFT JOIN users ref ON u.id = ref.referred_by
+                LEFT JOIN orders o ON ref.id = o.user_id AND o.status = 'completed'
+                LEFT JOIN products p ON o.product_id = p.id
+                WHERE u.affiliate_code IS NOT NULL
+                GROUP BY u.id
+                HAVING total_referrals > 0 OR earnings > 0
+                ORDER BY earnings DESC
+                LIMIT 10
+            `);
+
+            res.render('admin/affiliate-stats', {
+                title: 'Statistik Affiliate',
+                layout: './layouts/admin',
+                isAdmin: true,
+                stats: {
+                    total_affiliates: stats[0].total_affiliates,
+                    total_commissions: commStats[0].total_commissions,
+                    total_affiliate_orders: commStats[0].total_affiliate_orders
+                },
+                topAffiliates,
+                user
+            });
+        } else {
+            // PERSONAL STATS for regular users
+            const [refCount] = await db.execute(`SELECT COUNT(*) as total FROM users WHERE referred_by = ?`, [user.id]);
+            
+            const [commStats] = await db.execute(`
+                SELECT 
+                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as total_commissions,
+                    COUNT(o.id) as total_affiliate_orders
+                FROM orders o
+                JOIN products p ON o.product_id = p.id
+                JOIN users u ON o.user_id = u.id
+                WHERE o.status = 'completed' AND u.referred_by = ?
+            `, [user.id]);
+
+            res.render('admin/affiliate-stats', {
+                title: 'Statistik Affiliate Saya',
+                layout: './layouts/admin',
+                isAdmin: false,
+                stats: {
+                    total_referrals: refCount[0].total,
+                    total_commissions: commStats[0].total_commissions,
+                    total_affiliate_orders: commStats[0].total_affiliate_orders
+                },
+                topAffiliates: [],
+                user
+            });
+        }
+    } catch (err) {
+        console.error('Affiliate Stats Error:', err);
+        res.redirect('/admin');
     }
 };
 
 // ===================== DEV TOOLS (LOCAL ONLY) =====================
-exports.autoDeploy = (req, res) => {
-    // Safety check: Only allow if hostname is localhost
-    if (req.hostname !== 'localhost' && req.hostname !== '127.0.0.1') {
-        return res.status(403).json({ success: false, message: 'Fitur ini hanya untuk Local Dev!' });
-    }
-
-    console.log('--- AUTO DEPLOY STARTED ---');
-    
-    // 1. Check if there are any changes first
-    exec('git status --porcelain', (err, stdout) => {
-        if (!stdout.trim()) {
-            return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
+exports.autoDeploy = async (req, res) => {
+    try {
+        // Safety check: Only allow if hostname is localhost
+        if (req.hostname !== 'localhost' && req.hostname !== '127.0.0.1') {
+            return res.status(403).json({ success: false, message: 'Fitur ini hanya untuk Local Dev!' });
         }
 
-        const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
-        const command = `git add . && git commit -m "${commitMsg}" && git push origin master`;
+        console.log('--- AUTO DEPLOY STARTED ---');
         
-        exec(command, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`Git Error: ${stderr || error.message}`);
-                return res.json({ success: false, message: stderr || error.message });
+        // 1. Check if there are any changes first
+        exec('git status --porcelain', (err, stdout) => {
+            if (err) {
+                console.error(`Git Status Error: ${err.message}`);
+                return res.json({ success: false, message: 'Gagal cek status git: ' + err.message });
             }
-            res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+
+            if (!stdout.trim()) {
+                return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
+            }
+
+            const commitMsg = `Auto Deploy: ${new Date().toLocaleString()}`;
+            // Use GIT_TERMINAL_PROMPT=0 to prevent hanging on password prompts
+            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && git commit -m "${commitMsg}" && git push origin master`;
+            
+            exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
+                if (error) {
+                    console.error(`Git Push Error: ${stderr || error.message}`);
+                    let msg = stderr || error.message;
+                    if (msg.includes('terminal prompts disabled')) {
+                        msg = 'Git butuh login/password. Pastikan SSH Key sudah terpasang atau gunakan Git Credential Manager.';
+                    }
+                    return res.json({ success: false, message: msg });
+                }
+                console.log('--- AUTO DEPLOY SUCCESS ---');
+                res.json({ success: true, message: 'Kodingan berhasil diterbangkan ke Live!', log: stdout });
+            });
         });
-    });
+    } catch (globalErr) {
+        console.error('Auto Deploy Global Error:', globalErr);
+        res.json({ success: false, message: 'Kesalahan Sistem: ' + globalErr.message });
+    }
 };

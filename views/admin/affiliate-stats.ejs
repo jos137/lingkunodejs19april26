@@ -1,0 +1,201 @@
+<style>
+    .stats-header {
+        margin-bottom: 32px;
+    }
+    .stats-title { font-size: 26px; font-weight: 900; color: #111827; letter-spacing: -0.5px; }
+    .stats-subtitle { font-size: 14px; color: #64748b; margin-top: 4px; }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+        margin-bottom: 32px;
+    }
+    .analytics-card {
+        background: #fff;
+        padding: 24px;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    .analytics-card:hover {
+        border-color: #10b981;
+        box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.05);
+    }
+    .card-icon-w {
+        width: 44px; height: 44px;
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        margin-bottom: 16px;
+    }
+    .card-label-p { font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+    .card-value-p { font-size: 28px; font-weight: 900; color: #1e293b; margin: 6px 0; }
+    .card-trend {
+        display: flex; align-items: center; gap: 4px;
+        font-size: 12px; font-weight: 700; color: #10b981;
+    }
+
+    .table-card {
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #e5e7eb;
+        overflow: hidden;
+    }
+    .table-header-p {
+        padding: 24px;
+        border-bottom: 1px solid #f1f5f9;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-title-p { font-size: 16px; font-weight: 800; color: #111827; }
+
+    /* Custom Table Styling */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .custom-table th {
+        text-align: left;
+        padding: 16px 24px;
+        background: #f8fafc;
+        font-size: 11px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .custom-table td {
+        padding: 16px 24px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f8fafc;
+    }
+    .rank-badge {
+        width: 28px; height: 28px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 13px; font-weight: 800;
+    }
+    .rank-1 { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+    .rank-2 { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+    .rank-3 { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
+    .rank-other { background: #f8fafc; color: #94a3b8; }
+
+    .aff-user-info { display: flex; align-items: center; gap: 12px; }
+    .aff-avatar {
+        width: 38px; height: 38px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: #fff;
+        display: flex; align-items: center; justify-content: center;
+        font-weight: 800; font-size: 15px;
+    }
+    .aff-name { font-size: 14px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+    .aff-email { font-size: 12px; color: #94a3b8; }
+
+    .btn-export {
+        padding: 8px 16px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-export:hover {
+        border-color: #10b981;
+        color: #10b981;
+        background: #f0fdf4;
+    }
+</style>
+
+<div class="stats-header">
+    <h1 class="stats-title"><%= isAdmin ? 'Analisa Performa Affiliate' : 'Statistik Affiliate Saya' %></h1>
+    <p class="stats-subtitle"><%= isAdmin ? 'Pantau pertumbuhan ekosistem affiliate di platform Anda secara real-time' : 'Pantau performa promosi dan penghasilan komisi Anda secara transparan' %></p>
+</div>
+
+<div class="analytics-grid">
+    <div class="analytics-card">
+        <div class="card-icon-w" style="background: #eff6ff; color: #3b82f6;"><i class="fas fa-users"></i></div>
+        <div class="card-label-p"><%= isAdmin ? 'Total Affiliate Aktif' : 'Total Referral' %></div>
+        <div class="card-value-p"><%= isAdmin ? stats.total_affiliates : stats.total_referrals %></div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> <%= isAdmin ? '12% bulan ini' : 'Terus bagikan link Anda' %></div>
+    </div>
+    <div class="analytics-card">
+        <div class="card-icon-w" style="background: #f0fdf4; color: #10b981;"><i class="fas fa-shopping-cart"></i></div>
+        <div class="card-label-p">Total Pesanan Ref</div>
+        <div class="card-value-p"><%= stats.total_affiliate_orders %></div>
+        <div class="card-trend"><i class="fas fa-arrow-up"></i> <%= isAdmin ? '8.4% bulan ini' : 'Dari promosi kreatif Anda' %></div>
+    </div>
+    <div class="analytics-card">
+        <div class="card-icon-w" style="background: #fff7ed; color: #f59e0b;"><i class="fas fa-coins"></i></div>
+        <div class="card-label-p"><%= isAdmin ? 'Total Komisi Platform' : 'Total Komisi Saya' %></div>
+        <div class="card-value-p">Rp <%= new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(stats.total_commissions) %></div>
+        <div class="card-trend" style="color: #94a3b8;"><i class="fas fa-history"></i> Akumulasi Seluruh Waktu</div>
+    </div>
+</div>
+
+<% if (isAdmin) { %>
+    <div class="table-card">
+        <div class="table-header-p">
+            <h3 class="table-title-p">Top 10 Partner Affiliate Teratas</h3>
+            <button class="btn-export"><i class="fas fa-download"></i> Export Data</button>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width: 80px;">Rank</th>
+                        <th>Partner Affiliate</th>
+                        <th style="text-align: center;">Total Referal</th>
+                        <th style="text-align: right;">Total Penghasilan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (topAffiliates && topAffiliates.length > 0) { %>
+                        <% topAffiliates.forEach((aff, idx) => { %>
+                            <tr>
+                                <td>
+                                    <div class="rank-badge <%= idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other' %>">
+                                        <%= idx + 1 %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="aff-user-info">
+                                        <div class="aff-avatar"><%= (aff.fullname || 'A').charAt(0).toUpperCase() %></div>
+                                        <div>
+                                            <div class="aff-name"><%= aff.fullname %></div>
+                                            <div class="aff-email"><%= aff.email %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="text-align: center;">
+                                    <div style="font-size: 15px; font-weight: 800; color: #3b82f6;"><%= aff.total_referrals %></div>
+                                    <div style="font-size: 10px; color: #94a3b8; font-weight: 700; text-transform: uppercase;">Member</div>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div style="font-size: 16px; font-weight: 900; color: #1e293b;">
+                                        Rp <%= new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(aff.earnings) %>
+                                    </div>
+                                    <div style="font-size: 10px; color: #10b981; font-weight: 800;"><i class="fas fa-check-circle"></i> TERVERIFIKASI</div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 60px 0;">
+                                <div style="color: #cbd5e1; font-size: 40px; margin-bottom: 16px;"><i class="fas fa-database"></i></div>
+                                <div style="color: #94a3b8; font-weight: 700;">Belum ada data partner affiliate terdeteksi</div>
+                                <div style="color: #cbd5e1; font-size: 12px; margin-top: 4px;">Data akan muncul saat ada transaksi dari referral</div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+<% } %>

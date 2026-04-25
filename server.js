@@ -125,10 +125,87 @@ app.use(async (req, res, next) => {
 
         const [rows] = await db.execute("SELECT COUNT(*) as count FROM withdrawals WHERE status = 'pending'");
         res.locals.pendingWDCount = rows[0].count || 0;
+
+        // ===== AUTO-HEAL: AFFILIATE SYSTEM =====
+        let cookieDays = 30; // Default
+        try {
+            const [cols] = await db.execute("SHOW COLUMNS FROM users LIKE 'affiliate_code'");
+            if (cols.length === 0) {
+                await db.execute("ALTER TABLE users ADD COLUMN affiliate_code VARCHAR(50) UNIQUE DEFAULT NULL AFTER email");
+                await db.execute("ALTER TABLE users ADD COLUMN referred_by INT DEFAULT NULL AFTER affiliate_code");
+            }
+            
+            // Ensure every user has an affiliate_code (for existing users)
+            const [usersNoCode] = await db.execute("SELECT id, fullname FROM users WHERE affiliate_code IS NULL OR affiliate_code = '' LIMIT 50");
+            for (const u of usersNoCode) {
+                const cleanName = (u.fullname || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
+                const randomCode = cleanName + Math.floor(1000 + Math.random() * 9000);
+                await db.execute("UPDATE users SET affiliate_code = ? WHERE id = ?", [randomCode, u.id]);
+            }
+
+            // Ensure basic settings exist & fetch cookie duration
+            const affSettings = [
+                { key: 'aff_commission_percent', val: '20' },
+                { key: 'aff_cookie_duration', val: '30' }
+            ];
+            for (const s of affSettings) {
+                const [check] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key = ?", [s.key]);
+                if (check.length === 0) {
+                    await db.execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [s.key, s.val]);
+                } else if (s.key === 'aff_cookie_duration') {
+                    cookieDays = parseInt(check[0].setting_value) || 30;
+                }
+            }
+        } catch (affErr) {
+            console.error('Affiliate Auto-Heal Error:', affErr.message);
+        }
+
+        // ===== GLOBAL AFFILIATE SENSOR (via Query Param ?ref=) =====
+        if (req.query.ref) {
+            const refCode = req.query.ref;
+            res.cookie('ref_by', refCode, { 
+                maxAge: 1000 * 60 * 60 * 24 * cookieDays, 
+                httpOnly: true, 
+                path: '/' 
+            });
+        }
+        // ===== AUTO-HEAL: FEATURE FLAGS =====
+        try {
+            // Check if table and essential columns exist
+            await db.execute("SELECT is_enabled FROM feature_flags LIMIT 1");
+        } catch (e) {
+            if (e.message.includes("doesn't exist")) {
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS feature_flags (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        flag_key VARCHAR(100) UNIQUE NOT NULL,
+                        description TEXT,
+                        is_enabled TINYINT(1) DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+                await db.execute("INSERT IGNORE INTO feature_flags (flag_key, description, is_enabled) VALUES (?, ?, ?)", 
+                    ['enable_announcement', 'Menampilkan pengumuman di dashboard', 1]);
+                await db.execute("INSERT IGNORE INTO feature_flags (flag_key, description, is_enabled) VALUES (?, ?, ?)", 
+                    ['show_today_sales', 'Menampilkan statistik penjualan hari ini', 1]);
+            } else if (e.message.includes("Unknown column 'is_enabled'")) {
+                await db.execute("ALTER TABLE feature_flags ADD COLUMN is_enabled TINYINT(1) DEFAULT 0 AFTER description");
+            }
+        }
+
+        // Fetch all feature flags
+        const [featureRows] = await db.execute("SELECT flag_key, is_enabled FROM feature_flags");
+        const features = {};
+        featureRows.forEach(f => {
+            features[f.flag_key] = f.is_enabled === 1;
+        });
+        res.locals.features = features;
+
     } catch (e) {
         res.locals.notifications = [];
         res.locals.unreadNotifCount = 0;
         res.locals.pendingWDCount = 0;
+        res.locals.features = {};
     }
 
     next();
