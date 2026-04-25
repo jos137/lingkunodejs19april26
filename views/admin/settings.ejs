@@ -38,9 +38,13 @@
         <div class="settings-nav-item" onclick="showSection('toko', this)"><i class="fas fa-store"></i> Tampilan Toko</div>
         <div class="settings-nav-item" onclick="showSection('pembayarann', this)"><i class="fas fa-wallet"></i> Pembayaran</div>
         <div class="settings-nav-item" onclick="showSection('notifikasi', this)"><i class="fas fa-bell"></i> Notifikasi</div>
-        <div class="settings-nav-item" onclick="showSection('ipaymu', this)" style="color:#2563eb;"><i class="fas fa-credit-card"></i> iPaymu Gateway</div>
         <div class="settings-nav-item" onclick="showSection('keamanan', this)"><i class="fas fa-shield-alt"></i> Keamanan</div>
-        <div class="settings-nav-item" onclick="showSection('smtp', this)" style="color:#ec4899;"><i class="fas fa-server"></i> SMTP Server</div>
+        
+        <% if (user.role === 'admin') { %>
+            <div class="settings-nav-item" onclick="showSection('ipaymu', this)" style="color:#2563eb;"><i class="fas fa-credit-card"></i> iPaymu Gateway</div>
+            <div class="settings-nav-item" onclick="showSection('smtp', this)" style="color:#ec4899;"><i class="fas fa-server"></i> SMTP Server</div>
+        <% } %>
+
         <div class="settings-nav-item" onclick="showSection('affiliate', this)" style="color:#f59e0b;"><i class="fas fa-handshake"></i> Pengaturan Affiliate</div>
     </div>
 
@@ -222,6 +226,7 @@
             <button class="s-save">Ubah Password</button>
         </div>
         
+        <% if (user.role === 'admin') { %>
         <!-- IPAYMU -->
         <div class="settings-panel s-section" id="sec-ipaymu">
             <div class="settings-title">Integrasi Pembayaran iPaymu</div>
@@ -272,7 +277,10 @@
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #1e293b, #0f172a);">Perbarui Mode Gateway</button>
             </form>
         </div>
+        <% } %>
 
+
+        <% if (user.role === 'admin') { %>
         <!-- SMTP -->
         <div class="settings-panel s-section" id="sec-smtp">
             <div class="settings-title">Konfigurasi SMTP Server</div>
@@ -307,6 +315,8 @@
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #ec4899, #db2777);">Simpan SMTP</button>
             </form>
         </div>
+        <% } %>
+
 
         <!-- AFFILIATE -->
         <div class="settings-panel s-section" id="sec-affiliate">
