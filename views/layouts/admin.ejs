@@ -486,19 +486,20 @@
 
                 <style>
                     .subscription-badge {
-                        display: flex; flex-direction: column; width: 140px; 
-                        border-radius: 12px; overflow: hidden; 
+                        display: flex; flex-direction: row; width: 170px; height: 32px;
+                        border-radius: 10px; overflow: hidden; 
                         box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1.5px solid #f1f5f9;
                         flex-shrink: 0;
                     }
                     .sub-top {
-                        height: 22px; display: flex; align-items: center; justify-content: center;
-                        color: #fff; font-size: 11px; font-weight: 900; letter-spacing: 0.8px;
-                        text-transform: uppercase;
+                        width: 55px; height: 100%; display: flex; align-items: center; justify-content: center;
+                        color: #fff; font-size: 9px; font-weight: 900; letter-spacing: 0.5px;
+                        text-transform: uppercase; flex-shrink: 0;
                     }
                     .sub-bottom {
-                        height: 22px; background: #fff; display: flex; align-items: center; justify-content: center;
-                        color: #475569; font-size: 10px; font-weight: 800; border-top: 1px solid #f1f5f9;
+                        flex: 1; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center;
+                        color: #475569; font-size: 9px; font-weight: 800; padding: 0 8px;
+                        white-space: nowrap;
                     }
                 </style>
 
