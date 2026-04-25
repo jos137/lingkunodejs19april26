@@ -463,21 +463,76 @@
             <div class="header-actions">
                 <% 
                     let planLabel = 'FREE';
-                    if (user && user.role === 'admin') planLabel = 'ADMIN';
-                    else if (user && (user.role === 'pro' || user.plan === 'pro')) planLabel = 'PRO';
+                    let roleLower = (user && user.role) ? user.role.toLowerCase() : 'user';
+                    let planLower = (user && user.plan) ? user.plan.toLowerCase() : 'free';
+
+                    if (roleLower === 'admin') planLabel = 'ADMIN';
+                    else if (roleLower === 'pro' || planLower === 'pro') planLabel = 'PRO';
                     
-                    let badgeBg = 'linear-gradient(135deg, #cbd5e1, #94a3b8)'; // Default Silver
-                    if (planLabel === 'ADMIN') {
-                        badgeBg = 'linear-gradient(135deg, #facc15, #eab308)'; // Gold
-                    } else if (planLabel === 'PRO') {
-                        badgeBg = 'linear-gradient(135deg, #34d399, #10b981)'; // Green
-                    }
+                    let mainColor = '#94a3b8'; // Default Silver
+                    if (planLabel === 'ADMIN') mainColor = '#eab308'; // Gold
+                    else if (planLabel === 'PRO') mainColor = '#10b981'; // Green
                 %>
-                <!-- USER STATUS BADGE -->
-                <div style="padding: 5px 12px; border-radius: 50px; background: <%= badgeBg %>; color: white; font-size: 9px; font-weight: 900; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 1px solid rgba(255,255,255,0.2);">
-                    <i class="fas fa-crown"></i>
-                    <span><%= planLabel %></span>
+                <!-- TWO-LINE STATUS BADGE -->
+                <div class="subscription-badge" id="subBadge" data-expiry="<%= user && user.expired_at ? user.expired_at : '' %>">
+                    <div class="sub-top" style="background: <%= mainColor %>;">
+                        <i class="fas fa-crown" style="font-size: 8px; margin-right: 4px;"></i>
+                        <%= planLabel %>
+                    </div>
+                    <div class="sub-bottom" id="subTimer">
+                        <%= (planLabel === 'ADMIN') ? 'LIFETIME ACCESS' : (user && user.expired_at ? 'CALCULATING...' : 'NO ACTIVE PLAN') %>
+                    </div>
                 </div>
+
+                <style>
+                    .subscription-badge {
+                        display: flex; flex-direction: column; width: 100px; 
+                        border-radius: 8px; overflow: hidden; 
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1.5px solid #f1f5f9;
+                        flex-shrink: 0;
+                    }
+                    .sub-top {
+                        height: 18px; display: flex; align-items: center; justify-content: center;
+                        color: #fff; font-size: 9px; font-weight: 900; letter-spacing: 0.5px;
+                    }
+                    .sub-bottom {
+                        height: 18px; background: #fff; display: flex; align-items: center; justify-content: center;
+                        color: #64748b; font-size: 8px; font-weight: 800; border-top: 1px solid #f1f5f9;
+                    }
+                </style>
+
+                <script>
+                    function updateSubscriptionTimer() {
+                        const badge = document.getElementById('subBadge');
+                        const timer = document.getElementById('subTimer');
+                        if (!badge || !timer) return;
+                        const expiryStr = badge.getAttribute('data-expiry');
+                        
+                        if (!expiryStr || expiryStr === '' || timer.innerText.includes('LIFETIME')) return;
+
+                        const expiryDate = new Date(expiryStr);
+                        const now = new Date();
+                        const diff = expiryDate - now;
+
+                        if (diff <= 0) {
+                            timer.innerText = 'EXPIRED';
+                            timer.style.color = '#ef4444';
+                            return;
+                        }
+
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                        if (days > 0) {
+                            timer.innerText = `${days}D ${hours}H REMAINING`;
+                        } else {
+                            timer.innerText = `${hours}H ${mins}M REMAINING`;
+                        }
+                    }
+                    setInterval(updateSubscriptionTimer, 60000);
+                    updateSubscriptionTimer();
+                </script>
 
                 <div class="profile-container">
                     <button class="action-btn" id="notifBtn">

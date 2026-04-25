@@ -52,6 +52,7 @@ app.use(async (req, res, next) => {
                     name: u.fullname || u.name || 'Admin',
                     role: u.role,
                     plan: u.plan,
+                    expired_at: u.expired_at,
                     profile_photo: u.profile_photo,
                     slug: u.slug,
                     whatsapp: u.whatsapp || u.phone,
@@ -61,6 +62,15 @@ app.use(async (req, res, next) => {
                 };
             }
         } catch(e) { console.error('Session refresh error:', e.message); }
+    }
+
+    // AUTO-HEAL: Ensure expired_at exists
+    try {
+        await db.execute("SELECT expired_at FROM users LIMIT 1");
+    } catch (e) {
+        if (e.message.includes('Unknown column')) {
+            await db.execute("ALTER TABLE users ADD COLUMN expired_at DATETIME DEFAULT NULL AFTER plan");
+        }
     }
 
     res.locals.user = req.session.user || {
