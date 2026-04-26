@@ -10,7 +10,7 @@ exports.getDashboardData = async (req, res) => {
         let queryParams = [userId];
         
         if (filterDate) {
-            dateCondition += " AND DATE(created_at) = ?";
+            dateCondition += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
             queryParams.push(filterDate);
         }
 
@@ -46,11 +46,11 @@ exports.getDashboardData = async (req, res) => {
             totalProducts = prodRow[0].total;
         } catch(e) {}
 
-        // Today's Sales
+        // Today's Sales (Fixed for GMT+7 WIB)
         let todaySales = 0;
         try {
             const [todayRow] = await db.execute(
-                "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND status = 'completed' AND DATE(created_at) = CURDATE()",
+                "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND status = 'completed' AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))",
                 [userId]
             );
             todaySales = todayRow[0].total;
@@ -67,20 +67,20 @@ exports.getDashboardData = async (req, res) => {
             }
         } catch(e) { console.log('User query note:', e.message); }
 
-        // Chart data
+        // Chart data (Fixed for GMT+7 WIB)
         let chartData = [];
         try {
-            let chartQuery = "SELECT DATE(created_at) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND status = 'completed'";
+            let chartQuery = "SELECT DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND status = 'completed'";
             let chartParams = [userId];
 
             if (filterDate) {
-                chartQuery += " AND DATE(created_at) = ?";
+                chartQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
                 chartParams.push(filterDate);
             } else {
-                chartQuery += " AND created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)";
+                chartQuery += " AND CONVERT_TZ(created_at, '+00:00', '+07:00') >= DATE_SUB(DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')), INTERVAL 30 DAY)";
             }
 
-            chartQuery += " GROUP BY DATE(created_at) ORDER BY date ASC";
+            chartQuery += " GROUP BY date ORDER BY date ASC";
             
             const [rows] = await db.execute(chartQuery, chartParams);
             chartData = rows;

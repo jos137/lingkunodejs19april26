@@ -761,9 +761,9 @@ exports.getGlobalAnalytics = async (req, res) => {
         // Stock alerts (products with stock = 0)
         try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products WHERE stock = 0"); stock_alerts = r[0].c; } catch(e) {}
 
-        // 7-day chart
+        // 7-day chart (Fixed for GMT+7 WIB)
         try {
-            const [rows] = await db.execute("SELECT DATE(created_at) as date, COUNT(*) as orders, COALESCE(SUM(total_price),0) as revenue FROM orders WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) GROUP BY DATE(created_at) ORDER BY date ASC");
+            const [rows] = await db.execute("SELECT DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) as date, COUNT(*) as orders, COALESCE(SUM(total_price),0) as revenue FROM orders WHERE CONVERT_TZ(created_at, '+00:00', '+07:00') >= DATE_SUB(DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')), INTERVAL 7 DAY) GROUP BY date ORDER BY date ASC");
             chartData = rows;
         } catch(e) {}
 
@@ -1203,38 +1203,26 @@ exports.getAffiliateStats = async (req, res) => {
         const isAdmin = user.role === 'admin';
 
         if (isAdmin) {
-            // Platform wide affiliate stats
-            const [stats] = await db.execute(`
-                SELECT 
-                    COUNT(DISTINCT referred_by) as total_affiliates,
-                    COUNT(id) as total_users
-                FROM users 
-                WHERE referred_by IS NOT NULL
-            `);
-
+            // GLOBAL STATS for Admin
+            const [stats] = await db.execute(`SELECT COUNT(*) as total_affiliates FROM users WHERE role = 'pro' OR role = 'admin'`);
+            
             const [commStats] = await db.execute(`
                 SELECT 
-                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as total_commissions,
-                    COUNT(o.id) as total_affiliate_orders
-                FROM orders o
-                JOIN products p ON o.product_id = p.id
-                JOIN users u ON o.user_id = u.id
-                WHERE o.status = 'completed' AND u.referred_by IS NOT NULL
+                    COALESCE(SUM(commission_amount), 0) as total_commissions,
+                    COUNT(*) as total_affiliate_orders
+                FROM orders 
+                WHERE status IN ('paid', 'completed', 'success') AND affiliate_id IS NOT NULL
             `);
 
             const [topAffiliates] = await db.execute(`
-                SELECT 
-                    u.fullname, u.email, 
-                    COUNT(ref.id) as total_referrals,
-                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as earnings
+                SELECT u.fullname as partner_name, u.slug, 
+                       COUNT(o.id) as total_referrals, 
+                       COALESCE(SUM(o.commission_amount), 0) as total_earnings
                 FROM users u
-                LEFT JOIN users ref ON u.id = ref.referred_by
-                LEFT JOIN orders o ON ref.id = o.user_id AND o.status = 'completed'
-                LEFT JOIN products p ON o.product_id = p.id
-                WHERE u.affiliate_code IS NOT NULL
+                JOIN orders o ON u.id = o.affiliate_id
+                WHERE o.status IN ('paid', 'completed', 'success')
                 GROUP BY u.id
-                HAVING total_referrals > 0 OR earnings > 0
-                ORDER BY earnings DESC
+                ORDER BY total_earnings DESC
                 LIMIT 10
             `);
 
@@ -1252,16 +1240,12 @@ exports.getAffiliateStats = async (req, res) => {
             });
         } else {
             // PERSONAL STATS for regular users
-            const [refCount] = await db.execute(`SELECT COUNT(*) as total FROM users WHERE referred_by = ?`, [user.id]);
-            
             const [commStats] = await db.execute(`
                 SELECT 
-                    COALESCE(SUM(o.total_price * (p.commission_percent / 100)), 0) as total_commissions,
-                    COUNT(o.id) as total_affiliate_orders
-                FROM orders o
-                JOIN products p ON o.product_id = p.id
-                JOIN users u ON o.user_id = u.id
-                WHERE o.status = 'completed' AND u.referred_by = ?
+                    COALESCE(SUM(commission_amount), 0) as total_commissions,
+                    COUNT(*) as total_affiliate_orders
+                FROM orders 
+                WHERE status IN ('paid', 'completed', 'success') AND affiliate_id = ?
             `, [user.id]);
 
             res.render('admin/affiliate-stats', {
@@ -1269,7 +1253,7 @@ exports.getAffiliateStats = async (req, res) => {
                 layout: './layouts/admin',
                 isAdmin: false,
                 stats: {
-                    total_referrals: refCount[0].total,
+                    total_referrals: commStats[0].total_affiliate_orders, // We use orders as referrals now
                     total_commissions: commStats[0].total_commissions,
                     total_affiliate_orders: commStats[0].total_affiliate_orders
                 },

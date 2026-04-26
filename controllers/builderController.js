@@ -521,6 +521,22 @@ exports.processCheckout = async (req, res) => {
         if (products.length === 0) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
         const product = products[0];
 
+        // 3. AFFILIATE TRACKING LOGIC
+        let affiliateId = null;
+        let commissionAmount = 0;
+        const refSlug = req.cookies.ref_by;
+        
+        if (refSlug && refSlug !== product.user_id && refSlug !== product.user_slug) {
+            try {
+                const [refUsers] = await db.execute('SELECT id FROM users WHERE slug = ? OR id = ?', [refSlug, refSlug]);
+                if (refUsers.length > 0 && refUsers[0].id !== product.user_id) {
+                    affiliateId = refUsers[0].id;
+                    const commPercent = parseFloat(product.commission_percent || 0);
+                    commissionAmount = (commPercent / 100) * parseFloat(product.price || 0);
+                }
+            } catch (e) { console.error('Affiliate Lookup Error:', e.message); }
+        }
+
         if (product.stock <= 0) return res.status(400).send('Stok produk habis.');
 
         // 1. Decrease Stock (Balance with DB)
@@ -529,15 +545,18 @@ exports.processCheckout = async (req, res) => {
         // 2. Generate Reference ID
         const refId = 'INV-' + Date.now();
 
-        // 3. Create Order (With Auto-Fix for Columns)
-        const orderParams = [product.user_id, product.id, refId, name, email, phone, product.price, payment_channel];
+        // 4. Create Order (With Auto-Fix for Columns)
+        const orderParams = [
+            product.user_id, product.id, affiliateId, refId, 
+            name, email, phone, product.price, commissionAmount, payment_channel
+        ];
         const insertQuery = `
-            INSERT INTO orders (user_id, product_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, payment_channel, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+            INSERT INTO orders (user_id, product_id, affiliate_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, commission_amount, payment_channel, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         `;
 
         try {
-            const [orderRes] = await db.execute(insertQuery, orderParams);
+            await db.execute(insertQuery, orderParams);
             
             // Notify Merchant about NEW PENDING ORDER
             try {
@@ -552,6 +571,8 @@ exports.processCheckout = async (req, res) => {
             // Auto-Heal: Add missing columns if they don't exist
             if (dbErr.message.includes('Unknown column')) {
                 const cols = [
+                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS affiliate_id INT DEFAULT NULL',
+                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission_amount DECIMAL(15,2) DEFAULT 0',
                     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INT',
                     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS reference_id VARCHAR(100)',
                     'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)',
@@ -767,18 +788,37 @@ exports.ipaymuCallback = async (req, res) => {
                 const order = orders[0];
                 
                 if (order.status === 'pending') {
+                    const commAmt = parseFloat(order.commission_amount || 0);
+                    const totalPrice = parseFloat(order.total_price || 0);
+                    const merchantNet = totalPrice - commAmt;
+
                     // 1. Update Order Status
                     await db.execute(
                         'UPDATE orders SET status = ?, trx_id = ? WHERE id = ?',
                         ['completed', trx_id || null, order.id]
                     );
 
-                    // 2. Add Balance to Merchant
+                    // 2. Add Balance to Merchant (Net Amount)
                     await db.execute(
                         'UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id = ?',
-                        [parseFloat(order.total_price || 0), order.user_id]
+                        [merchantNet, order.user_id]
                     );
 
+                    // 2b. Add Balance to Affiliate (if exists)
+                    if (order.affiliate_id && commAmt > 0) {
+                        await db.execute(
+                            'UPDATE users SET balance = COALESCE(balance, 0) + ? WHERE id = ?',
+                            [commAmt, order.affiliate_id]
+                        );
+                        
+                        // Notify Affiliate
+                        try {
+                            await db.execute(
+                                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                                [order.affiliate_id, '💸 Komisi Cair!', `Anda mendapat komisi Rp ${commAmt.toLocaleString('id-ID')} dari penjualan ${order.product_name}`, 'pay']
+                            );
+                        } catch (e) {}
+                    }
 
                     // 3. Send Access Email Automatically
                     if (order.customer_email && order.access_link) {

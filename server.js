@@ -192,11 +192,11 @@ app.use(async (req, res, next) => {
             console.error('Affiliate Auto-Heal Error:', affErr.message);
         }
 
-        // ===== GLOBAL AFFILIATE SENSOR (via Query Param ?ref=) =====
-        if (req.query.ref) {
-            const refCode = req.query.ref;
+        // ===== GLOBAL AFFILIATE SENSOR (via Query Param ?ref= or ?aff=) =====
+        const refCode = req.query.ref || req.query.aff;
+        if (refCode) {
             res.cookie('ref_by', refCode, { 
-                maxAge: 1000 * 60 * 60 * 24 * cookieDays, 
+                maxAge: 1000 * 60 * 60 * 24 * (typeof cookieDays !== 'undefined' ? cookieDays : 30), 
                 httpOnly: true, 
                 path: '/' 
             });
