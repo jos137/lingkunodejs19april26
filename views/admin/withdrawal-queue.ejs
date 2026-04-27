@@ -1,73 +1,274 @@
 <style>
-.wdq-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; }
-.wdq-table { width: 100%; border-collapse: collapse; }
-.wdq-table thead th { background: #f9fafb; padding: 14px 18px; text-align: left; font-size: 11px; font-weight: 800; color: #64748b; letter-spacing: 0.5px; border-bottom: 1px solid #e5e7eb; }
-.wdq-table tbody td { padding: 14px 18px; font-size: 13px; color: #374151; border-bottom: 1px solid #f3f4f6; font-weight: 500; }
-.wdq-table tbody tr:hover { background: #f9fafb; }
-.wdq-badge { padding: 4px 12px; border-radius: 100px; font-size: 10px; font-weight: 800; }
-.wdq-badge.pending { background: #fffbeb; color: #d97706; }
-.wdq-badge.completed { background: #f0fdf4; color: #059669; }
-.wdq-badge.rejected { background: #fef2f2; color: #dc2626; }
-.wdq-btn { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; margin-right: 6px; transition: 0.15s; }
-.wdq-btn.approve { background: #10b981; color: #fff; }
-.wdq-btn.approve:hover { background: #059669; }
-.wdq-btn.reject { background: #ef4444; color: #fff; }
-.wdq-btn.reject:hover { background: #dc2626; }
-.wdq-empty { text-align: center; padding: 50px; color: #94a3b8; font-size: 13px; }
-.wdq-summary { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
-.wdq-sum { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 18px; text-align: center; }
-.wdq-sum-label { font-size: 10px; font-weight: 800; color: #94a3b8; letter-spacing: 1px; margin-bottom: 6px; }
-.wdq-sum-val { font-size: 22px; font-weight: 900; }
+    /* Global Styling for WD Queue */
+    .wdq-container { padding-bottom: 40px; }
+    
+    /* Summary Cards */
+    .wdq-summary { 
+        display: grid; 
+        grid-template-columns: repeat(3, 1fr); 
+        gap: 16px; 
+        margin-bottom: 24px; 
+    }
+    .wdq-sum-card {
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        border: 1px solid #f1f5f9;
+        transition: 0.3s;
+    }
+    .wdq-sum-card:hover { transform: translateY(-3px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+    .wdq-sum-icon {
+        width: 48px; height: 48px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 20px;
+    }
+    .wdq-sum-info { flex: 1; }
+    .wdq-sum-label { font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
+    .wdq-sum-val { font-size: 24px; font-weight: 900; color: #1e293b; margin-top: 2px; }
+
+    /* Table & Card Wrapper */
+    .wdq-list-wrapper { background: #fff; border-radius: 20px; border: 1px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden; }
+    
+    /* Desktop Table */
+    .wdq-table { width: 100%; border-collapse: collapse; display: table; }
+    .wdq-table thead th { background: #f8fafc; padding: 16px 20px; text-align: left; font-size: 12px; font-weight: 800; color: #64748b; border-bottom: 1px solid #f1f5f9; }
+    .wdq-table tbody td { padding: 18px 20px; font-size: 14px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    .wdq-table tbody tr:last-child td { border-bottom: none; }
+    .wdq-table tr:hover { background: #f8fafc; }
+
+    /* User Info Cell */
+    .wdq-user-cell { display: flex; align-items: center; gap: 12px; }
+    .wdq-user-avatar { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+    .wdq-user-name { font-weight: 750; color: #1e293b; font-size: 14px; }
+    .wdq-user-email { font-size: 11px; color: #94a3b8; margin-top: 1px; }
+
+    /* Badges */
+    .wdq-badge { padding: 6px 14px; border-radius: 100px; font-size: 11px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+    .wdq-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+    .wdq-badge.pending { background: #fffbeb; color: #d97706; }
+    .wdq-badge.pending::before { background: #d97706; }
+    .wdq-badge.completed { background: #f0fdf4; color: #16a34a; }
+    .wdq-badge.completed::before { background: #16a34a; }
+    .wdq-badge.rejected { background: #fef2f2; color: #dc2626; }
+    .wdq-badge.rejected::before { background: #dc2626; }
+    .wdq-actions { display: flex; gap: 6px; align-items: center; }
+    .wdq-btn.approve { background: #f0fdf4; color: #16a34a; }
+    .wdq-btn.approve:hover { background: #dcfce7; transform: translateY(-1px); }
+    .wdq-btn.reject { background: #fef2f2; color: #ef4444; }
+    .wdq-btn.reject:hover { background: #fee2e2; transform: translateY(-1px); }
+
+    /* Action Buttons - Shrunk */
+    .wdq-btn { 
+        padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 800; border: none; cursor: pointer; 
+        transition: 0.2s; display: flex; align-items: center; gap: 4px;
+    }
+    .wdq-btn i { font-size: 10px; }
+    
+    .wdq-copy-btn {
+        background: #f1f5f9; color: #64748b; border: none; padding: 4px 6px; border-radius: 6px;
+        font-size: 10px; cursor: pointer; margin-left: 6px; transition: 0.2s;
+    }
+    .wdq-copy-btn:hover { background: #e2e8f0; color: #1e293b; }
+    .wdq-copy-btn:active { transform: scale(0.9); }
+
+    /* Mobile Cards (Hidden by default) */
+    .wdq-mobile-list { display: none; padding: 16px; flex-direction: column; gap: 16px; }
+    .wdq-card { background: #fff; border: 1px solid #f1f5f9; border-radius: 16px; padding: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .wdq-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+    .wdq-card-body { background: #f8fafc; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+    .wdq-card-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+    .wdq-card-row:last-child { margin-bottom: 0; }
+    .wdq-card-label { color: #94a3b8; font-weight: 600; }
+    .wdq-card-val { color: #1e293b; font-weight: 800; }
+
+    /* Empty State */
+    .wdq-empty { padding: 60px 20px; text-align: center; }
+    .wdq-empty-icon { font-size: 40px; color: #e2e8f0; margin-bottom: 16px; display: block; }
+    .wdq-empty-text { font-size: 14px; font-weight: 700; color: #94a3b8; }
+
+    /* Responsive Queries */
+    @media (max-width: 992px) {
+        .wdq-summary { grid-template-columns: 1fr 1fr; }
+        .wdq-summary .wdq-sum-card:last-child { grid-column: span 2; }
+    }
+    @media (max-width: 768px) {
+        .wdq-summary { grid-template-columns: 1fr; gap: 12px; }
+        .wdq-summary .wdq-sum-card:last-child { grid-column: span 1; }
+        .wdq-table { display: none; }
+        .wdq-mobile-list { display: flex; }
+        .wdq-list-wrapper { border: none; background: transparent; box-shadow: none; }
+    }
 </style>
 
-<%
-const pendingList = withdrawals.filter(w => w.status === 'pending');
-const completedList = withdrawals.filter(w => w.status === 'completed');
-const rejectedList = withdrawals.filter(w => w.status === 'rejected');
-%>
+<div class="wdq-container">
+    <%
+    const pendingList = withdrawals.filter(w => w.status === 'pending');
+    const completedList = withdrawals.filter(w => w.status === 'completed');
+    const rejectedList = withdrawals.filter(w => w.status === 'rejected');
+    const fmt = (n) => 'Rp ' + (parseFloat(n || 0)).toLocaleString('id-ID');
+    %>
 
-<div class="wdq-summary">
-    <div class="wdq-sum"><div class="wdq-sum-label">PENDING</div><div class="wdq-sum-val" style="color:#d97706;"><%= pendingList.length %></div></div>
-    <div class="wdq-sum"><div class="wdq-sum-label">DISETUJUI</div><div class="wdq-sum-val" style="color:#059669;"><%= completedList.length %></div></div>
-    <div class="wdq-sum"><div class="wdq-sum-label">DITOLAK</div><div class="wdq-sum-val" style="color:#ef4444;"><%= rejectedList.length %></div></div>
-</div>
+    <div class="wdq-summary">
+        <div class="wdq-sum-card">
+            <div class="wdq-sum-icon" style="background: #fff7ed; color: #f59e0b;"><i class="fas fa-clock"></i></div>
+            <div class="wdq-sum-info">
+                <div class="wdq-sum-label">Pending</div>
+                <div class="wdq-sum-val"><%= pendingList.length %></div>
+            </div>
+        </div>
+        <div class="wdq-sum-card">
+            <div class="wdq-sum-icon" style="background: #f0fdf4; color: #10b981;"><i class="fas fa-check-circle"></i></div>
+            <div class="wdq-sum-info">
+                <div class="wdq-sum-label">Disetujui</div>
+                <div class="wdq-sum-val"><%= completedList.length %></div>
+            </div>
+        </div>
+        <div class="wdq-sum-card">
+            <div class="wdq-sum-icon" style="background: #fef2f2; color: #ef4444;"><i class="fas fa-times-circle"></i></div>
+            <div class="wdq-sum-info">
+                <div class="wdq-sum-label">Ditolak</div>
+                <div class="wdq-sum-val"><%= rejectedList.length %></div>
+            </div>
+        </div>
+    </div>
 
-<div class="wdq-table-wrap">
-    <% if (withdrawals.length > 0) { %>
-        <table class="wdq-table">
-            <thead>
-                <tr><th>#</th><th>User</th><th>Jumlah</th><th>Bank</th><th>Rekening</th><th>Status</th><th>Tanggal</th><th>Aksi</th></tr>
-            </thead>
-            <tbody>
-                <% withdrawals.forEach(w => { %>
+    <div class="wdq-list-wrapper">
+        <% if (withdrawals.length > 0) { %>
+            <!-- Desktop Table -->
+            <table class="wdq-table">
+                <thead>
                     <tr>
-                        <td><strong>#<%= w.id %></strong></td>
-                        <td>
-                            <strong><%= w.user_name || w.account_name || '-' %></strong>
-                            <div style="font-size:11px;color:#94a3b8;"><%= w.user_email || '' %></div>
-                        </td>
-                        <td><strong>Rp <%= parseFloat(w.amount || 0).toLocaleString('id-ID') %></strong></td>
-                        <td><%= w.bank_name || '-' %></td>
-                        <td><%= w.account_number || '-' %><br><span style="font-size:11px;color:#94a3b8;">a.n. <%= w.account_name || '-' %></span></td>
-                        <td><span class="wdq-badge <%= w.status %>"><%= (w.status || '').toUpperCase() %></span></td>
-                        <td><%= w.created_at ? new Date(w.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short',year:'numeric'}) : '-' %></td>
-                        <td>
-                            <% if (w.status === 'pending') { %>
-                                <form action="/admin/withdrawal-queue/<%= w.id %>/approve" method="POST" style="display:inline;">
-                                    <button class="wdq-btn approve" type="submit">✓ Setuju</button>
-                                </form>
-                                <form action="/admin/withdrawal-queue/<%= w.id %>/reject" method="POST" style="display:inline;">
-                                    <button class="wdq-btn reject" type="submit">✕ Tolak</button>
-                                </form>
-                            <% } else { %>
-                                <span style="font-size:11px;color:#94a3b8;">—</span>
-                            <% } %>
-                        </td>
+                        <th>USER</th>
+                        <th>JUMLAH</th>
+                        <th>METODE</th>
+                        <th>REKENING</th>
+                        <th>STATUS</th>
+                        <th>AKSI</th>
                     </tr>
-                <% }); %>
-            </tbody>
-        </table>
-    <% } else { %>
-        <div class="wdq-empty"><i class="fas fa-inbox" style="font-size:28px;display:block;margin-bottom:8px;"></i>Belum ada permintaan penarikan.</div>
-    <% } %>
+                </thead>
+                <tbody>
+                    <% withdrawals.forEach(w => { %>
+                        <tr>
+                            <td>
+                                <div class="wdq-user-cell">
+                                    <div class="wdq-user-avatar">
+                                        <%= (w.user_name || w.account_name || 'U').charAt(0).toUpperCase() %>
+                                    </div>
+                                    <div>
+                                        <div class="wdq-user-name"><%= w.user_name || w.account_name || 'User' %></div>
+                                        <div class="wdq-user-email"><%= w.user_email || '-' %></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><strong style="color: #1e293b;"><%= fmt(w.amount) %></strong></td>
+                            <td>
+                                <span style="font-weight: 700; color: #475569;"><%= w.bank_name || '-' %></span>
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center;">
+                                    <span style="font-weight: 700; color: #1e293b;"><%= w.account_number || '-' %></span>
+                                    <button class="wdq-copy-btn" onclick="copyToClipboard('<%= w.account_number %>', this)" title="Salin Nomor">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">a.n. <%= w.account_name || '-' %></div>
+                            </td>
+                            <td><span class="wdq-badge <%= w.status %>"><%= (w.status || 'pending').toUpperCase() %></span></td>
+                            <td>
+                                <% if (w.status === 'pending') { %>
+                                    <div class="wdq-actions">
+                                        <form action="/admin/withdrawal-queue/<%= w.id %>/approve" method="POST" style="margin:0;">
+                                            <button class="wdq-btn approve" type="submit" title="Setujui"><i class="fas fa-check"></i></button>
+                                        </form>
+                                        <form action="/admin/withdrawal-queue/<%= w.id %>/reject" method="POST" style="margin:0;">
+                                            <button class="wdq-btn reject" type="submit" title="Tolak"><i class="fas fa-times"></i></button>
+                                        </form>
+                                    </div>
+                                <% } else { %>
+                                    <span style="font-size: 12px; color: #cbd5e1; font-weight: 600;"><i class="fas fa-lock"></i> Selesai</span>
+                                <% } %>
+                            </td>
+                        </tr>
+                    <% }); %>
+                </tbody>
+            </table>
+
+            <!-- Mobile Card List -->
+            <div class="wdq-mobile-list">
+                <% withdrawals.forEach(w => { %>
+                    <div class="wdq-card">
+                        <div class="wdq-card-header">
+                            <div class="wdq-user-cell">
+                                <div class="wdq-user-avatar"><%= (w.user_name || w.account_name || 'U').charAt(0).toUpperCase() %></div>
+                                <div>
+                                    <div class="wdq-user-name"><%= w.user_name || w.account_name || 'User' %></div>
+                                    <div class="wdq-user-email"><%= new Date(w.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'short'}) %></div>
+                                </div>
+                            </div>
+                            <span class="wdq-badge <%= w.status %>"><%= (w.status || 'pending').toUpperCase() %></span>
+                        </div>
+                        <div class="wdq-card-body">
+                            <div class="wdq-card-row">
+                                <span class="wdq-card-label">Jumlah WD</span>
+                                <span class="wdq-card-val" style="color: #10b981;"><%= fmt(w.amount) %></span>
+                            </div>
+                            <div class="wdq-card-row">
+                                <span class="wdq-card-label">Bank / E-Wallet</span>
+                                <span class="wdq-card-val"><%= w.bank_name || '-' %></span>
+                            </div>
+                            <div class="wdq-card-row">
+                                <span class="wdq-card-label">No. Rekening</span>
+                                <span class="wdq-card-val">
+                                    <%= w.account_number || '-' %>
+                                    <button class="wdq-copy-btn" onclick="copyToClipboard('<%= w.account_number %>', this)" style="padding: 2px 4px; font-size: 9px;">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="wdq-card-row">
+                                <span class="wdq-card-label">Atas Nama</span>
+                                <span class="wdq-card-val"><%= w.account_name || '-' %></span>
+                            </div>
+                        </div>
+                        <% if (w.status === 'pending') { %>
+                            <div class="wdq-actions" style="margin-top: 14px;">
+                                <form action="/admin/withdrawal-queue/<%= w.id %>/approve" method="POST" style="flex: 1; margin: 0;">
+                                    <button class="wdq-btn approve" type="submit" style="width: 100%; justify-content: center; padding: 10px;">Setujui</button>
+                                </form>
+                                <form action="/admin/withdrawal-queue/<%= w.id %>/reject" method="POST" style="flex: 1; margin: 0;">
+                                    <button class="wdq-btn reject" type="submit" style="width: 100%; justify-content: center; padding: 10px;">Tolak</button>
+                                </form>
+                            </div>
+                        <% } %>
+                    </div>
+                <% }) %>
+            </div>
+
+        <% } else { %>
+            <div class="wdq-empty">
+                <i class="fas fa-inbox wdq-empty-icon"></i>
+                <div class="wdq-empty-text">Belum ada permintaan penarikan.</div>
+            </div>
+        <% } %>
+    </div>
 </div>
+
+<script>
+function copyToClipboard(text, btn) {
+    const originalHtml = btn.innerHTML;
+    navigator.clipboard.writeText(text).then(() => {
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i>';
+        btn.style.background = '#f0fdf4';
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+            btn.style.background = '';
+        }, 1500);
+    }).catch(err => {
+        console.error('Gagal menyalin:', err);
+    });
+}
+</script>
