@@ -47,12 +47,12 @@
 <div class="feat-table-wrap">
     <% if (features.length > 0) { %>
         <table class="feat-table">
-            <thead><tr><th>#</th><th>Flag Key</th><th>Deskripsi</th><th>Status</th><th>Aksi</th></tr></thead>
+            <thead><tr><th>#</th><th>Feature Key</th><th>Deskripsi</th><th>Status</th><th>Aksi</th></tr></thead>
             <tbody>
                 <% features.forEach(f => { %>
                     <tr>
                         <td><strong><%= f.id %></strong></td>
-                        <td><strong><%= f.flag_key %></strong></td>
+                        <td><strong><%= f.feature_key %></strong></td>
                         <td><%= f.description || '-' %></td>
                         <td>
                             <form action="/admin/features/<%= f.id %>/toggle" method="POST" style="display:inline;">

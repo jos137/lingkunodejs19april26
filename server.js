@@ -210,26 +210,42 @@ app.use(async (req, res, next) => {
                 await db.execute(`
                     CREATE TABLE IF NOT EXISTS feature_flags (
                         id INT AUTO_INCREMENT PRIMARY KEY,
-                        flag_key VARCHAR(100) UNIQUE NOT NULL,
+                        feature_key VARCHAR(50) UNIQUE NOT NULL,
+                        feature_name VARCHAR(100) NOT NULL,
+                        flag_key VARCHAR(100) UNIQUE,
                         description TEXT,
                         is_enabled TINYINT(1) DEFAULT 0,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
-                await db.execute("INSERT IGNORE INTO feature_flags (flag_key, description, is_enabled) VALUES (?, ?, ?)", 
-                    ['enable_announcement', 'Menampilkan pengumuman di dashboard', 1]);
-                await db.execute("INSERT IGNORE INTO feature_flags (flag_key, description, is_enabled) VALUES (?, ?, ?)", 
-                    ['show_today_sales', 'Menampilkan statistik penjualan hari ini', 1]);
             } else if (e.message.includes("Unknown column 'is_enabled'")) {
                 await db.execute("ALTER TABLE feature_flags ADD COLUMN is_enabled TINYINT(1) DEFAULT 0 AFTER description");
             }
         }
 
+        // Ensure default flags exist
+        const defaultFlags = [
+            { key: 'enable_announcement', desc: 'Menampilkan pengumuman di dashboard', val: 1 },
+            { key: 'enable_affiliate', desc: 'Menampilkan menu affiliate di sidebar', val: 1 },
+            { key: 'show_today_sales', desc: 'Menampilkan statistik penjualan hari ini', val: 1 }
+        ];
+        for (const f of defaultFlags) {
+            try {
+                await db.execute(`
+                    INSERT IGNORE INTO feature_flags (feature_key, feature_name, flag_key, description, is_enabled) 
+                    VALUES (?, ?, ?, ?, ?)`, 
+                    [f.key, f.desc || f.key, f.key, f.desc || '', f.val]
+                );
+            } catch (err) {
+                console.error(`Error ensuring flag ${f.key}:`, err.message);
+            }
+        }
+
         // Fetch all feature flags
-        const [featureRows] = await db.execute("SELECT flag_key, is_enabled FROM feature_flags");
+        const [featureRows] = await db.execute("SELECT feature_key, is_enabled FROM feature_flags");
         const features = {};
         featureRows.forEach(f => {
-            features[f.flag_key] = f.is_enabled === 1;
+            features[f.feature_key] = f.is_enabled === 1;
         });
         res.locals.features = features;
 

@@ -1,14 +1,14 @@
-const db = require('./config/db');
-
-async function checkTables() {
+require('dotenv').config();
+const db = require('../config/db');
+async function check() {
     try {
-        const [rows] = await db.execute('SHOW TABLES');
-        console.log('Tables in database:', rows);
+        const [rows] = await db.execute("DESCRIBE feature_flags");
+        console.log("STRUCTURE OF feature_flags:");
+        console.table(rows);
         process.exit(0);
-    } catch (err) {
-        console.error('Error:', err);
+    } catch (e) {
+        console.error("FULL ERROR:", e);
         process.exit(1);
     }
 }
-
-checkTables();
+check();

@@ -858,7 +858,11 @@ exports.toggleFeature = async (req, res) => {
 exports.createFeature = async (req, res) => {
     try {
         const { flag_key, description } = req.body;
-        await db.execute('INSERT INTO feature_flags (flag_key, description, is_enabled) VALUES (?,?,?)', [flag_key, description, 0]);
+        await db.execute(`
+            INSERT INTO feature_flags (feature_key, feature_name, flag_key, description, is_enabled) 
+            VALUES (?, ?, ?, ?, ?)`, 
+            [flag_key, flag_key, flag_key, description || '', 0]
+        );
         res.redirect('/admin/features?success=1');
     } catch (err) {
         console.error('Create Feature Error:', err.message);
@@ -946,8 +950,14 @@ exports.updateAffiliateSettings = async (req, res) => {
 
 exports.getAffiliate = async (req, res) => {
     try {
-        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const user = req.session.user || res.locals.user;
+        const userId = req.session.userId || (user ? user.id : null);
         if (!userId) return res.redirect('/auth/login');
+
+        // Feature Toggle Check: Only Admin can bypass
+        if (user.role !== 'admin' && res.locals.features && !res.locals.features.enable_affiliate) {
+            return res.redirect('/admin');
+        }
 
         // 1. Get User Affiliate Info
         const [users] = await db.execute("SELECT affiliate_code FROM users WHERE id = ?", [userId]);
@@ -1150,6 +1160,12 @@ exports.uploadProfilePhoto = async (req, res) => {
 // ===================== ADMIN: MARKETPLACE =====================
 exports.getMarketplace = async (req, res) => {
     try {
+        const user = req.session.user || res.locals.user;
+        
+        // Feature Toggle Check: Only Admin can bypass
+        if (user.role !== 'admin' && res.locals.features && !res.locals.features.enable_affiliate) {
+            return res.redirect('/admin');
+        }
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
         const offset = (page - 1) * limit;
@@ -1200,6 +1216,12 @@ exports.getMarketplace = async (req, res) => {
 exports.getAffiliateStats = async (req, res) => {
     try {
         const user = req.session.user || res.locals.user;
+
+        // Feature Toggle Check: Only Admin can bypass
+        if (user.role !== 'admin' && res.locals.features && !res.locals.features.enable_affiliate) {
+            return res.redirect('/admin');
+        }
+
         const isAdmin = user.role === 'admin';
 
         if (isAdmin) {
