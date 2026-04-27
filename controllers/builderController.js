@@ -698,6 +698,9 @@ exports.processCheckout = async (req, res) => {
                                 .card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); overflow: hidden; }
                                 .header { background: #10b981; height: 5px; }
                                 .content { padding: 40px 30px; }
+                                .timer-container { text-align: center; margin-bottom: 20px; background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3; }
+                                .timer-label { font-size: 11px; font-weight: 700; color: #e11d48; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+                                .timer-value { font-size: 20px; font-weight: 900; color: #be123c; font-variant-numeric: tabular-nums; }
                                 .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
                                 .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
                                 .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
@@ -715,6 +718,10 @@ exports.processCheckout = async (req, res) => {
                             <div class="card">
                                 <div class="header"></div>
                                 <div class="content">
+                                    <div class="timer-container">
+                                        <div class="timer-label">Selesaikan Pembayaran Dalam</div>
+                                        <div id="countdown" class="timer-value">--:--</div>
+                                    </div>
                                     <div class="info-box">
                                         <div class="pay-label">${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
                                         ${isQR ? `<img src="${qrImageUrl}" class="qr-img">` : `<h1 class="pay-no">${payNo}</h1>`}
@@ -729,6 +736,24 @@ exports.processCheckout = async (req, res) => {
                                 </div>
                             </div>
                             <script>
+                                // Timer Logic
+                                let timeLeft = ${expiryMins} * 60;
+                                const timerDisplay = document.getElementById('countdown');
+
+                                function updateTimer() {
+                                    if (timeLeft <= 0) {
+                                        timerDisplay.innerHTML = "WAKTU HABIS";
+                                        return;
+                                    }
+                                    const m = Math.floor(timeLeft / 60);
+                                    const s = timeLeft % 60;
+                                    timerDisplay.innerHTML = \`\${m.toString().padStart(2, '0')}:\${s.toString().padStart(2, '0')}\`;
+                                    timeLeft--;
+                                }
+                                setInterval(updateTimer, 1000);
+                                updateTimer();
+
+                                // Status Check Logic
                                 const rid = '${refId}';
                                 setInterval(async () => {
                                     try {
