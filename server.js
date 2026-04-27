@@ -126,7 +126,7 @@ app.use(async (req, res, next) => {
     try {
         // Auto-Heal: Ensure notifications table exists
         try {
-            await db.execute("SELECT id FROM notifications LIMIT 1");
+            await db.execute("SELECT link FROM notifications LIMIT 1");
         } catch (e) {
             if (e.message.includes('Unknown table') || e.message.includes('doesn\'t exist')) {
                 await db.execute(`
@@ -136,10 +136,13 @@ app.use(async (req, res, next) => {
                         title VARCHAR(255),
                         message TEXT,
                         type VARCHAR(50) DEFAULT 'info',
+                        link VARCHAR(255),
                         is_read TINYINT(1) DEFAULT 0,
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
+            } else if (e.message.includes("Unknown column 'link'")) {
+                await db.execute("ALTER TABLE notifications ADD COLUMN link VARCHAR(255) AFTER type");
             }
         }
 
@@ -248,6 +251,31 @@ app.use(async (req, res, next) => {
             features[f.feature_key] = f.is_enabled === 1;
         });
         res.locals.features = features;
+        
+        // ===== AUTO-HEAL: WITHDRAWALS =====
+        try {
+            await db.execute("SELECT bank_name, account_name FROM withdrawals LIMIT 1");
+        } catch (e) {
+            if (e.message.includes("doesn't exist")) {
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS withdrawals (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT NOT NULL,
+                        amount DECIMAL(15,2) NOT NULL,
+                        bank_name VARCHAR(100),
+                        account_number VARCHAR(100),
+                        account_name VARCHAR(100),
+                        status ENUM('pending', 'completed', 'rejected') DEFAULT 'pending',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+            } else if (e.message.includes("Unknown column 'bank_name'")) {
+                await db.execute("ALTER TABLE withdrawals ADD COLUMN bank_name VARCHAR(100) AFTER amount");
+                await db.execute("ALTER TABLE withdrawals ADD COLUMN account_name VARCHAR(100) AFTER account_number");
+            } else if (e.message.includes("Unknown column 'account_name'")) {
+                await db.execute("ALTER TABLE withdrawals ADD COLUMN account_name VARCHAR(100) AFTER account_number");
+            }
+        }
 
     } catch (e) {
         res.locals.notifications = [];

@@ -151,4 +151,5 @@ router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
 router.post('/settings/update-affiliate', adminController.updateAffiliateSettings);
 router.post('/settings/upload-photo', uploadProfile.single('profile_photo'), adminController.uploadProfilePhoto);
 
+router.get('/notifications/:id/read', adminController.readNotification);
 module.exports = router;

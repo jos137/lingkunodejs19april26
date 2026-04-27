@@ -560,6 +560,19 @@ exports.requestWithdrawal = async (req, res) => {
             'INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status) VALUES (?,?,?,?,?,?)',
             [userId, amount, bank_name, account_number, account_name, 'pending']
         );
+
+        // Notify Admin (User ID 1 is usually admin)
+        try {
+            const [userRows] = await db.execute("SELECT fullname FROM users WHERE id = ?", [userId]);
+            const requesterName = userRows.length > 0 ? userRows[0].fullname : 'User';
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [1, 'Permintaan WD Baru', `${requesterName} meminta penarikan sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`, 'withdrawal', '/admin/withdrawal-queue']
+            );
+        } catch (notifErr) {
+            console.error('Failed to create admin notification:', notifErr.message);
+        }
+
         res.redirect('/admin/withdrawal');
     } catch (err) {
         console.error(err.message);
@@ -1326,5 +1339,22 @@ exports.autoDeploy = async (req, res) => {
     } catch (globalErr) {
         console.error('Auto Deploy Global Error:', globalErr);
         res.json({ success: false, message: 'Kesalahan Sistem: ' + globalErr.message });
+    }
+};
+
+exports.readNotification = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [rows] = await db.execute("SELECT link FROM notifications WHERE id = ?", [id]);
+        
+        await db.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", [id]);
+        
+        if (rows.length > 0 && rows[0].link) {
+            return res.redirect(rows[0].link);
+        }
+        res.redirect('/admin');
+    } catch (err) {
+        console.error('Read Notification Error:', err.message);
+        res.redirect('/admin');
     }
 };
