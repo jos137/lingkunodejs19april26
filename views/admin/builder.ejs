@@ -354,7 +354,9 @@
             <button class="btn-add-block" onclick="addBlock('video')"><i class="fas fa-play-circle"></i> + Video</button>
             <button class="btn-add-block" onclick="addBlock('button')"><i class="fas fa-link"></i> + Button</button>
             <button class="btn-add-block" onclick="addBlock('divider')"><i class="fas fa-minus"></i> + Divider</button>
-            <button class="btn-add-block" onclick="addBlock('affiliate')" style="border-color:#f59e0b; color:#f59e0b;"><i class="fas fa-handshake"></i> + Affiliate</button>
+            <% if (locals.user && locals.user.role === 'admin' || locals.features && locals.features.enable_affiliate) { %>
+                <button class="btn-add-block" onclick="addBlock('affiliate')" style="border-color:#f59e0b; color:#f59e0b;"><i class="fas fa-handshake"></i> + Affiliate</button>
+            <% } %>
         </div>
     </div>
 
