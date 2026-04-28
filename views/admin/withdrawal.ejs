@@ -52,6 +52,37 @@
     .wd-content, .wd-summary { grid-template-columns: 1fr; } 
     .wd-balance { width: 100%; min-width: 0; padding: 20px; }
 }
+
+/* Success Modal */
+.wd-modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; opacity: 0; pointer-events: none; transition: 0.3s ease;
+}
+.wd-modal-overlay.active { opacity: 1; pointer-events: auto; }
+.wd-modal {
+    background: #fff; width: 90%; max-width: 400px;
+    border-radius: 24px; padding: 32px 24px; text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(20px) scale(0.95); transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.wd-modal-overlay.active .wd-modal { transform: translateY(0) scale(1); }
+.wd-modal-icon {
+    width: 80px; height: 80px; background: #dcfce7; color: #10b981;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 36px; margin: 0 auto 20px;
+    box-shadow: 0 0 0 10px #f0fdf4;
+}
+.wd-modal-title { font-size: 22px; font-weight: 900; color: #1e293b; margin-bottom: 8px; letter-spacing: -0.5px; }
+.wd-modal-amount { font-size: 28px; font-weight: 900; color: #10b981; margin-bottom: 16px; }
+.wd-modal-desc { font-size: 14px; color: #64748b; line-height: 1.6; margin-bottom: 24px; padding: 0 10px; }
+.wd-modal-btn {
+    background: #111827; color: #fff; border: none; width: 100%;
+    padding: 14px; border-radius: 12px; font-size: 14px; font-weight: 800;
+    cursor: pointer; transition: 0.2s;
+}
+.wd-modal-btn:hover { background: #1e293b; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 </style>
 
 <%
@@ -131,6 +162,22 @@ const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s,
     </div>
 </div>
 
+<!-- Success Modal HTML -->
+<div class="wd-modal-overlay" id="successModal">
+    <div class="wd-modal">
+        <div class="wd-modal-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <div class="wd-modal-title">Penarikan Berhasil!</div>
+        <div class="wd-modal-amount" id="modalAmount">Rp 0</div>
+        <div class="wd-modal-desc">
+            Permintaan penarikan dana Anda telah kami terima dan akan diproses dalam waktu maksimal <strong>1x24 jam</strong>.
+        </div>
+        <button class="wd-modal-btn" onclick="closeModal()">Selesai & Tutup</button>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
 function calcFee() {
     const amount = parseInt(document.getElementById('wdAmount').value) || 0;
@@ -139,4 +186,34 @@ function calcFee() {
     document.getElementById('feeDisplay').textContent = '- Rp ' + fee.toLocaleString('id-ID');
     document.getElementById('estDisplay').textContent = 'Rp ' + est.toLocaleString('id-ID');
 }
+
+function closeModal() {
+    document.getElementById('successModal').classList.remove('active');
+    // Clean up URL without reloading
+    const url = new URL(window.location);
+    url.searchParams.delete('success');
+    url.searchParams.delete('amount');
+    window.history.replaceState({}, document.title, url);
+}
+
+// Check for success param on load
+document.addEventListener('DOMContentLoaded', () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('success') === 'true') {
+        const amount = urlParams.get('amount') || 0;
+        document.getElementById('modalAmount').textContent = 'Rp ' + parseFloat(amount).toLocaleString('id-ID');
+        
+        // Trigger Celebration
+        setTimeout(() => {
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10b981', '#3b82f6', '#f59e0b', '#ec4899'],
+                zIndex: 10000
+            });
+            document.getElementById('successModal').classList.add('active');
+        }, 300);
+    }
+});
 </script>

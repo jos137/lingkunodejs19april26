@@ -573,7 +573,7 @@ exports.requestWithdrawal = async (req, res) => {
             console.error('Failed to create admin notification:', notifErr.message);
         }
 
-        res.redirect('/admin/withdrawal');
+        res.redirect(`/admin/withdrawal?success=true&amount=${amount}`);
     } catch (err) {
         console.error(err.message);
         res.redirect('/admin/withdrawal');
