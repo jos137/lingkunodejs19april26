@@ -141,6 +141,19 @@
                 document.getElementById('payMethod').value = el.dataset.method;
                 document.getElementById('payChannel').value = el.dataset.channel;
             }
+
+            // Anti-Spam Submit
+            document.querySelector('form').addEventListener('submit', function(e) {
+                const btn = this.querySelector('.pay-btn');
+                if (btn.classList.contains('processing')) {
+                    e.preventDefault();
+                    return;
+                }
+                btn.classList.add('processing');
+                btn.style.opacity = '0.7';
+                btn.style.cursor = 'not-allowed';
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghubungkan ke iPaymu...';
+            });
         </script>
 
         <div class="footer-note">

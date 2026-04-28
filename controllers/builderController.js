@@ -773,12 +773,24 @@ exports.processCheckout = async (req, res) => {
 
             } else {
                 console.error('iPaymu Error:', response.data);
-                return res.status(500).send('Gagal memproses pembayaran: ' + (response.data.Message || 'Kesalahan iPaymu'));
+                try { await db.execute('UPDATE orders SET status = "rejected" WHERE reference_id = ?', [refId]); } catch(e){}
+                return res.status(500).send(`
+                    <html>
+                    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pembayaran Gagal</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#ef4444;margin-top:0;} p{color:#64748b;line-height:1.5;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
+                    <body><div class="box"><h2>Pembayaran Gagal</h2><p>Sistem pembayaran sedang sibuk atau menolak transaksi Anda. Silakan coba kembali beberapa saat lagi.</p><a href="javascript:history.back()">Kembali & Coba Lagi</a></div></body>
+                    </html>
+                `);
             }
 
         } catch (err) {
             console.error('Checkout Critical Error:', err.message);
-            res.status(500).send('Terjadi kesalahan pada sistem: ' + (err.response ? JSON.stringify(err.response.data) : err.message));
+            try { await db.execute('UPDATE orders SET status = "rejected" WHERE reference_id = ?', [refId]); } catch(e){}
+            res.status(500).send(`
+                <html>
+                <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Koneksi Terputus</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#f59e0b;margin-top:0;} p{color:#64748b;line-height:1.5;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
+                <body><div class="box"><h2>Koneksi Terputus</h2><p>Terjadi kesalahan saat menghubungi gateway pembayaran. Silakan periksa koneksi Anda dan coba lagi.</p><a href="javascript:history.back()">Kembali</a></div></body>
+                </html>
+            `);
         }
     } catch (globalErr) {
         console.error('Global Error:', globalErr);
