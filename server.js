@@ -224,9 +224,11 @@ app.use(async (req, res, next) => {
             } else if (e.message.includes("Unknown column 'is_enabled'")) {
                 await db.execute("ALTER TABLE feature_flags ADD COLUMN is_enabled TINYINT(1) DEFAULT 0 AFTER description");
             }
-            try { await db.execute("ALTER TABLE feature_flags ADD COLUMN text_value TEXT AFTER is_enabled"); } catch(err){}
-            try { await db.execute("ALTER TABLE feature_flags ADD COLUMN color_value VARCHAR(50) AFTER text_value"); } catch(err){}
         }
+        
+        // Auto-heal new announcement columns
+        try { await db.execute("ALTER TABLE feature_flags ADD COLUMN text_value TEXT AFTER is_enabled"); } catch(err){}
+        try { await db.execute("ALTER TABLE feature_flags ADD COLUMN color_value VARCHAR(50) AFTER text_value"); } catch(err){}
 
         // Ensure default flags exist
         const defaultFlags = [
