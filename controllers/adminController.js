@@ -1077,6 +1077,18 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+exports.updateAnnouncement = async (req, res) => {
+    try {
+        if (req.session.user.role !== 'admin') return res.redirect('/admin/dashboard');
+        const { text_value, color_value } = req.body;
+        await db.execute('UPDATE feature_flags SET text_value = ?, color_value = ? WHERE feature_key = "enable_announcement"', [text_value, color_value]);
+        res.redirect('/admin/settings?success=Pengumuman%20Global%20berhasil%20diperbarui');
+    } catch (err) {
+        console.error(err);
+        res.redirect('/admin/settings?error=Gagal%20memperbarui%20pengumuman');
+    }
+};
+
 exports.updateStoreSettings = async (req, res) => {
     try {
         const { theme_color, profile_box_color, show_header, header_type, profile_text_color, name_font_size, bio_font_size } = req.body;

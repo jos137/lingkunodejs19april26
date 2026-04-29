@@ -445,13 +445,19 @@
 
     <!-- MAIN -->
     <main class="main-content">
-        <% if (locals.features && features.enable_announcement) { %>
-            <!-- FEATURE FLAG TEST: ANNOUNCEMENT BANNER -->
-            <div style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; padding: 12px 32px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                <div style="width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+        <% if (locals.features && features.enable_announcement && locals.announcementData) { %>
+            <% 
+               let bgGrad1 = '#3b82f6', bgGrad2 = '#2563eb';
+               if (announcementData.color === 'red') { bgGrad1 = '#ef4444'; bgGrad2 = '#dc2626'; }
+               else if (announcementData.color === 'yellow') { bgGrad1 = '#f59e0b'; bgGrad2 = '#d97706'; }
+               else if (announcementData.color === 'green') { bgGrad1 = '#10b981'; bgGrad2 = '#059669'; }
+            %>
+            <!-- DYNAMIC ANNOUNCEMENT BANNER -->
+            <div style="background: linear-gradient(135deg, <%= bgGrad1 %>, <%= bgGrad2 %>); color: white; padding: 12px 32px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <div style="width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
                     <i class="fas fa-bullhorn"></i>
                 </div>
-                <span>PENGUMUMAN: Fitur Kontrol Sekarang Aktif! Coba matikan flag "enable_announcement" di menu Kontrol Fitur untuk menyembunyikan banner ini.</span>
+                <span><%= announcementData.text %></span>
                 <button onclick="this.parentElement.style.display='none'" style="margin-left: auto; background: transparent; border: none; color: white; cursor: pointer; font-size: 18px; line-height: 1;">&times;</button>
             </div>
         <% } %>

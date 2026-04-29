@@ -224,6 +224,8 @@ app.use(async (req, res, next) => {
             } else if (e.message.includes("Unknown column 'is_enabled'")) {
                 await db.execute("ALTER TABLE feature_flags ADD COLUMN is_enabled TINYINT(1) DEFAULT 0 AFTER description");
             }
+            try { await db.execute("ALTER TABLE feature_flags ADD COLUMN text_value TEXT AFTER is_enabled"); } catch(err){}
+            try { await db.execute("ALTER TABLE feature_flags ADD COLUMN color_value VARCHAR(50) AFTER text_value"); } catch(err){}
         }
 
         // Ensure default flags exist
@@ -245,10 +247,16 @@ app.use(async (req, res, next) => {
         }
 
         // Fetch all feature flags
-        const [featureRows] = await db.execute("SELECT feature_key, is_enabled FROM feature_flags");
+        const [featureRows] = await db.execute("SELECT feature_key, is_enabled, text_value, color_value FROM feature_flags");
         const features = {};
         featureRows.forEach(f => {
             features[f.feature_key] = f.is_enabled === 1;
+            if (f.feature_key === 'enable_announcement') {
+                res.locals.announcementData = { 
+                    text: f.text_value || 'PENGUMUMAN: Fitur Kontrol Sekarang Aktif! Coba matikan flag "enable_announcement" di menu Kontrol Fitur.', 
+                    color: f.color_value || 'blue' 
+                };
+            }
         });
         res.locals.features = features;
         
