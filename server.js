@@ -57,6 +57,7 @@ app.use(async (req, res, next) => {
                     slug: u.slug,
                     whatsapp: u.whatsapp || u.phone,
                     bio: u.bio,
+                    sidebar_theme: u.sidebar_theme || 'default',
                     ipaymu_sandbox: u.ipaymu_sandbox,
                     ipaymu_expiry: u.ipaymu_expiry
                 };
@@ -72,6 +73,7 @@ app.use(async (req, res, next) => {
             await db.execute("ALTER TABLE users ADD COLUMN expired_at DATETIME DEFAULT NULL AFTER plan");
         }
     }
+    try { await db.execute("ALTER TABLE users ADD COLUMN sidebar_theme VARCHAR(50) DEFAULT 'default' AFTER bio"); } catch(e){}
 
     res.locals.user = req.session.user || {
         role: 'admin',

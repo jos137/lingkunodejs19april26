@@ -1077,6 +1077,18 @@ exports.updateProfile = async (req, res) => {
     }
 };
 
+exports.updateAdminTheme = async (req, res) => {
+    try {
+        const { sidebar_theme } = req.body;
+        await db.execute('UPDATE users SET sidebar_theme = ? WHERE id = ?', [sidebar_theme, req.session.user.id]);
+        req.session.user.sidebar_theme = sidebar_theme;
+        res.redirect('/admin/settings?success=Tema%20Dasbor%20berhasil%20diperbarui');
+    } catch (err) {
+        console.error(err);
+        res.redirect('/admin/settings?error=Gagal%20memperbarui%20tema%20dasbor');
+    }
+};
+
 exports.updateAnnouncement = async (req, res) => {
     try {
         if (req.session.user.role !== 'admin') return res.redirect('/admin/dashboard');

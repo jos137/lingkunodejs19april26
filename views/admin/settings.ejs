@@ -44,6 +44,7 @@
             <div class="settings-nav-item" onclick="showSection('ipaymu', this)" style="color:#2563eb;"><i class="fas fa-credit-card"></i> iPaymu Gateway</div>
             <div class="settings-nav-item" onclick="showSection('smtp', this)" style="color:#ec4899;"><i class="fas fa-server"></i> SMTP Server</div>
             <div class="settings-nav-item" onclick="showSection('pengumuman', this)" style="color:#f43f5e;"><i class="fas fa-bullhorn"></i> Pengumuman Global</div>
+            <div class="settings-nav-item" onclick="showSection('dasbor', this)" style="color:#8b5cf6;"><i class="fas fa-paint-roller"></i> Tema Dasbor Admin</div>
         <% } %>
 
         <div class="settings-nav-item" onclick="showSection('affiliate', this)" style="color:#f59e0b;"><i class="fas fa-handshake"></i> Pengaturan Affiliate</div>
@@ -312,6 +313,51 @@
                 </div>
                 <hr class="s-divider">
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #f43f5e, #e11d48);">Simpan Pengumuman</button>
+            </form>
+        </div>
+
+        <!-- TEMA DASBOR ADMIN -->
+        <div class="settings-panel s-section" id="sec-dasbor">
+            <div class="settings-title">Tema Dasbor Admin</div>
+            <div class="settings-desc">Ubah gaya tampilan dan warna menu sidebar (khusus untuk Anda).</div>
+            
+            <% if (locals.success && locals.success.includes('Tema Dasbor')) { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-check-circle"></i> Berhasil memperbarui tema dasbor
+                </div>
+            <% } %>
+
+            <form action="/admin/settings/update-admin-theme" method="POST">
+                <div class="s-group">
+                    <label class="s-label">Pilih Tema Sidebar</label>
+                    <div style="display:grid; gap:12px; margin-top:10px;">
+                        <label style="display:flex; align-items:center; gap:12px; padding:16px; border:1.5px solid <%= (!user.sidebar_theme || user.sidebar_theme === 'default') ? '#3b82f6' : '#e2e8f0' %>; border-radius:12px; cursor:pointer; background:<%= (!user.sidebar_theme || user.sidebar_theme === 'default') ? '#eff6ff' : '#fff' %>; transition:0.2s;">
+                            <input type="radio" name="sidebar_theme" value="default" <%= (!user.sidebar_theme || user.sidebar_theme === 'default') ? 'checked' : '' %>>
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">Klasik (Biru Dongker)</div>
+                                <div style="font-size:12px; color:#64748b;">Tema bawaan Lingku dengan nuansa profesional biru gelap.</div>
+                            </div>
+                        </label>
+
+                        <label style="display:flex; align-items:center; gap:12px; padding:16px; border:1.5px solid <%= user.sidebar_theme === 'dark_green' ? '#10b981' : '#e2e8f0' %>; border-radius:12px; cursor:pointer; background:<%= user.sidebar_theme === 'dark_green' ? '#f0fdf4' : '#fff' %>; transition:0.2s;">
+                            <input type="radio" name="sidebar_theme" value="dark_green" <%= user.sidebar_theme === 'dark_green' ? 'checked' : '' %>>
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">Modern Gelap (Neon Green)</div>
+                                <div style="font-size:12px; color:#64748b;">Background hitam pekat dengan sorotan ikon hijau neon yang futuristik.</div>
+                            </div>
+                        </label>
+
+                        <label style="display:flex; align-items:center; gap:12px; padding:16px; border:1.5px solid <%= user.sidebar_theme === 'light_glass' ? '#8b5cf6' : '#e2e8f0' %>; border-radius:12px; cursor:pointer; background:<%= user.sidebar_theme === 'light_glass' ? '#f5f3ff' : '#fff' %>; transition:0.2s;">
+                            <input type="radio" name="sidebar_theme" value="light_glass" <%= user.sidebar_theme === 'light_glass' ? 'checked' : '' %>>
+                            <div>
+                                <div style="font-weight:700; color:#0f172a; margin-bottom:4px;">Kaca Terang (Light Glass)</div>
+                                <div style="font-size:12px; color:#64748b;">Tampilan putih bersih ala macOS/iOS dengan efek bayangan lembut.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <hr class="s-divider">
+                <button type="submit" class="s-save" style="background:linear-gradient(135deg, #8b5cf6, #6d28d9);">Simpan Tema</button>
             </form>
         </div>
 

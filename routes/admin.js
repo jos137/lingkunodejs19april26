@@ -146,6 +146,7 @@ const profileStorage = multer.diskStorage({
 const uploadProfile = multer({ storage: profileStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 router.post('/settings/update-profile', uploadProfile.single('profile_photo'), adminController.updateProfile);
 router.post('/settings/update-store', adminController.updateStoreSettings);
+router.post('/settings/update-admin-theme', adminController.updateAdminTheme);
 router.post('/settings/update-announcement', adminController.updateAnnouncement);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
