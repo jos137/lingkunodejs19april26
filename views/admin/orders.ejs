@@ -164,13 +164,14 @@
     .order-detail-mobile { display: none; width: 100% !important; margin: 15px 0 0 0 !important; padding: 15px 0 0 0 !important; border-top: 1px solid #f1f5f9; }
     .order-detail-mobile .detail-status { display: none; } /* Hapus status di detail sesuai request */
     .order-detail-mobile .detail-ref-id { font-size: 13px; font-weight: 500; }
-    .order-detail-mobile .detail-sections { display: block; width: 100%; margin: 0; }
-    .order-detail-mobile .detail-section { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; }
+    .order-detail-mobile .detail-sections { display: block; width: 100%; margin: 0; box-sizing: border-box; }
+    .order-detail-mobile .detail-section { width: 100%; padding: 15px; margin-bottom: 15px; border-radius: 12px; box-sizing: border-box; }
     
     .order-detail-mobile .detail-row { 
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;
         font-size: 13px; line-height: 1.4; color: #64748b; margin-bottom: 8px;
     }
+    .order-detail-mobile .detail-row strong, .order-detail-mobile .detail-row .detail-total { text-align: right; word-break: break-word; }
     .order-detail-mobile .detail-total { font-size: 16px; font-weight: 700; color: #10b981; margin-top: 0; }
     .order-detail-mobile .mini-followup { width: 100%; border-radius: 10px; padding: 12px; }
     
@@ -350,7 +351,7 @@ function selectOrder(el, idx) {
             <div class="detail-section" style="${isMobile ? 'margin-top:20px;' : ''}">
                 <div class="detail-section-title">INFORMASI PEMBELI</div>
                 <div class="detail-row"><strong>${o.customer_name || o.buyer_name || 'N/A'}</strong></div>
-                <div class="detail-row" style="font-size:12px;">${o.customer_email || o.buyer_email || ''}</div>
+                <div class="detail-row" style="font-size:12px; word-break: break-all;">${o.customer_email || o.buyer_email || ''}</div>
                 <div class="detail-row" style="font-size:12px; margin-top:4px;"><i class="fas fa-phone"></i> ${o.customer_whatsapp || o.customer_phone || o.buyer_phone || '-'}</div>
                 <div onclick="sendOrderEmail(${o.id}, '${o.status}')" class="mini-followup" style="background:${btnColor}; min-width: 140px; justify-content: center; cursor: pointer;">
                     <i class="fas fa-paper-plane"></i> ${btnLabel}

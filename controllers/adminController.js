@@ -385,7 +385,7 @@ exports.getOrders = async (req, res) => {
         });
 
         res.render('admin/orders', {
-            title: 'Manajemen Pesanan',
+            title: 'Pesanan',
             layout: './layouts/admin',
             user: req.session.user || res.locals.user,
             orders: cleanedOrders,
