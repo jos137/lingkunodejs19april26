@@ -1100,8 +1100,9 @@ exports.updateProfile = async (req, res) => {
         }
 
         if (req.session.user) {
-            req.session.user.fullname = name;
+            req.session.user.name = name;
             req.session.user.phone = phone;
+            req.session.user.whatsapp = phone;
             req.session.user.bio = bio;
         }
         res.redirect('/admin/settings?tab=profil&success=1');

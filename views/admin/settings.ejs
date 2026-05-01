@@ -81,7 +81,7 @@
                 <div class="s-row">
                     <div class="s-group">
                         <label class="s-label">Nama Lengkap</label>
-                        <input class="s-input" type="text" name="name" value="<%= user.name || '' %>" placeholder="Nama Anda">
+                        <input class="s-input" type="text" name="name" value="<%= user.fullname || user.name || '' %>" placeholder="Nama Anda">
                     </div>
                     <div class="s-group">
                         <label class="s-label">Email</label>
@@ -94,7 +94,7 @@
                 </div>
                 <div class="s-group">
                     <label class="s-label">WhatsApp</label>
-                    <input class="s-input" type="text" name="phone" value="<%= user.phone || '' %>" placeholder="e.g. 08123456789">
+                    <input class="s-input" type="text" name="phone" value="<%= user.phone || user.whatsapp || '' %>" placeholder="e.g. 08123456789">
                 </div>
                 <hr class="s-divider">
                 <button type="submit" class="s-save">Simpan Perubahan</button>
