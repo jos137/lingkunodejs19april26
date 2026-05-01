@@ -198,6 +198,30 @@
             font-size: 12px; color: #475569; max-width: 1100px; margin: 0 auto;
         }
 
+        /* ===== ACCORDION (LEGAL) ===== */
+        .legal-section { padding: 100px 40px; background: #fff; }
+        .accordion-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+        .accordion-item { border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+        .accordion-header { 
+            width: 100%; padding: 20px 24px; background: #f8fafc; border: none; text-align: left; 
+            font-size: 16px; font-weight: 800; color: #0f172a; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center; transition: 0.2s;
+        }
+        .accordion-header:hover { background: #f1f5f9; }
+        .accordion-content { 
+            padding: 0 24px; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out, padding 0.3s ease; 
+            font-size: 14px; color: #475569; line-height: 1.7; background: #fff;
+        }
+        .accordion-item.active .accordion-content { padding: 24px; max-height: 5000px; border-top: 1px solid #e2e8f0; }
+        .accordion-item.active .accordion-header .icon { transform: rotate(180deg); }
+        .accordion-header .icon { transition: transform 0.3s; color: #10b981; }
+
+        .legal-text h4 { margin-top: 24px; margin-bottom: 10px; color: #0f172a; font-size: 15px; font-weight: 800; }
+        .legal-text h4:first-child { margin-top: 0; }
+        .legal-text p { margin-bottom: 12px; }
+        .legal-text ul { margin-bottom: 16px; padding-left: 20px; }
+        .legal-text li { margin-bottom: 6px; }
+
         /* ===== RESPONSIVE ===== */
         @media (max-width: 900px) {
             .hero { grid-template-columns: 1fr; text-align: center; padding: 120px 20px 60px; }
@@ -330,6 +354,155 @@
         </div>
     </section>
 
+    <!-- LEGAL ACCORDION -->
+    <section class="legal-section" id="legal">
+        <div class="section-center">
+            <h2>Syarat & Ketentuan</h2>
+            <p>Penting untuk membaca kebijakan kami sebelum menggunakan layanan Lingku.xyz.</p>
+        </div>
+        <div class="accordion-container">
+            <!-- T&C -->
+            <div class="accordion-item">
+                <button class="accordion-header" onclick="toggleAccordion(this)">
+                    <span>Syarat dan Ketentuan Penggunaan</span>
+                    <i class="fas fa-chevron-down icon"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="legal-text">
+                        <p><em>Terakhir diperbarui: 1 Mei 2026</em></p>
+                        <p>Selamat datang di Lingku.xyz (“Platform”, “Layanan”, “kami”, atau “Lingku.xyz”). Dengan mengakses atau menggunakan website https://lingku.xyz/, Anda dianggap telah membaca, memahami, dan menyetujui seluruh isi Syarat & Ketentuan ini. Jika Anda tidak setuju, mohon untuk tidak menggunakan layanan kami.</p>
+
+                        <h4>1. Definisi</h4>
+                        <ul>
+                            <li><strong>Lingku.xyz</strong> adalah platform digital, website, sistem, dan layanan yang dioperasikan dengan nama Lingku.xyz.</li>
+                            <li><strong>Pengguna</strong> adalah setiap individu atau pihak yang mengakses dan menggunakan layanan Lingku.xyz.</li>
+                            <li><strong>Kreator</strong> adalah pengguna yang mengunggah, menjual, membagikan, atau mempromosikan konten, produk, atau layanan melalui platform.</li>
+                            <li><strong>Konten</strong> mencakup teks, gambar, video, file, tautan, produk digital, layanan, dan materi lainnya yang diunggah pengguna.</li>
+                        </ul>
+
+                        <h4>2. Persyaratan Pengguna</h4>
+                        <ul>
+                            <li>Pengguna wajib berusia minimal 18 tahun untuk menggunakan layanan ini.</li>
+                            <li>Jika berusia di bawah 18 tahun, penggunaan layanan harus berada di bawah pengawasan dan persetujuan orang tua atau wali.</li>
+                        </ul>
+
+                        <h4>3. Akun Pengguna</h4>
+                        <p>Pengguna bertanggung jawab penuh atas:</p>
+                        <ul>
+                            <li>keamanan akun,</li>
+                            <li>kerahasiaan password,</li>
+                            <li>seluruh aktivitas yang terjadi pada akun masing-masing.</li>
+                        </ul>
+                        <p>Lingku.xyz berhak menangguhkan atau menghapus akun yang melanggar ketentuan ini.</p>
+
+                        <h4>4. Penggunaan yang Dilarang</h4>
+                        <p>Pengguna dilarang menggunakan Lingku.xyz untuk:</p>
+                        <ul>
+                            <li>aktivitas ilegal, penipuan, spam, phishing, atau penyebaran malware.</li>
+                            <li>pelanggaran hak cipta, ujaran kebencian, pornografi, atau promosi kekerasan.</li>
+                            <li>aktivitas menyesatkan atau merugikan pihak lain.</li>
+                        </ul>
+                        <p>Kami berhak menghapus konten atau menonaktifkan akun yang melanggar hukum atau ketentuan platform.</p>
+
+                        <h4>5. Hak Kekayaan Intelektual</h4>
+                        <p>Pengguna tetap memiliki hak atas konten yang diunggah. Dengan mengunggah konten ke Lingku.xyz, pengguna memberikan izin non-eksklusif kepada kami untuk: menyimpan, menampilkan, mendistribusikan, memproses, dan menggunakan konten tersebut untuk kebutuhan operasional dan promosi platform.</p>
+                        <p>Pengguna bertanggung jawab memastikan bahwa konten yang diunggah tidak melanggar hak pihak lain.</p>
+
+                        <h4>6. Pembayaran dan Transaksi</h4>
+                        <p>Jika terdapat transaksi melalui Lingku.xyz:</p>
+                        <ul>
+                            <li>pengguna bertanggung jawab atas keakuratan transaksi,</li>
+                            <li>kewajiban pajak menjadi tanggung jawab masing-masing pengguna,</li>
+                            <li>transaksi dapat diproses melalui layanan pihak ketiga (payment gateway).</li>
+                        </ul>
+                        <p>Lingku.xyz tidak bertanggung jawab atas sengketa antara penjual dan pembeli kecuali diwajibkan oleh hukum.</p>
+
+                        <h4>7. Layanan Pihak Ketiga</h4>
+                        <p>Lingku.xyz dapat terhubung dengan layanan pihak ketiga seperti payment gateway, layanan analitik, media sosial, layanan iklan, dan website eksternal. Kami tidak bertanggung jawab atas kebijakan maupun layanan pihak ketiga tersebut.</p>
+
+                        <h4>8. Batasan Tanggung Jawab</h4>
+                        <p>Layanan Lingku.xyz disediakan sebagaimana adanya (“AS IS”) dan sebagaimana tersedia (“AS AVAILABLE”). Kami tidak menjamin layanan selalu tersedia tanpa gangguan, bebas error, sepenuhnya aman, atau kompatibel di seluruh perangkat.</p>
+                        <p>Lingku.xyz tidak bertanggung jawab atas kehilangan data, kerugian bisnis, gangguan layanan, akses tidak sah, maupun kerugian tidak langsung lainnya.</p>
+
+                        <h4>9. Penangguhan dan Penghentian Akun</h4>
+                        <p>Kami berhak menangguhkan atau menghentikan akses pengguna kapan saja tanpa pemberitahuan apabila ditemukan pelanggaran terhadap syarat ini atau hukum yang berlaku.</p>
+
+                        <h4>10. Perubahan Ketentuan</h4>
+                        <p>Lingku.xyz dapat mengubah Syarat & Ketentuan ini sewaktu-waktu. Perubahan akan berlaku setelah dipublikasikan pada halaman ini. Dengan tetap menggunakan layanan, pengguna dianggap menyetujui perubahan tersebut.</p>
+
+                        <h4>11. Hukum yang Berlaku</h4>
+                        <p>Syarat & Ketentuan ini diatur dan ditafsirkan berdasarkan hukum Republik Indonesia.</p>
+
+                        <h4>12. Kontak</h4>
+                        <p>Jika terdapat pertanyaan terkait Syarat & Ketentuan ini, silakan hubungi:<br>
+                        Email: <a href="mailto:support@lingku.xyz" style="color:#10b981;font-weight:600;">support@lingku.xyz</a><br>
+                        Website: <a href="https://lingku.xyz/" style="color:#10b981;font-weight:600;">https://lingku.xyz/</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Privacy Policy -->
+            <div class="accordion-item">
+                <button class="accordion-header" onclick="toggleAccordion(this)">
+                    <span>Kebijakan Privasi (Privacy Policy)</span>
+                    <i class="fas fa-chevron-down icon"></i>
+                </button>
+                <div class="accordion-content">
+                    <div class="legal-text">
+                        <p><em>Terakhir diperbarui: 1 Mei 2026</em></p>
+                        <p>Lingku.xyz menghargai privasi pengguna dan berkomitmen melindungi data pribadi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, menyimpan, dan melindungi informasi pengguna saat menggunakan layanan https://lingku.xyz/.</p>
+
+                        <h4>1. Informasi yang Kami Kumpulkan</h4>
+                        <p>Kami dapat mengumpulkan informasi seperti:</p>
+                        <ul>
+                            <li>nama, alamat email, nomor telepon, alamat IP,</li>
+                            <li>informasi perangkat dan browser, aktivitas penggunaan, cookies,</li>
+                            <li>data transaksi, dan konten yang diunggah pengguna.</li>
+                        </ul>
+
+                        <h4>2. Penggunaan Informasi</h4>
+                        <p>Informasi digunakan untuk:</p>
+                        <ul>
+                            <li>menyediakan dan mengelola layanan,</li>
+                            <li>meningkatkan performa platform dan memproses transaksi,</li>
+                            <li>berkomunikasi dengan pengguna dan mencegah penyalahgunaan,</li>
+                            <li>analisis penggunaan layanan serta personalisasi pengalaman pengguna.</li>
+                        </ul>
+
+                        <h4>3. Cookies dan Teknologi Pelacakan</h4>
+                        <p>Lingku.xyz dapat menggunakan cookies, analytics, tracking pixels, dan session technology. Teknologi ini membantu meningkatkan pengalaman pengguna dan performa layanan. Pengguna dapat menonaktifkan cookies melalui pengaturan browser masing-masing.</p>
+
+                        <h4>4. Layanan Pihak Ketiga</h4>
+                        <p>Kami dapat menggunakan layanan pihak ketiga seperti payment gateway, cloud hosting, layanan analitik, dan jaringan periklanan. Pihak ketiga tersebut dapat memproses data sesuai kebijakan privasi mereka masing-masing.</p>
+
+                        <h4>5. Keamanan Data</h4>
+                        <p>Kami menerapkan langkah teknis dan organisasi yang wajar untuk melindungi data pengguna. Namun, tidak ada sistem keamanan yang sepenuhnya aman.</p>
+
+                        <h4>6. Penyimpanan Data</h4>
+                        <p>Data pengguna disimpan selama diperlukan untuk operasional layanan, kepatuhan hukum, penyelesaian sengketa, dan keamanan platform.</p>
+
+                        <h4>7. Hak Pengguna</h4>
+                        <p>Pengguna berhak untuk meminta akses data pribadi, memperbaiki data, menghapus akun, dan menarik persetujuan penggunaan data jika memungkinkan. Permintaan dapat dikirim melalui email resmi kami.</p>
+
+                        <h4>8. Privasi Anak</h4>
+                        <p>Layanan ini tidak ditujukan untuk anak di bawah usia 18 tahun. Kami tidak secara sengaja mengumpulkan data pribadi anak di bawah umur.</p>
+
+                        <h4>9. Tautan Eksternal</h4>
+                        <p>Lingku.xyz dapat berisi tautan menuju website pihak ketiga. Kami tidak bertanggung jawab atas isi maupun kebijakan privasi website tersebut.</p>
+
+                        <h4>10. Perubahan Kebijakan Privasi</h4>
+                        <p>Kami dapat memperbarui Kebijakan Privasi ini sewaktu-waktu. Perubahan berlaku setelah dipublikasikan pada halaman ini.</p>
+
+                        <h4>11. Kontak</h4>
+                        <p>Jika ada pertanyaan mengenai Kebijakan Privasi ini:<br>
+                        Email: <a href="mailto:support@lingku.xyz" style="color:#10b981;font-weight:600;">support@lingku.xyz</a><br>
+                        Website: <a href="https://lingku.xyz/" style="color:#10b981;font-weight:600;">https://lingku.xyz/</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- CTA -->
     <section class="cta">
         <h2>Mulai Uangkan Kreativitas Mu</h2>
@@ -382,6 +555,21 @@
             document.querySelector('.navbar').style.boxShadow = 
                 window.scrollY > 20 ? '0 4px 20px rgba(0,0,0,0.15)' : 'none';
         });
+        // Accordion Logic
+        function toggleAccordion(button) {
+            const item = button.parentElement;
+            const isActive = item.classList.contains('active');
+            
+            // Close all items
+            document.querySelectorAll('.accordion-item').forEach(acc => {
+                acc.classList.remove('active');
+            });
+
+            // Open clicked item if it wasn't already open
+            if (!isActive) {
+                item.classList.add('active');
+            }
+        }
     </script>
 
 </body>
