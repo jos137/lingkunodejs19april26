@@ -805,6 +805,7 @@ exports.ipaymuCallback = async (req, res) => {
         
         // Success condition: status 'berhasil' or status_code '1'
         const isSuccess = status === 'berhasil' || String(status_code) === '1';
+        const isExpired = status === 'expired' || String(status_code) === '-2';
 
         if (isSuccess && sid) {
             // Auto-Heal: Ensure trx_id column exists
@@ -883,6 +884,18 @@ exports.ipaymuCallback = async (req, res) => {
                     }
 
                     console.log(`[SUCCESS] Order ${sid} completed & Email/Notif sent.`);
+                }
+            }
+        } else if (isExpired && sid) {
+            const [orders] = await db.execute('SELECT id, product_id, status FROM orders WHERE reference_id = ?', [sid]);
+            if (orders.length > 0) {
+                const order = orders[0];
+                if (order.status === 'pending') {
+                    // Update order to expired
+                    await db.execute('UPDATE orders SET status = ? WHERE id = ?', ['expired', order.id]);
+                    // Return stock
+                    await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ?', [order.product_id]);
+                    console.log(`[EXPIRED] Order ${sid} expired. Stock returned.`);
                 }
             }
         }
