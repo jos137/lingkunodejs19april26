@@ -63,20 +63,19 @@
         .product-hero {
             width: 100%;
             position: relative;
-            background: #f8fafc;
+            background: #fff;
             overflow: hidden;
         }
 
         .product-img {
             width: 100%;
-            aspect-ratio: 1/1;
-            object-fit: cover;
+            height: auto;
             display: block;
         }
 
         .content {
-            padding: 24px;
-            padding-bottom: 120px;
+            padding: 20px;
+            padding-bottom: 100px;
         }
 
         .badge-row {
@@ -117,29 +116,56 @@
         }
 
         .price-box {
-            margin-bottom: 24px;
-            padding-bottom: 20px;
-            border-bottom: 1.5px solid #f1f5f9;
+            margin-top: 8px;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
             display: flex;
-            align-items: baseline;
-            gap: 12px;
-            flex-wrap: wrap;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .price-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .price-value-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-amounts {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .price-current {
-            font-size: 18px;
-            font-weight: 700;
+            font-size: 24px;
+            font-weight: 800;
             color: #10b981;
             margin: 0;
-            letter-spacing: -1px;
+            letter-spacing: -0.5px;
         }
 
         .price-old {
-            font-size: 13px;
+            font-size: 14px;
             color: #94a3b8;
             text-decoration: line-through;
             font-weight: 500;
-            opacity: 0.9;
         }
 
         .description {
@@ -205,29 +231,34 @@
         </div>
 
         <div class="content">
-            <div class="badge-row">
-                <% if (product.stock> 0) { %>
-                    <div class="stock-badge"><i class="fas fa-bolt"></i> SISA <%= product.stock %> SLOT</div>
-                    <% } %>
-                        <% // Safely parse numbers (handle strings with commas or nulls) const
-                            curPrice=parseFloat(String(product.price).replace(',', '.' )) || 0; const
-                            oldPrice=parseFloat(String(product.normal_price).replace(',', '.' )) || 0; %>
-                            <% if (oldPrice> curPrice) { %>
-                                <% let save=Math.round((oldPrice - curPrice) / oldPrice * 100); %>
-                                    <div class="discount-badge">Hemat <%= save %>%</div>
-                                    <% } %>
-            </div>
+            <% 
+                const curPrice = parseFloat(String(product.price).replace(',', '.' )) || 0; 
+                const oldPrice = parseFloat(String(product.normal_price).replace(',', '.' )) || 0; 
+            %>
 
             <h1 class="product-title">
                 <%= product.name %>
             </h1>
 
             <div class="price-box">
-                <div class="price-current">Rp <%= curPrice.toLocaleString('id-ID') %>
-                </div>
-                <% if (oldPrice> curPrice) { %>
-                    <span class="price-old">Rp <%= oldPrice.toLocaleString('id-ID') %></span>
+                <div class="price-label-row">
+                    <div class="price-label">Harga Spesial</div>
+                    <% if (oldPrice > curPrice) { %>
+                        <% let save = Math.round((oldPrice - curPrice) / oldPrice * 100); %>
+                        <div class="discount-badge">Hemat <%= save %>%</div>
                     <% } %>
+                </div>
+                <div class="price-value-row">
+                    <div class="price-amounts">
+                        <div class="price-current">Rp <%= curPrice.toLocaleString('id-ID') %></div>
+                        <% if (oldPrice > curPrice) { %>
+                            <span class="price-old">Rp <%= oldPrice.toLocaleString('id-ID') %></span>
+                        <% } %>
+                    </div>
+                    <% if (product.stock > 0) { %>
+                        <div class="stock-badge"><i class="fas fa-bolt"></i> SISA <%= product.stock %> SLOT</div>
+                    <% } %>
+                </div>
             </div>
 
             <div class="description">
