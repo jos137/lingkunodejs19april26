@@ -316,12 +316,31 @@ exports.getOrders = async (req, res) => {
             const [adminRows] = await db.execute('SELECT ipaymu_expiry FROM users WHERE role = "admin" LIMIT 1');
             if (adminRows.length > 0) expiryMins = parseInt(adminRows[0].ipaymu_expiry) || 60;
             
-            await db.execute(`
-                UPDATE orders 
-                SET status = 'expired' 
+            const [expiredOrders] = await db.execute(`
+                SELECT id, product_id 
+                FROM orders 
                 WHERE status = 'pending' 
-                AND created_at < DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+07:00'), INTERVAL ? MINUTE)
+                AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
             `, [expiryMins]);
+
+            if (expiredOrders.length > 0) {
+                await db.execute(`
+                    UPDATE orders 
+                    SET status = 'expired' 
+                    WHERE status = 'pending' 
+                    AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
+                `, [expiryMins]);
+
+                // Restore stock
+                const productCounts = {};
+                expiredOrders.forEach(o => {
+                    productCounts[o.product_id] = (productCounts[o.product_id] || 0) + 1;
+                });
+                
+                for (let pid in productCounts) {
+                    await db.execute('UPDATE products SET stock = stock + ? WHERE id = ?', [productCounts[pid], pid]);
+                }
+            }
         } catch(e) { console.error('Auto-expire err:', e.message); }
 
         // Get total count for pagination

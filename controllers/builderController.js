@@ -830,7 +830,7 @@ exports.ipaymuCallback = async (req, res) => {
             if (orders.length > 0) {
                 const order = orders[0];
                 
-                if (order.status === 'pending') {
+                if (order.status === 'pending' || order.status === 'expired') {
                     const commAmt = parseFloat(order.commission_amount || 0);
                     const totalPrice = parseFloat(order.total_price || 0);
                     const merchantNet = totalPrice - commAmt;
