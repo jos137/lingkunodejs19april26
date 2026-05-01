@@ -12,13 +12,17 @@ router.get('/', (req, res) => {
     res.render('index', { layout: false });
 });
 
-// Legal Pages
+// Legal & Contact Pages
 router.get('/terms', (req, res) => {
     res.render('terms', { layout: false });
 });
 
 router.get('/privacy', (req, res) => {
     res.render('privacy', { layout: false });
+});
+
+router.get('/contact', (req, res) => {
+    res.render('contact', { layout: false });
 });
 
 // Affiliate / Referral Tracking
