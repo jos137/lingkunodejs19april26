@@ -591,12 +591,15 @@ exports.processCheckout = async (req, res) => {
             }
         }
 
-        // 4. iPaymu Integration
-        const isSandbox = product.ipaymu_sandbox == 1;
-        const va = product.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE); 
-        const apiKey = product.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
+        // 4. iPaymu Integration (Global Config from Admin)
+        const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_expiry, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
+        const adminConfig = adminRows.length > 0 ? adminRows[0] : {};
+
+        const isSandbox = adminConfig.ipaymu_sandbox == 1;
+        const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE); 
+        const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
         const url = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
-        const expiryMins = product.ipaymu_expiry || 60; 
+        const expiryMins = adminConfig.ipaymu_expiry || 60; 
 
         if (!va || !apiKey) {
             return res.status(500).send('Konfigurasi iPaymu (VA/APIKey) belum disetting di database atau .env (' + (isSandbox ? 'SANDBOX' : 'LIVE') + ')');
@@ -640,7 +643,9 @@ exports.processCheckout = async (req, res) => {
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            comments: `Order ${product.name}`
+            comments: `Order ${product.name}`,
+            expired: expiryMins,
+            expiredType: 'minutes'
         };
 
         const jsonBody = JSON.stringify(body);
@@ -657,7 +662,7 @@ exports.processCheckout = async (req, res) => {
                     'signature': signature,
                     'timestamp': timestamp
                 },
-                timeout: 15000 
+                timeout: 45000 
             });
 
             if (response.data && response.data.Status === 200) {

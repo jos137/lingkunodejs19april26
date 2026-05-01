@@ -310,6 +310,20 @@ exports.getOrders = async (req, res) => {
         const limit = 20;
         const offset = (page - 1) * limit;
 
+        // Auto-expire pending orders globally
+        let expiryMins = 60;
+        try {
+            const [adminRows] = await db.execute('SELECT ipaymu_expiry FROM users WHERE role = "admin" LIMIT 1');
+            if (adminRows.length > 0) expiryMins = parseInt(adminRows[0].ipaymu_expiry) || 60;
+            
+            await db.execute(`
+                UPDATE orders 
+                SET status = 'expired' 
+                WHERE status = 'pending' 
+                AND created_at < DATE_SUB(CONVERT_TZ(NOW(), '+00:00', '+07:00'), INTERVAL ? MINUTE)
+            `, [expiryMins]);
+        } catch(e) { console.error('Auto-expire err:', e.message); }
+
         // Get total count for pagination
         const [countRow] = await db.execute('SELECT COUNT(*) as total FROM orders WHERE user_id = ?', [userId]);
         const totalItems = countRow[0].total;
@@ -358,7 +372,8 @@ exports.getOrders = async (req, res) => {
             orders: cleanedOrders,
             currentPage: page,
             totalPages: totalPages,
-            merchantUsername: req.session.user ? req.session.user.username : ""
+            merchantUsername: req.session.user ? req.session.user.username : "",
+            expiryMins: expiryMins
         });
     } catch (err) {
         console.error('Orders Error:', err.message);

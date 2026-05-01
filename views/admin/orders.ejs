@@ -202,9 +202,23 @@
                          data-buyer="<%= (order.customer_name || order.buyer_name || '').toLowerCase() %>"
                          onclick="selectOrder(this, <%= idx %>)">
                         <div class="order-info">
-                            <div class="order-date">
-                                <%= order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', timeZone: 'Asia/Jakarta' }) : '' %>,
-                                <%= order.created_at ? new Date(order.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta' }) : '' %>
+                            <div class="order-date" style="display:flex; align-items:center;">
+                                <span>
+                                    <%= order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', timeZone: 'Asia/Jakarta' }) : '' %>,
+                                    <%= order.created_at ? new Date(order.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta' }) : '' %>
+                                </span>
+                                <% if (order.status === 'pending') { 
+                                    let nowTime = new Date().getTime();
+                                    let createTime = new Date(order.created_at).getTime();
+                                    let expireTime = createTime + ((locals.expiryMins || 60) * 60000);
+                                    let timeLeft = Math.floor((expireTime - nowTime) / 1000);
+                                    if (timeLeft > 0) {
+                                %>
+                                    <span class="countdown-timer" data-timeleft="<%= timeLeft %>" style="margin-left: 8px; padding: 2px 8px; border: 1px solid #10b981; border-radius: 20px; font-size: 10px; color: #10b981; font-weight: 800;">
+                                        --:--
+                                    </span>
+                                <%  } 
+                                   } %>
                             </div>
                             <div class="order-buyer"><%= order.customer_name || order.buyer_name || 'Pembeli' %></div>
                             <div class="order-product"><%= order.product_name %></div>
@@ -411,4 +425,30 @@ async function sendOrderEmail(id, status) {
     }
 }
 if (ordersData.length > 0) selectOrder(document.querySelector('.order-card.active') || document.querySelector('.order-card'), 0);
+
+function startCountdowns() {
+    const timers = document.querySelectorAll('.countdown-timer');
+    if (timers.length === 0) return;
+    
+    setInterval(() => {
+        timers.forEach(timer => {
+            let timeLeft = parseInt(timer.getAttribute('data-timeleft'));
+            if (timeLeft <= 0) {
+                timer.innerHTML = "EXPIRED";
+                timer.style.color = "#dc2626";
+                timer.style.borderColor = "#dc2626";
+                if(timer.getAttribute('data-expired') !== 'true') {
+                    timer.setAttribute('data-expired', 'true');
+                    setTimeout(() => location.reload(), 2000);
+                }
+            } else {
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                timer.innerHTML = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                timer.setAttribute('data-timeleft', timeLeft - 1);
+            }
+        });
+    }, 1000);
+}
+startCountdowns();
 </script>
