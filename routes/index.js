@@ -12,6 +12,15 @@ router.get('/', (req, res) => {
     res.render('index', { layout: false });
 });
 
+// Legal Pages
+router.get('/terms', (req, res) => {
+    res.render('terms', { layout: false });
+});
+
+router.get('/privacy', (req, res) => {
+    res.render('privacy', { layout: false });
+});
+
 // Affiliate / Referral Tracking
 router.get('/ref/:affiliateCode', indexController.handleReferral);
 
