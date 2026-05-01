@@ -310,26 +310,30 @@ exports.getOrders = async (req, res) => {
         const limit = 20;
         const offset = (page - 1) * limit;
 
-        // Auto-expire pending orders globally
-        let expiryMins = 60;
+        // Auto-expire pending orders for THIS MERCHANT
+        let expiryMins = 15;
         try {
-            const [adminRows] = await db.execute('SELECT ipaymu_expiry FROM users WHERE role = "admin" LIMIT 1');
-            if (adminRows.length > 0) expiryMins = parseInt(adminRows[0].ipaymu_expiry) || 60;
+            const [userRows] = await db.execute('SELECT ipaymu_expiry FROM users WHERE id = ?', [userId]);
+            if (userRows.length > 0) expiryMins = parseInt(userRows[0].ipaymu_expiry) || 15;
             
+            // Independent Timer Logic: Check each order's created_at against its seller's expiry
             const [expiredOrders] = await db.execute(`
                 SELECT id, product_id 
                 FROM orders 
                 WHERE status = 'pending' 
-                AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
-            `, [expiryMins]);
+                AND user_id = ? 
+                AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
+            `, [userId, expiryMins]);
 
             if (expiredOrders.length > 0) {
+                // Update status to expired
                 await db.execute(`
                     UPDATE orders 
                     SET status = 'expired' 
                     WHERE status = 'pending' 
-                    AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
-                `, [expiryMins]);
+                    AND user_id = ? 
+                    AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
+                `, [userId, expiryMins]);
 
                 // Restore stock
                 const productCounts = {};
