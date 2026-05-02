@@ -43,6 +43,8 @@ const sessionStore = new MySQLStore({
     expiration: 86400000 // 1 day
 }, db);
 
+app.set('trust proxy', 1); // Trust first proxy (Hostinger/Nginx)
+
 app.use(session({
     key: 'lingku_session',
     secret: process.env.SESSION_SECRET || 'lingkusessions',
@@ -50,7 +52,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', 
+        secure: false, // Set to false to allow login via HTTP or if SSL is handled by proxy
         maxAge: 1000 * 60 * 60 * 24 // 1 day
     }
 }));
