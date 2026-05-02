@@ -3,11 +3,30 @@ const express = require('express');
 const expressLayouts = require('express-ejs-layouts');
 const path = require('path');
 const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session);
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const helmet = require('helmet');
+const { rateLimit } = require('express-rate-limit');
 
 const app = express();
 const port = process.env.PORT || 3000;
+const db = require('./config/db');
+
+// Security Hardening
+app.use(helmet({
+    contentSecurityPolicy: false, // Disabling CSP for now to prevent breaking existing FontAwesome/external scripts
+}));
+
+// Rate Limiting (Prevent brute force & spam)
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per window
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: 'Terlalu banyak permintaan dari IP ini, silakan coba lagi nanti.'
+});
+app.use('/auth/', limiter); // Stricter limit for auth routes
 
 // Middlewares
 app.use(cors());
@@ -16,11 +35,24 @@ app.use(express.json({ limit: '50mb' }));
 app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Session Persistence (Move from RAM to MySQL)
+const sessionStore = new MySQLStore({
+    clearExpired: true,
+    checkExpirationInterval: 900000, // 15 minutes
+    expiration: 86400000 // 1 day
+}, db);
+
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    key: 'lingku_session',
+    secret: process.env.SESSION_SECRET || 'lingkusessions',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: { secure: false, maxAge: 1000 * 60 * 60 * 24 } // 1 day
+    cookie: { 
+        secure: process.env.NODE_ENV === 'production', 
+        maxAge: 1000 * 60 * 60 * 24 // 1 day
+    }
 }));
 
 // Set Templating Engine
@@ -28,7 +60,7 @@ app.use(expressLayouts);
 app.set('layout', './layouts/main');
 app.set('view engine', 'ejs');
 
-const db = require('./config/db');
+
 const fs = require('fs');
 
 const builderController = require('./controllers/builderController');

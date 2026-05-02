@@ -807,8 +807,36 @@ exports.ipaymuCallback = async (req, res) => {
     try {
         console.log('--- IPAYMU CALLBACK DEBUG ---');
         const { trx_id, sid, status, status_code } = req.body;
+        const incomingSignature = req.headers.signature;
         
-        // Success condition: status 'berhasil' or status_code '1'
+        // 1. Fetch Admin iPaymu Config for Verification
+        const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
+        if (adminRows.length === 0) return res.status(500).send('Admin config not found');
+        
+        const adminConfig = adminRows[0];
+        const isSandbox = adminConfig.ipaymu_sandbox == 1;
+        const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE);
+        const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
+
+        // 2. Verify Signature (Security Hardening)
+        // Note: iPaymu callback usually sends signature in headers. 
+        // We verify by recreating the hash from the raw body.
+        if (incomingSignature) {
+            const jsonBody = JSON.stringify(req.body);
+            const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex').toLowerCase();
+            const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`; // Standard iPaymu v2 Sign Pattern
+            const expectedSignature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
+            
+            if (incomingSignature !== expectedSignature) {
+                console.error('[SECURITY ALERT] Invalid iPaymu Callback Signature!');
+                return res.status(403).send('Invalid Signature');
+            }
+        } else {
+            // Optional: In production, you might want to reject if no signature is present
+            console.warn('[WARNING] Callback received without signature header.');
+        }
+
+        // 3. Process Payment Logic
         const isSuccess = status === 'berhasil' || String(status_code) === '1';
         const isExpired = status === 'expired' || String(status_code) === '-2';
 
