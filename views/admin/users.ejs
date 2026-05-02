@@ -124,17 +124,24 @@
                     <% users.forEach(function(u, idx) { 
                         const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
                         const color = colors[idx % colors.length];
+                        
+                        // Prioritize Fullname, then Email Prefix
+                        let displayName = u.fullname || u.name || '';
+                        if (!displayName && u.email) {
+                            displayName = u.email.split('@')[0];
+                        }
+                        if (!displayName) displayName = 'Member';
                     %>
-                        <tr class="user-row" data-name="<%= (u.name || '').toLowerCase() %>" data-email="<%= (u.email || '').toLowerCase() %>" data-plan="<%= (u.plan || 'free').toLowerCase() %>">
+                        <tr class="user-row" data-name="<%= displayName.toLowerCase() %>" data-email="<%= (u.email || '').toLowerCase() %>" data-plan="<%= (u.plan || 'free').toLowerCase() %>">
                             <td><strong><%= u.id %></strong></td>
                             <td>
                                 <% if (u.profile_photo) { %>
                                     <img src="<%= u.profile_photo %>" class="user-avatar-sm" alt="AV">
                                 <% } else { %>
-                                    <div class="user-avatar-sm" style="background:<%= color %>"><%= u.name ? u.name.charAt(0).toUpperCase() : '?' %></div>
+                                    <div class="user-avatar-sm" style="background:<%= color %>"><%= displayName.charAt(0).toUpperCase() %></div>
                                 <% } %>
                             </td>
-                            <td><strong><%= u.name || '-' %></strong></td>
+                            <td><strong><%= displayName %></strong></td>
                             <td><%= u.email || '-' %></td>
                             <td>
                                 <!-- ROLE DROPDOWN -->
@@ -216,9 +223,10 @@ function showUser(idx) {
     const color = colors[idx % colors.length];
     const date = u.created_at ? new Date(u.created_at).toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : '-';
     
+    const displayName = u.fullname || u.name || (u.email ? u.email.split('@')[0] : 'Member');
     const avatarHtml = u.profile_photo 
         ? `<img src="${u.profile_photo}" class="user-modal-avatar">`
-        : `<div class="user-modal-avatar" style="background:${color}">${u.name ? u.name.charAt(0).toUpperCase() : '?'}</div>`;
+        : `<div class="user-modal-avatar" style="background:${color}">${displayName.charAt(0).toUpperCase()}</div>`;
 
     document.getElementById('userModalContent').innerHTML = `
         <div class="user-modal-header">
@@ -228,7 +236,7 @@ function showUser(idx) {
             <div class="user-profile-top">
                 ${avatarHtml}
                 <div class="user-profile-meta">
-                    <div class="user-modal-name">${u.name || 'User'}</div>
+                    <div class="user-modal-name">${displayName}</div>
                     <div class="user-modal-email">${u.email || '-'}</div>
                 </div>
             </div>

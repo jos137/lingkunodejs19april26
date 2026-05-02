@@ -748,7 +748,7 @@ exports.getUserBuyers = async (req, res) => {
         const pageTitle = targetUser.name || targetUser.username || targetUser.email || 'User';
 
         res.render('admin/user-detail', { 
-            title: 'Daftar Pembeli: ' + pageTitle,
+            title: 'Member',
             layout: './layouts/admin',
             targetUser,
             orders,

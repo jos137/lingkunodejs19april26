@@ -48,7 +48,13 @@
     <% 
         const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
         const color = colors[targetUser.id % colors.length];
-        const displayName = targetUser.name || targetUser.username || targetUser.email || 'User';
+        
+        // Prioritize Fullname, then Email Prefix
+        let displayName = targetUser.fullname || targetUser.name || '';
+        if (!displayName && targetUser.email) {
+            displayName = targetUser.email.split('@')[0];
+        }
+        if (!displayName) displayName = 'Member';
         
         let finalPhoto = targetUser.profile_photo || '';
         if (finalPhoto && !finalPhoto.startsWith('http') && !finalPhoto.startsWith('/')) {
@@ -68,7 +74,7 @@
     <% } %>
 
     <div class="user-info-text">
-        <h1 style="color: #111827; font-weight: 1000;">Daftar Pembeli: <%= displayName %></h1>
+        <h1 style="color: #111827; font-weight: 1000;"><%= displayName %></h1>
         <p><%= targetUser.email %> • Member sejak <%= new Date(targetUser.created_at).toLocaleDateString('id-ID', {month:'long', year:'numeric'}) %></p>
     </div>
 </div>
