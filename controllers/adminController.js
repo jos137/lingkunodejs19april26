@@ -1433,12 +1433,22 @@ exports.getHelpCenter = async (req, res) => {
             return res.redirect('/admin/reports');
         }
 
-        // Jika User biasa, baru kasih pilihan lapor
+        // Jika User biasa, ambil riwayat laporan miliknya
+        let myTickets = [];
+        try {
+            const [rows] = await db.execute('SELECT * FROM support_tickets WHERE user_id = ? ORDER BY created_at DESC', [user.id || 0]);
+            myTickets = rows;
+        } catch (dbErr) {
+            // Jika tabel belum ada, biarkan kosong (nanti dibuat saat submit pertama kali)
+            myTickets = [];
+        }
+
         res.render('admin/help/index', {
             title: 'Pusat Bantuan',
             layout: './layouts/admin',
             user: user,
-            query: req.query
+            query: req.query,
+            myTickets
         });
     } catch (err) {
         console.error('Help Center Error:', err);
