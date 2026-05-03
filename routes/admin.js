@@ -157,6 +157,7 @@ router.post('/help/report', (req, res, next) => {
 }, adminController.submitReport);
 router.get('/reports', isAdmin, adminController.getAdminReports);
 router.post('/reports/:id/resolve', isAdmin, adminController.resolveTicket);
+router.post('/reports/:id/reply', isAdmin, adminController.replyTicket);
 
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);

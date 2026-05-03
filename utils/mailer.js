@@ -230,3 +230,49 @@ exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
         return false;
     }
 };
+
+exports.sendReplyNotificationEmail = async (email, fullname, subject, replyText, baseUrl) => {
+    try {
+        const host = baseUrl || 'https://lingku.xyz';
+        const transporter = await getTransporter();
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="background: #3b82f6; padding: 40px 30px; text-align: center;">
+                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Balasan Admin</h2>
+                    </div>
+                    <div style="padding: 40px 30px;">
+                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${fullname}</strong>,<br>Admin telah memberikan balasan untuk laporan Anda mengenai: <strong>"${subject}"</strong>.</p>
+                        
+                        <div style="padding: 20px; background: #f0f9ff; border-left: 4px solid #3b82f6; border-radius: 12px; margin-bottom: 32px;">
+                            <p style="margin: 0 0 8px; font-size: 11px; font-weight: 900; color: #3b82f6; text-transform: uppercase;">Pesan Admin:</p>
+                            <p style="margin: 0; color: #1e293b; font-size: 14px; line-height: 1.6;">${replyText}</p>
+                        </div>
+
+                        <div style="text-align: center; margin-top: 32px;">
+                            <a href="${host}/admin/help" style="display: inline-block; background-color: #111827; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 14px;">LIHAT DETAIL DI DASHBOARD</a>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Lingku.xyz — Kami Siap Membantu Anda</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku Support" <${fromEmail}>`,
+            to: email,
+            subject: `Balasan Admin: ${subject}`,
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email balasan:", err);
+        return false;
+    }
+};

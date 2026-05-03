@@ -1,7 +1,7 @@
 const db = require('../config/db');
 const axios = require('axios');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendFollowUpEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendFollowUpEmail, sendReplyNotificationEmail } = require('../utils/mailer');
 
 // ===================== DASHBOARD =====================
 exports.getDashboard = async (req, res) => {
@@ -1505,6 +1505,7 @@ exports.submitReport = async (req, res) => {
                         subject VARCHAR(255),
                         description TEXT,
                         screenshot VARCHAR(255),
+                        admin_reply TEXT,
                         status ENUM('open', 'resolved') DEFAULT 'open',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
@@ -1516,6 +1517,21 @@ exports.submitReport = async (req, res) => {
         }
 
         res.redirect('/admin/help?success=1');
+
+        // Notify Admin (User ID 1)
+        try {
+            const [userRows] = await db.execute("SELECT fullname FROM users WHERE id = ?", [userId || 0]);
+            const requesterName = userRows.length > 0 ? userRows[0].fullname : 'User';
+            const notifType = type === 'bug' ? 'bug' : 'withdrawal';
+            const notifTitle = type === 'bug' ? 'Laporan Bug Baru' : 'Masalah Tarik Dana';
+            
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [1, notifTitle, `${requesterName}: ${subject}`, notifType, '/admin/reports']
+            );
+        } catch (notifErr) {
+            console.error('Failed to create ticket notification:', notifErr.message);
+        }
     } catch (err) {
         console.error('Submit Report Error:', err);
         // Tangani error khusus dari Multer (File too large)
@@ -1529,6 +1545,13 @@ exports.submitReport = async (req, res) => {
 
 exports.getAdminReports = async (req, res) => {
     try {
+        // Auto-heal: Ensure admin_reply column exists
+        try {
+            await db.execute("ALTER TABLE support_tickets ADD COLUMN admin_reply TEXT AFTER screenshot");
+        } catch (e) {
+            // Column likely already exists, ignore
+        }
+
         const [tickets] = await db.execute(`
             SELECT t.*, u.fullname, u.email 
             FROM support_tickets t
@@ -1563,6 +1586,43 @@ exports.resolveTicket = async (req, res) => {
         res.redirect('/admin/reports?resolved=1');
     } catch (err) {
         console.error('Resolve Ticket Error:', err);
+        res.redirect('/admin/reports?error=1');
+    }
+};
+
+exports.replyTicket = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { admin_reply } = req.body;
+
+        // Update reply
+        await db.execute('UPDATE support_tickets SET admin_reply = ? WHERE id = ?', [admin_reply, id]);
+
+        // Get user info to notify
+        const [rows] = await db.execute(`
+            SELECT t.user_id, t.subject, u.email, u.fullname 
+            FROM support_tickets t 
+            JOIN users u ON t.user_id = u.id 
+            WHERE t.id = ?
+        `, [id]);
+
+        if (rows.length > 0) {
+            const { user_id, subject, email, fullname } = rows[0];
+
+            // 1. Notify via in-app notification
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [user_id, 'Balasan dari Admin', `Admin membalas laporan Anda: ${subject}`, 'info', '/admin/help']
+            );
+
+            // 2. Notify via Email
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            await sendReplyNotificationEmail(email, fullname, subject, admin_reply, baseUrl);
+        }
+
+        res.redirect('/admin/reports?replied=1');
+    } catch (err) {
+        console.error('Reply Ticket Error:', err);
         res.redirect('/admin/reports?error=1');
     }
 };
