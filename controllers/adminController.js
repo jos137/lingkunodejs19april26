@@ -1467,14 +1467,19 @@ exports.submitReport = async (req, res) => {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         const screenshot = req.file ? '/uploads/tickets/' + req.file.filename : null;
 
+        // Validasi input minimal
+        if (!type || !subject || !description) {
+            return res.redirect('/admin/help?error=' + encodeURIComponent('Mohon isi semua kolom wajib.'));
+        }
+
         const query = 'INSERT INTO support_tickets (user_id, type, subject, description, screenshot) VALUES (?, ?, ?, ?, ?)';
-        const params = [userId, type, subject, description, screenshot];
+        const params = [userId || 0, type, subject, description, screenshot];
 
         try {
             await db.execute(query, params);
         } catch (dbErr) {
+            // Jika tabel belum ada (Auto-Heal)
             if (dbErr.message.includes('Table') && dbErr.message.includes('doesn\'t exist')) {
-                // Auto-heal table
                 await db.execute(`
                     CREATE TABLE IF NOT EXISTS support_tickets (
                         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1496,7 +1501,12 @@ exports.submitReport = async (req, res) => {
         res.redirect('/admin/help?success=1');
     } catch (err) {
         console.error('Submit Report Error:', err);
-        res.redirect('/admin/help?error=' + encodeURIComponent(err.message));
+        // Tangani error khusus dari Multer (File too large)
+        let errorMsg = err.message;
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            errorMsg = 'File terlalu besar! Maksimal 2MB bro.';
+        }
+        res.redirect('/admin/help?error=' + encodeURIComponent(errorMsg));
     }
 };
 

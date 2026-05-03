@@ -60,6 +60,12 @@
         </div>
     <% } %>
 
+    <% if (locals.query && query.error) { %>
+        <div style="background: #fef2f2; border: 1px solid #ef4444; color: #dc2626; padding: 20px; border-radius: 16px; margin-bottom: 30px; text-align: center; font-weight: 700;">
+            <i class="fas fa-exclamation-circle" style="margin-right: 8px;"></i> <%= query.error %>
+        </div>
+    <% } %>
+
     <div class="help-grid">
         <a href="/admin/help/report?type=bug" class="help-card">
             <div class="help-icon" style="background: #fef2f2; color: #ef4444;">

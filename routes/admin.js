@@ -76,7 +76,7 @@ const productStorage = multer.diskStorage({
         cb(null, 'prod-' + Date.now() + path.extname(file.originalname));
     }
 });
-const uploadProduct = multer({ storage: productStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadProduct = multer({ storage: productStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 router.get('/products', adminController.getProducts);
 router.get('/products/create', adminController.getProductCreate);
@@ -140,11 +140,21 @@ const ticketStorage = multer.diskStorage({
         cb(null, 'ticket-' + Date.now() + path.extname(file.originalname));
     }
 });
-const uploadTicket = multer({ storage: ticketStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+const uploadTicket = multer({ storage: ticketStorage, limits: { fileSize: 2 * 1024 * 1024 } });
 
 router.get('/help', adminController.getHelpCenter);
 router.get('/help/report', adminController.getReportForm);
-router.post('/help/report', uploadTicket.single('screenshot'), adminController.submitReport);
+router.post('/help/report', (req, res, next) => {
+    uploadTicket.single('screenshot')(req, res, (err) => {
+        if (err) {
+            console.error('Multer Help Error:', err);
+            let msg = err.message;
+            if (err.code === 'LIMIT_FILE_SIZE') msg = 'File terlalu besar! Maksimal 2MB bro.';
+            return res.redirect('/admin/help?error=' + encodeURIComponent(msg));
+        }
+        next();
+    });
+}, adminController.submitReport);
 router.get('/reports', isAdmin, adminController.getAdminReports);
 router.post('/reports/:id/resolve', isAdmin, adminController.resolveTicket);
 
