@@ -1489,28 +1489,41 @@ exports.submitReport = async (req, res) => {
             return res.redirect('/admin/help?error=' + encodeURIComponent('Mohon isi semua kolom wajib.'));
         }
 
-        const query = 'INSERT INTO support_tickets (user_id, type, subject, description, screenshot) VALUES (?, ?, ?, ?, ?)';
-        const params = [userId || 0, type, subject, description, screenshot];
-
         try {
-            await db.execute(query, params);
+            // New logic: Insert into tickets then messages
+            const [ticketResult] = await db.execute('INSERT INTO support_tickets (user_id, type, subject) VALUES (?, ?, ?)', [userId || 0, type, subject]);
+            const ticketId = ticketResult.insertId;
+            await db.execute('INSERT INTO support_messages (ticket_id, sender_id, message, attachment) VALUES (?, ?, ?, ?)', [ticketId, userId || 0, description, screenshot]);
         } catch (dbErr) {
             // Jika tabel belum ada (Auto-Heal)
             if (dbErr.message.includes('Table') && dbErr.message.includes('doesn\'t exist')) {
+                // Create support_tickets if not exists
                 await db.execute(`
                     CREATE TABLE IF NOT EXISTS support_tickets (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         user_id INT,
                         type ENUM('bug', 'withdrawal') NOT NULL,
                         subject VARCHAR(255),
-                        description TEXT,
-                        screenshot VARCHAR(255),
-                        admin_reply TEXT,
                         status ENUM('open', 'resolved') DEFAULT 'open',
                         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 `);
-                await db.execute(query, params);
+                // Create support_messages if not exists
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS support_messages (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        ticket_id INT,
+                        sender_id INT,
+                        message TEXT,
+                        attachment VARCHAR(255),
+                        is_admin TINYINT(1) DEFAULT 0,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+                
+                const [ticketResult] = await db.execute('INSERT INTO support_tickets (user_id, type, subject) VALUES (?, ?, ?)', [userId || 0, type, subject]);
+                const ticketId = ticketResult.insertId;
+                await db.execute('INSERT INTO support_messages (ticket_id, sender_id, message, attachment) VALUES (?, ?, ?, ?)', [ticketId, userId || 0, description, screenshot]);
             } else {
                 throw dbErr;
             }
@@ -1545,18 +1558,27 @@ exports.submitReport = async (req, res) => {
 
 exports.getAdminReports = async (req, res) => {
     try {
-        // Auto-heal: Ensure admin_reply column exists
+        // Auto-heal: Ensure both tables exist for chat system
         try {
-            await db.execute("ALTER TABLE support_tickets ADD COLUMN admin_reply TEXT AFTER screenshot");
-        } catch (e) {
-            // Column likely already exists, ignore
-        }
+            await db.execute(`CREATE TABLE IF NOT EXISTS support_messages (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                ticket_id INT,
+                sender_id INT,
+                message TEXT,
+                attachment VARCHAR(255),
+                is_admin TINYINT(1) DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`);
+            // Check if tickets table needs update (remove old columns if possible or just ignore)
+        } catch (e) {}
 
         const [tickets] = await db.execute(`
-            SELECT t.*, u.fullname, u.email 
+            SELECT t.*, u.fullname, u.email, 
+                   (SELECT message FROM support_messages WHERE ticket_id = t.id ORDER BY id DESC LIMIT 1) as last_message,
+                   (SELECT created_at FROM support_messages WHERE ticket_id = t.id ORDER BY id DESC LIMIT 1) as last_activity
             FROM support_tickets t
             JOIN users u ON t.user_id = u.id
-            ORDER BY t.created_at DESC
+            ORDER BY last_activity DESC
         `);
 
         res.render('admin/help/admin-list', {
@@ -1590,39 +1612,94 @@ exports.resolveTicket = async (req, res) => {
     }
 };
 
-exports.replyTicket = async (req, res) => {
+exports.getTicketChat = async (req, res) => {
     try {
         const { id } = req.params;
-        const { admin_reply } = req.body;
+        const user = req.session.user || res.locals.user;
+        const isAdmin = user.role === 'admin';
 
-        // Update reply
-        await db.execute('UPDATE support_tickets SET admin_reply = ? WHERE id = ?', [admin_reply, id]);
+        // Auto-heal support_messages table check
+        try { await db.execute('SELECT 1 FROM support_messages LIMIT 1'); } 
+        catch(e) { await db.execute(`CREATE TABLE IF NOT EXISTS support_messages (id INT AUTO_INCREMENT PRIMARY KEY, ticket_id INT, sender_id INT, message TEXT, attachment VARCHAR(255), is_admin TINYINT(1) DEFAULT 0, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`); }
 
-        // Get user info to notify
-        const [rows] = await db.execute(`
-            SELECT t.user_id, t.subject, u.email, u.fullname 
+        // Get ticket info
+        const [tickets] = await db.execute(`
+            SELECT t.*, u.fullname, u.email 
             FROM support_tickets t 
             JOIN users u ON t.user_id = u.id 
             WHERE t.id = ?
         `, [id]);
 
-        if (rows.length > 0) {
-            const { user_id, subject, email, fullname } = rows[0];
+        if (tickets.length === 0) return res.redirect('/admin/help');
+        const ticket = tickets[0];
 
-            // 1. Notify via in-app notification
-            await db.execute(
-                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                [user_id, 'Balasan dari Admin', `Admin membalas laporan Anda: ${subject}`, 'info', '/admin/help']
-            );
+        // Security check for non-admins
+        if (!isAdmin && ticket.user_id !== user.id) return res.redirect('/admin/help');
 
-            // 2. Notify via Email
-            const baseUrl = `${req.protocol}://${req.get('host')}`;
-            await sendReplyNotificationEmail(email, fullname, subject, admin_reply, baseUrl);
+        // Get messages
+        const [messages] = await db.execute('SELECT * FROM support_messages WHERE ticket_id = ? ORDER BY id ASC', [id]);
+
+        res.render('admin/help/chat', {
+            title: `Chat: ${ticket.subject}`,
+            layout: './layouts/admin',
+            user,
+            ticket,
+            messages,
+            isAdmin
+        });
+    } catch (err) {
+        console.error('Chat View Error:', err);
+        res.redirect('/admin/help');
+    }
+};
+
+exports.postTicketMessage = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { message } = req.body;
+        const user = req.session.user || res.locals.user;
+        const isAdmin = user.role === 'admin';
+        const screenshot = req.file ? '/uploads/tickets/' + req.file.filename : null;
+
+        if (!message && !screenshot) return res.redirect(`/admin/help/ticket/${id}`);
+
+        // Insert message
+        await db.execute(
+            'INSERT INTO support_messages (ticket_id, sender_id, message, attachment, is_admin) VALUES (?, ?, ?, ?, ?)',
+            [id, user.id || 0, message, screenshot, isAdmin ? 1 : 0]
+        );
+
+        // Get ticket info for notifications
+        const [tickets] = await db.execute(`
+            SELECT t.*, u.email, u.fullname 
+            FROM support_tickets t 
+            JOIN users u ON t.user_id = u.id 
+            WHERE t.id = ?
+        `, [id]);
+        
+        if (tickets.length > 0) {
+            const ticket = tickets[0];
+            if (isAdmin) {
+                // Notify User
+                await db.execute(
+                    "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                    [ticket.user_id, 'Pesan Baru dari Admin', `Admin membalas chat: ${ticket.subject}`, 'info', `/admin/help/ticket/${id}`]
+                );
+                // Send Email
+                const baseUrl = `${req.protocol}://${req.get('host')}`;
+                await sendReplyNotificationEmail(ticket.email, ticket.fullname, ticket.subject, message, baseUrl);
+            } else {
+                // Notify Admin (ID 1)
+                await db.execute(
+                    "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                    [1, 'Pesan Chat Baru', `${ticket.fullname}: ${message.substring(0, 50)}...`, 'bug', `/admin/help/ticket/${id}`]
+                );
+            }
         }
 
-        res.redirect('/admin/reports?replied=1');
+        res.redirect(`/admin/help/ticket/${id}`);
     } catch (err) {
-        console.error('Reply Ticket Error:', err);
-        res.redirect('/admin/reports?error=1');
+        console.error('Post Message Error:', err);
+        res.redirect('/admin/help');
     }
 };

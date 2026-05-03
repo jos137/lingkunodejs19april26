@@ -157,7 +157,19 @@ router.post('/help/report', (req, res, next) => {
 }, adminController.submitReport);
 router.get('/reports', isAdmin, adminController.getAdminReports);
 router.post('/reports/:id/resolve', isAdmin, adminController.resolveTicket);
-router.post('/reports/:id/reply', isAdmin, adminController.replyTicket);
+
+// New Chat System Routes
+router.get('/help/ticket/:id', adminController.getTicketChat);
+router.post('/help/ticket/:id/message', (req, res, next) => {
+    uploadTicket.single('screenshot')(req, res, (err) => {
+        if (err) {
+            let msg = err.message;
+            if (err.code === 'LIMIT_FILE_SIZE') msg = 'File terlalu besar! Maksimal 2MB.';
+            return res.redirect(`/admin/help/ticket/${req.params.id}?error=` + encodeURIComponent(msg));
+        }
+        next();
+    });
+}, adminController.postTicketMessage);
 
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);
