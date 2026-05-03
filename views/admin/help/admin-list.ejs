@@ -1,0 +1,83 @@
+<style>
+    .ticket-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .ticket-table { width: 100%; border-collapse: collapse; }
+    .ticket-table thead th { background: #f9fafb; padding: 18px 25px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; letter-spacing: 1px; }
+    .ticket-table tbody td { padding: 18px 25px; font-size: 14px; border-bottom: 1px solid #f3f4f6; color: #475569; }
+    .ticket-table tbody tr:hover { background: #f8fafc; }
+    
+    .type-badge { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+    .type-bug { background: #fef2f2; color: #ef4444; }
+    .type-withdrawal { background: #fff7ed; color: #f59e0b; }
+    
+    .status-badge { padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 850; }
+    .status-open { background: #eff6ff; color: #3b82f6; }
+    .status-resolved { background: #f0fdf4; color: #10b981; }
+    
+    .btn-resolve { 
+        padding: 6px 12px; background: #111827; color: white; border: none; border-radius: 8px; 
+        font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s;
+    }
+    .btn-resolve:hover { background: #000; transform: translateY(-1px); }
+
+    .screenshot-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e5e7eb; }
+</style>
+
+<div class="ticket-table-wrap">
+    <table class="ticket-table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Tipe</th>
+                <th>Subjek & Detail</th>
+                <th>Screenshot</th>
+                <th>Status</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (tickets && tickets.length > 0) { %>
+                <% tickets.forEach(t => { %>
+                    <tr>
+                        <td>
+                            <div style="font-weight: 800; color: #1e293b;"><%= t.fullname || 'User' %></div>
+                            <div style="font-size: 11px; color: #94a3b8;"><%= t.email %></div>
+                            <div style="font-size: 10px; color: #cbd5e1; margin-top: 4px;"><%= new Date(t.created_at).toLocaleString('id-ID') %></div>
+                        </td>
+                        <td>
+                            <span class="type-badge type-<%= t.type %>"><%= t.type %></span>
+                        </td>
+                        <td style="max-width: 300px;">
+                            <div style="font-weight: 700; color: #1e293b; margin-bottom: 5px;"><%= t.subject %></div>
+                            <div style="font-size: 12px; line-height: 1.4; color: #64748b;"><%= t.description %></div>
+                        </td>
+                        <td>
+                            <% if (t.screenshot) { %>
+                                <a href="<%= t.screenshot %>" target="_blank">
+                                    <img src="<%= t.screenshot %>" class="screenshot-thumb" alt="SC">
+                                </a>
+                            <% } else { %>
+                                <span style="font-size: 11px; color: #cbd5e1;">No SC</span>
+                            <% } %>
+                        </td>
+                        <td>
+                            <span class="status-badge status-<%= t.status %>"><%= t.status.toUpperCase() %></span>
+                        </td>
+                        <td>
+                            <% if (t.status === 'open') { %>
+                                <form action="/admin/reports/<%= t.id %>/resolve" method="POST">
+                                    <button type="submit" class="btn-resolve">Resolve</button>
+                                </form>
+                            <% } else { %>
+                                <i class="fas fa-check-circle" style="color: #10b981; font-size: 18px;"></i>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }) %>
+            <% } else { %>
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 60px; color: #94a3b8; font-weight: 700;">Belum ada laporan dari user.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>

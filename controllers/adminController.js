@@ -1421,3 +1421,120 @@ exports.readNotification = async (req, res) => {
         res.redirect('/admin');
     }
 };
+
+// ===== HELP & BUG REPORTS =====
+exports.getHelpCenter = async (req, res) => {
+    try {
+        const user = req.session.user || res.locals.user;
+        
+        // Jika Admin, langsung lempar ke halaman list laporan
+        if (user && user.role === 'admin') {
+            return res.redirect('/admin/reports');
+        }
+
+        // Jika User biasa, baru kasih pilihan lapor
+        res.render('admin/help/index', {
+            title: 'Pusat Bantuan',
+            layout: './layouts/admin',
+            user: user,
+            query: req.query
+        });
+    } catch (err) {
+        console.error('Help Center Error:', err);
+        res.redirect('/admin');
+    }
+};
+
+exports.getReportForm = async (req, res) => {
+    try {
+        const type = req.query.type || 'bug';
+        res.render('admin/help/form', {
+            title: type === 'bug' ? 'Lapor Bug / Error' : 'Masalah Tarik Dana',
+            layout: './layouts/admin',
+            user: req.session.user || res.locals.user,
+            type
+        });
+    } catch (err) {
+        console.error('Report Form Error:', err);
+        res.redirect('/admin/help');
+    }
+};
+
+exports.submitReport = async (req, res) => {
+    try {
+        const { type, subject, description } = req.body;
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const screenshot = req.file ? '/uploads/tickets/' + req.file.filename : null;
+
+        const query = 'INSERT INTO support_tickets (user_id, type, subject, description, screenshot) VALUES (?, ?, ?, ?, ?)';
+        const params = [userId, type, subject, description, screenshot];
+
+        try {
+            await db.execute(query, params);
+        } catch (dbErr) {
+            if (dbErr.message.includes('Table') && dbErr.message.includes('doesn\'t exist')) {
+                // Auto-heal table
+                await db.execute(`
+                    CREATE TABLE IF NOT EXISTS support_tickets (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id INT,
+                        type ENUM('bug', 'withdrawal') NOT NULL,
+                        subject VARCHAR(255),
+                        description TEXT,
+                        screenshot VARCHAR(255),
+                        status ENUM('open', 'resolved') DEFAULT 'open',
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                `);
+                await db.execute(query, params);
+            } else {
+                throw dbErr;
+            }
+        }
+
+        res.redirect('/admin/help?success=1');
+    } catch (err) {
+        console.error('Submit Report Error:', err);
+        res.redirect('/admin/help?error=' + encodeURIComponent(err.message));
+    }
+};
+
+exports.getAdminReports = async (req, res) => {
+    try {
+        const [tickets] = await db.execute(`
+            SELECT t.*, u.fullname, u.email 
+            FROM support_tickets t
+            JOIN users u ON t.user_id = u.id
+            ORDER BY t.created_at DESC
+        `);
+
+        res.render('admin/help/admin-list', {
+            title: 'Laporan User',
+            layout: './layouts/admin',
+            user: req.session.user || res.locals.user,
+            tickets
+        });
+    } catch (err) {
+        if (err.message.includes('doesn\'t exist')) {
+            return res.render('admin/help/admin-list', {
+                title: 'Laporan User',
+                layout: './layouts/admin',
+                user: req.session.user || res.locals.user,
+                tickets: []
+            });
+        }
+        console.error('Get Admin Reports Error:', err);
+        res.redirect('/admin');
+    }
+};
+
+exports.resolveTicket = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.execute('UPDATE support_tickets SET status = \'resolved\' WHERE id = ?', [id]);
+        res.redirect('/admin/reports?resolved=1');
+    } catch (err) {
+        console.error('Resolve Ticket Error:', err);
+        res.redirect('/admin/reports?error=1');
+    }
+};

@@ -452,6 +452,9 @@
                         <span class="notif-badge"><%= pendingWDCount %></span>
                     <% } %>
                 </a>
+                <a href="/admin/reports" class="sidebar-link <%= title === 'Laporan User' ? 'active' : '' %>">
+                    <i class="fas fa-bug"></i><span>Laporan User</span>
+                </a>
                 <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
                     <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>
                 </a>
@@ -631,6 +634,9 @@
                     <div class="dropdown-menu" id="profileMenu">
                         <a href="/admin/settings" class="dropdown-item">
                             <i class="fas fa-cog"></i> Pengaturan
+                        </a>
+                        <a href="/admin/help" class="dropdown-item">
+                            <i class="fas fa-question-circle"></i> Help
                         </a>
                         <div class="dropdown-divider"></div>
                         <a href="/auth/logout" class="dropdown-item logout">

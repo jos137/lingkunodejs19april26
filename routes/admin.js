@@ -128,6 +128,26 @@ router.post('/dev/push', adminController.autoDeploy);
 
 
 
+// ===== HELP & BUG REPORTS =====
+const ticketStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const fs = require('fs');
+        const dir = path.join(__dirname, '../public/uploads/tickets');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        cb(null, 'ticket-' + Date.now() + path.extname(file.originalname));
+    }
+});
+const uploadTicket = multer({ storage: ticketStorage, limits: { fileSize: 5 * 1024 * 1024 } });
+
+router.get('/help', adminController.getHelpCenter);
+router.get('/help/report', adminController.getReportForm);
+router.post('/help/report', uploadTicket.single('screenshot'), adminController.submitReport);
+router.get('/reports', isAdmin, adminController.getAdminReports);
+router.post('/reports/:id/resolve', isAdmin, adminController.resolveTicket);
+
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);
 

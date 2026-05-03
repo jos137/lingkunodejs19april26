@@ -1,0 +1,87 @@
+<style>
+    .help-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 25px;
+        margin-top: 20px;
+    }
+    .help-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 24px;
+        padding: 40px;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        text-decoration: none;
+        color: inherit;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+    .help-card:hover {
+        transform: translateY(-10px);
+        border-color: #3b82f6;
+        box-shadow: 0 20px 40px rgba(59, 130, 246, 0.1);
+    }
+    .help-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        margin-bottom: 10px;
+    }
+    .help-card h3 {
+        font-size: 20px;
+        font-weight: 800;
+        margin: 0;
+        color: #1e293b;
+    }
+    .help-card p {
+        font-size: 14px;
+        color: #64748b;
+        line-height: 1.6;
+        margin: 0;
+    }
+</style>
+
+<div style="max-width: 900px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 40px;">
+        <h2 style="font-size: 28px; font-weight: 900; color: #1e293b; margin-bottom: 10px;">Bagaimana kami bisa membantu?</h2>
+        <p style="color: #64748b; font-weight: 500;">Pilih kategori masalah yang ingin Anda laporkan</p>
+    </div>
+
+    <% if (locals.query && query.success) { %>
+        <div style="background: #f0fdf4; border: 1px solid #10b981; color: #16a34a; padding: 20px; border-radius: 16px; margin-bottom: 30px; text-align: center; font-weight: 700;">
+            <i class="fas fa-check-circle" style="margin-right: 8px;"></i> Laporan Anda berhasil dikirim! Kami akan segera meninjaunya.
+        </div>
+    <% } %>
+
+    <div class="help-grid">
+        <a href="/admin/help/report?type=bug" class="help-card">
+            <div class="help-icon" style="background: #fef2f2; color: #ef4444;">
+                <i class="fas fa-bug"></i>
+            </div>
+            <h3>Lapor Bug / Error</h3>
+            <p>Sampaikan jika Anda menemukan fitur yang tidak berfungsi, tampilan berantakan, atau error sistem.</p>
+        </a>
+
+        <a href="/admin/help/report?type=withdrawal" class="help-card">
+            <div class="help-icon" style="background: #fff7ed; color: #f59e0b;">
+                <i class="fas fa-money-bill-transfer"></i>
+            </div>
+            <h3>Masalah Tarik Dana</h3>
+            <p>Laporkan jika penarikan saldo Anda belum sampai, gagal, atau ada kendala pada pengaturan rekening.</p>
+        </a>
+    </div>
+
+    <div style="margin-top: 50px; text-align: center; padding: 30px; background: #f8fafc; border-radius: 24px; border: 1px dashed #e2e8f0;">
+        <p style="font-size: 13px; color: #94a3b8; font-weight: 600; margin-bottom: 15px;">Butuh bantuan mendesak?</p>
+        <a href="https://wa.me/628123456789" target="_blank" style="display: inline-flex; align-items: center; gap: 10px; background: #25d366; color: white; text-decoration: none; padding: 12px 24px; border-radius: 12px; font-weight: 800; font-size: 14px;">
+            <i class="fab fa-whatsapp" style="font-size: 18px;"></i> Chat WhatsApp Admin
+        </a>
+    </div>
+</div>
