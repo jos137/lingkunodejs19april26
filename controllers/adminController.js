@@ -1685,9 +1685,9 @@ exports.postTicketMessage = async (req, res) => {
                     "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
                     [ticket.user_id, 'Pesan Baru dari Admin', `Admin membalas chat: ${ticket.subject}`, 'info', `/admin/help/ticket/${id}`]
                 );
-                // Send Email
+                // Send Email in background (No await for speed)
                 const baseUrl = `${req.protocol}://${req.get('host')}`;
-                await sendReplyNotificationEmail(ticket.email, ticket.fullname, ticket.subject, message, baseUrl);
+                sendReplyNotificationEmail(ticket.email, ticket.fullname, ticket.subject, message, baseUrl);
             } else {
                 // Notify Admin (ID 1)
                 await db.execute(
