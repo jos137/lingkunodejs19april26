@@ -1382,18 +1382,19 @@ exports.autoDeploy = async (req, res) => {
                 return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
             }
 
-            const commitMsg = `Push to Git: ${new Date().toLocaleString()}`;
+            const commitMsg = `Update: ${new Date().toLocaleString()}`;
             // Use GIT_TERMINAL_PROMPT=0 to prevent hanging on password prompts
-            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && git commit -m "${commitMsg}" && git push origin master`;
+            // Added || true to commit to prevent failure if there's nothing to commit (though we checked status)
+            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && (git commit -m "${commitMsg}" || true) && git push origin master`;
             
-            exec(command, { timeout: 30000 }, (error, stdout, stderr) => {
-                if (error) {
+            exec(command, { timeout: 60000 }, (error, stdout, stderr) => {
+                if (error && !stdout.includes('Everything up-to-date')) {
                     console.error(`Git Push Error: ${stderr || error.message}`);
                     let msg = stderr || error.message;
                     if (msg.includes('terminal prompts disabled')) {
                         msg = 'Git butuh login/password. Pastikan SSH Key sudah terpasang atau gunakan Git Credential Manager.';
                     }
-                    return res.json({ success: false, message: msg });
+                    return res.json({ success: false, message: 'Gagal Push: ' + msg });
                 }
                 console.log('--- AUTO DEPLOY SUCCESS ---');
                 res.json({ success: true, message: 'BERHASIL! Kodingan sudah ter-push ke Git Repository.' });
