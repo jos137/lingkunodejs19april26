@@ -210,12 +210,15 @@
                                     <%= order.created_at ? new Date(order.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', timeZone: 'Asia/Jakarta' }) : '' %>,
                                     <%= order.created_at ? new Date(order.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit', timeZone: 'Asia/Jakarta' }) : '' %>
                                 </span>
-                                <% if (order.status === 'pending') { 
-                                    let nowTime = new Date().getTime();
-                                    let createTime = new Date(order.created_at).getTime();
-                                    let expireTime = createTime + ((locals.expiryMins || 60) * 60000);
-                                    let timeLeft = Math.floor((expireTime - nowTime) / 1000);
-                                    if (timeLeft > 0) {
+                                <% 
+                                   let s = (order.status || 'pending').toLowerCase();
+                                   if (s === 'pending') { 
+                                       let nowTime = new Date().getTime();
+                                       let createTime = new Date(order.created_at).getTime();
+                                       let expMins = locals.expiryMins || 60;
+                                       let expireTime = createTime + (expMins * 60000);
+                                       let timeLeft = Math.floor((expireTime - nowTime) / 1000);
+                                       if (timeLeft > 0) {
                                 %>
                                     <span class="countdown-timer" data-timeleft="<%= timeLeft %>" style="margin-left: 8px; padding: 2px 8px; border: 1px solid #10b981; border-radius: 20px; font-size: 10px; color: #10b981; font-weight: 800;">
                                         --:--
