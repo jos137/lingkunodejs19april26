@@ -2,81 +2,107 @@
     .report-card {
         background: #fff;
         border: 1px solid #e5e7eb;
-        border-radius: 24px;
-        padding: 40px;
-        max-width: 600px;
+        border-radius: 20px;
+        padding: 30px;
+        max-width: 500px;
         margin: 0 auto;
         box-shadow: 0 4px 20px rgba(0,0,0,0.02);
     }
-    .form-group { margin-bottom: 25px; }
-    .form-label { display: block; font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 12px; font-weight: 800; color: #1e293b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
     .form-input { 
-        width: 100%; padding: 14px 18px; border: 1.5px solid #f1f5f9; border-radius: 14px; 
-        font-size: 15px; background: #f8fafc; transition: 0.2s; outline: none; box-sizing: border-box;
+        width: 100%; padding: 12px 16px; border: 1.5px solid #f1f5f9; border-radius: 12px; 
+        font-size: 14px; background: #f8fafc; transition: 0.2s; outline: none; box-sizing: border-box;
     }
     .form-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1); }
     
     .file-upload-wrap {
         border: 2px dashed #e2e8f0;
-        padding: 30px;
-        border-radius: 16px;
+        padding: 20px;
+        border-radius: 12px;
         text-align: center;
         background: #f8fafc;
         cursor: pointer;
         transition: 0.2s;
     }
     .file-upload-wrap:hover { border-color: #3b82f6; background: #eff6ff; }
-    .file-upload-wrap i { font-size: 30px; color: #94a3b8; margin-bottom: 10px; }
-    .file-upload-wrap p { font-size: 13px; color: #64748b; font-weight: 600; margin: 0; }
+    .file-upload-wrap i { font-size: 20px; color: #94a3b8; margin-bottom: 5px; display: block; }
+    .file-upload-wrap p { font-size: 12px; color: #64748b; font-weight: 600; margin: 0; }
     
     .btn-submit {
-        width: 100%; padding: 16px; border-radius: 14px; border: none;
+        width: 100%; padding: 14px; border-radius: 12px; border: none;
         background: #111827; color: white; font-size: 14px; font-weight: 800;
         cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .btn-submit:hover { background: #000; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .btn-submit:hover:not(:disabled) { background: #000; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; background: #94a3b8; }
 </style>
 
-<div style="margin-bottom: 30px;">
-    <a href="/admin/help" style="text-decoration: none; color: #64748b; font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+<div style="margin-bottom: 20px;">
+    <a href="/admin/help" style="text-decoration: none; color: #64748b; font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 8px;">
         <i class="fas fa-arrow-left"></i> Kembali
     </a>
 </div>
 
 <div class="report-card">
-    <div style="text-align: center; margin-bottom: 35px;">
-        <div style="width: 60px; height: 60px; border-radius: 50%; background: <%= type === 'bug' ? '#fef2f2' : '#fff7ed' %>; color: <%= type === 'bug' ? '#ef4444' : '#f59e0b' %>; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 15px;">
-            <i class="fas <%= type === 'bug' ? 'fa-bug' : 'fa-money-bill-transfer' %>"></i>
-        </div>
-        <h2 style="font-size: 22px; font-weight: 900; color: #1e293b; margin: 0;"><%= title %></h2>
-        <p style="color: #64748b; font-size: 14px; margin-top: 8px;">Mohon lengkapi detail laporan di bawah ini</p>
+    <div style="margin-bottom: 25px;">
+        <h2 style="font-size: 18px; font-weight: 900; color: #1e293b; margin: 0;"><%= title %></h2>
+        <p style="color: #64748b; font-size: 13px; margin-top: 5px;">Mohon isi detail laporan Anda</p>
     </div>
 
-    <form action="/admin/help/report" method="POST" enctype="multipart/form-data">
+    <form id="reportForm" action="/admin/help/report" method="POST" enctype="multipart/form-data">
         <input type="hidden" name="type" value="<%= type %>">
         
         <div class="form-group">
-            <label class="form-label">Subjek Laporan</label>
-            <input type="text" name="subject" class="form-input" placeholder="Contoh: <%= type === 'bug' ? 'Tombol simpan tidak berfungsi' : 'Dana belum masuk setelah 2x24 jam' %>" required>
+            <label class="form-label">Subjek</label>
+            <input type="text" name="subject" class="form-input" placeholder="Apa masalahnya?" required>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Deskripsi Masalah</label>
-            <textarea name="description" class="form-input" rows="5" placeholder="Ceritakan detail masalah yang Anda alami..." required></textarea>
+            <label class="form-label">Detail Deskripsi</label>
+            <textarea name="description" class="form-input" rows="4" placeholder="Ceritakan detailnya..." required></textarea>
         </div>
 
         <div class="form-group">
-            <label class="form-label">Screenshot (Opsional)</label>
-            <div class="file-upload-wrap" onclick="document.getElementById('screenshotInput').click()">
+            <label class="form-label">Screenshot (Maks 2MB)</label>
+            <div class="file-upload-wrap" id="dropZone" onclick="document.getElementById('screenshotInput').click()">
                 <i class="fas fa-cloud-upload-alt"></i>
-                <p id="fileNameDisplay">Klik untuk upload gambar atau drag & drop</p>
-                <input type="file" id="screenshotInput" name="screenshot" style="display: none;" accept="image/*" onchange="document.getElementById('fileNameDisplay').innerText = this.files[0].name">
+                <p id="fileNameDisplay">Pilih atau Drag Foto</p>
+                <input type="file" id="screenshotInput" name="screenshot" style="display: none;" accept="image/*">
             </div>
-            <p style="font-size: 11px; color: #94a3b8; margin-top: 10px;">Format: JPG, PNG. Maksimal 5MB.</p>
+            <div id="sizeError" style="display: none; color: #ef4444; font-size: 11px; font-weight: 700; margin-top: 8px;">
+                <i class="fas fa-exclamation-triangle"></i> File terlalu besar! Maksimal 2MB.
+            </div>
         </div>
 
-        <button type="submit" class="btn-submit">
+        <button type="submit" id="submitBtn" class="btn-submit">
             Kirim Laporan <i class="fas fa-paper-plane"></i>
         </button>
     </form>
 </div>
+
+<script>
+    const fileInput = document.getElementById('screenshotInput');
+    const fileNameDisplay = document.getElementById('fileNameDisplay');
+    const submitBtn = document.getElementById('submitBtn');
+    const sizeError = document.getElementById('sizeError');
+
+    fileInput.addEventListener('change', function() {
+        if (this.files && this.files[0]) {
+            const file = this.files[0];
+            const fileSize = file.size / 1024 / 1024; // in MB
+            
+            fileNameDisplay.innerText = file.name;
+
+            if (fileSize > 2) {
+                sizeError.style.display = 'block';
+                submitBtn.disabled = true;
+                fileNameDisplay.style.color = '#ef4444';
+            } else {
+                sizeError.style.display = 'none';
+                submitBtn.disabled = false;
+                fileNameDisplay.style.color = '#3b82f6';
+            }
+        }
+    });
+</script>
