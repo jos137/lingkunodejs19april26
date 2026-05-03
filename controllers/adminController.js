@@ -1383,21 +1383,28 @@ exports.autoDeploy = async (req, res) => {
             }
 
             const commitMsg = `Update: ${new Date().toLocaleString()}`;
-            // Use GIT_TERMINAL_PROMPT=0 to prevent hanging on password prompts
-            // Added || true to commit to prevent failure if there's nothing to commit (though we checked status)
-            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && (git commit -m "${commitMsg}" || true) && git push origin master`;
+            // Use GIT_TERMINAL_PROMPT=0 to prevent hanging
+            // Added --porcelain check and robust push
+            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && (git commit -m "${commitMsg}" || true) && git push origin master 2>&1`;
             
-            exec(command, { timeout: 60000 }, (error, stdout, stderr) => {
-                if (error && !stdout.includes('Everything up-to-date')) {
-                    console.error(`Git Push Error: ${stderr || error.message}`);
-                    let msg = stderr || error.message;
+            exec(command, { 
+                timeout: 120000, // Increase to 2 minutes
+                maxBuffer: 1024 * 1024 * 10 // 10MB buffer
+            }, (error, stdout, stderr) => {
+                const output = stdout + (stderr || '');
+                console.log('Git Output:', output);
+
+                if (error && !output.includes('Everything up-to-date')) {
+                    console.error(`Git Push Error: ${output}`);
+                    let msg = output;
                     if (msg.includes('terminal prompts disabled')) {
-                        msg = 'Git butuh login/password. Pastikan SSH Key sudah terpasang atau gunakan Git Credential Manager.';
+                        msg = 'Git butuh login/password (SSH/Token).';
                     }
-                    return res.json({ success: false, message: 'Gagal Push: ' + msg });
+                    return res.json({ success: false, message: 'Gagal: ' + msg });
                 }
+
                 console.log('--- AUTO DEPLOY SUCCESS ---');
-                res.json({ success: true, message: 'BERHASIL! Kodingan sudah ter-push ke Git Repository.' });
+                res.json({ success: true, message: 'BERHASIL! Kodingan sudah di-push ke Git.' });
             });
         });
     } catch (globalErr) {
