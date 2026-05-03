@@ -1,6 +1,24 @@
 <style>
-    .ticket-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
-    .ticket-table { width: 100%; border-collapse: collapse; }
+    /* Filter Header */
+    .ticket-filters { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; background: #fff; padding: 20px; border-radius: 18px; border: 1px solid #e5e7eb; }
+    .search-wrap { position: relative; flex: 1; min-width: 250px; }
+    .search-wrap i { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 14px; }
+    .search-input { width: 100%; padding: 12px 16px 12px 42px; border: 1.5px solid #f1f5f9; border-radius: 12px; font-size: 14px; outline: none; background: #f8fafc; transition: 0.2s; box-sizing: border-box; }
+    .search-input:focus { border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
+    
+    .cat-filters { display: flex; gap: 8px; flex-wrap: wrap; }
+    .cat-btn { padding: 10px 18px; border-radius: 10px; font-size: 12px; font-weight: 800; cursor: pointer; color: #64748b; transition: 0.2s; border: 1.5px solid #f1f5f9; background: #fff; white-space: nowrap; }
+    .cat-btn.active { border-color: #111827; background: #111827; color: white; }
+
+    @media (max-width: 768px) {
+        .ticket-filters { flex-direction: column; align-items: stretch; padding: 15px; }
+        .search-wrap { min-width: 100%; }
+        .cat-filters { justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
+        .cat-btn { padding: 8px 14px; font-size: 11px; }
+    }
+
+    .ticket-table-wrap { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; overflow-x: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.02); }
+    .ticket-table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .ticket-table thead th { background: #f9fafb; padding: 18px 25px; text-align: left; font-size: 11px; font-weight: 900; color: #64748b; border-bottom: 1px solid #e5e7eb; text-transform: uppercase; letter-spacing: 1px; }
     .ticket-table tbody td { padding: 18px 25px; font-size: 14px; border-bottom: 1px solid #f3f4f6; color: #475569; }
     .ticket-table tbody tr:hover { background: #f8fafc; }
@@ -22,6 +40,18 @@
     .screenshot-thumb { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; cursor: pointer; border: 1px solid #e5e7eb; }
 </style>
 
+<div class="ticket-filters">
+    <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" id="ticketSearch" class="search-input" placeholder="Cari nama user atau subjek laporan...">
+    </div>
+    <div class="cat-filters">
+        <button class="cat-btn active" onclick="filterTickets('all', this)">Semua</button>
+        <button class="cat-btn" onclick="filterTickets('bug', this)">Bug</button>
+        <button class="cat-btn" onclick="filterTickets('withdrawal', this)">Withdrawal</button>
+    </div>
+</div>
+
 <div class="ticket-table-wrap">
     <table class="ticket-table">
         <thead>
@@ -34,12 +64,18 @@
                 <th>Aksi</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody id="ticketBody">
             <% if (tickets && tickets.length > 0) { %>
-                <% tickets.forEach(t => { %>
-                    <tr>
+                <% tickets.forEach(t => { 
+                    let reporterName = t.fullname || '';
+                    if (!reporterName && t.email) {
+                        reporterName = t.email.split('@')[0];
+                    }
+                    if (!reporterName) reporterName = 'User';
+                %>
+                    <tr class="ticket-row" data-name="<%= reporterName.toLowerCase() %>" data-subject="<%= (t.subject || '').toLowerCase() %>" data-type="<%= t.type %>">
                         <td>
-                            <div style="font-weight: 800; color: #1e293b;"><%= t.fullname || 'User' %></div>
+                            <div style="font-weight: 800; color: #1e293b;"><%= reporterName %></div>
                             <div style="font-size: 11px; color: #94a3b8;"><%= t.email %></div>
                             <div style="font-size: 10px; color: #cbd5e1; margin-top: 4px;"><%= new Date(t.created_at).toLocaleString('id-ID') %></div>
                         </td>
@@ -74,10 +110,62 @@
                     </tr>
                 <% }) %>
             <% } else { %>
-                <tr>
+                <tr id="noTicketsRow">
                     <td colspan="6" style="text-align: center; padding: 60px; color: #94a3b8; font-weight: 700;">Belum ada laporan dari user.</td>
                 </tr>
             <% } %>
         </tbody>
     </table>
 </div>
+
+<script>
+    let currentType = 'all';
+
+    function filterTickets(type, btn) {
+        currentType = type;
+        
+        // Update button UI
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+
+        applyFilters();
+    }
+
+    document.getElementById('ticketSearch').addEventListener('input', applyFilters);
+
+    function applyFilters() {
+        const searchTerm = document.getElementById('ticketSearch').value.toLowerCase();
+        const rows = document.querySelectorAll('.ticket-row');
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const name = row.getAttribute('data-name');
+            const subject = row.getAttribute('data-subject');
+            const type = row.getAttribute('data-type');
+
+            const matchesSearch = name.includes(searchTerm) || subject.includes(searchTerm);
+            const matchesType = currentType === 'all' || type === currentType;
+
+            if (matchesSearch && matchesType) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        // Show "no results" if everything is hidden
+        const noResults = document.getElementById('noTicketsRow');
+        if (visibleCount === 0 && rows.length > 0) {
+            if (!document.getElementById('tempNoResults')) {
+                const tr = document.createElement('tr');
+                tr.id = 'tempNoResults';
+                tr.innerHTML = `<td colspan="6" style="text-align: center; padding: 60px; color: #94a3b8; font-weight: 700;">Tidak ada laporan yang cocok dengan pencarian.</td>`;
+                document.getElementById('ticketBody').appendChild(tr);
+            }
+        } else {
+            const temp = document.getElementById('tempNoResults');
+            if (temp) temp.remove();
+        }
+    }
+</script>
