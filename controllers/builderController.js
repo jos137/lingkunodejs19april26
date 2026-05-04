@@ -812,7 +812,7 @@ exports.processCheckout = async (req, res) => {
         }
     } catch (globalErr) {
         console.error('Global Error:', globalErr);
-        res.status(500).send('Sistem Error (v2): ' + globalErr.message);
+        res.status(500).send('Sistem Error: ' + globalErr.message);
     }
 };
 
