@@ -271,7 +271,7 @@
         </div>
 
         <div class="footer-action">
-            <% if (product.stock> 0) { %>
+            <% if (product.stock > 0 || product.stock === -1) { %>
                 <a href="/checkout/<%= product.id %>" class="buy-btn">Gabung Sekarang!</a>
                 <% } else { %>
                     <button class="buy-btn" style="background:#94a3b8; box-shadow:none; cursor:not-allowed;"
