@@ -93,11 +93,27 @@ const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, 
 const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
 %>
 
+<%
+const isPro = (user.plan || 'free') === 'pro';
+const feePct = isPro ? 2 : 3;
+const minAmount = isPro ? 0 : 100000;
+%>
+
 <div class="wd-summary" style="margin-bottom: 14px; grid-template-columns: 1fr 1fr;">
     <div class="wd-balance">
-        <div class="wd-balance-label">SALDO TERSEDIA</div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div class="wd-balance-label">SALDO TERSEDIA</div>
+            <% if(isPro) { %>
+                <span style="background:#10b981; color:#fff; font-size:9px; font-weight:900; padding:2px 8px; border-radius:100px; letter-spacing:0.5px;"><i class="fas fa-crown"></i> PRO PLAN</span>
+            <% } else { %>
+                <span style="background:#475569; color:#fff; font-size:9px; font-weight:900; padding:2px 8px; border-radius:100px; letter-spacing:0.5px;">FREE ACCOUNT</span>
+            <% } %>
+        </div>
         <div class="wd-balance-value"><%= fmt(bal) %></div>
-        <div class="wd-balance-sub">Limit Harian: Rp 100.000.000 &nbsp;|&nbsp; Terpakai: Rp 0</div>
+        <div class="wd-balance-sub">
+            Minimal WD: <%= isPro ? '<span style="color:#10b981;">Bebas</span>' : fmt(minAmount) %> 
+            &nbsp;|&nbsp; Fee: <%= feePct %>%
+        </div>
     </div>
     <div class="wd-balance" style="background: linear-gradient(135deg, #10b981, #059669);">
         <div class="wd-balance-label" style="color: rgba(255,255,255,0.8);">KOMISI AFFILIATE</div>
@@ -118,10 +134,17 @@ const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s,
         <form action="/admin/withdrawal/request" method="POST" id="wdForm">
             <div class="wd-input-group">
                 <label class="wd-label">Jumlah (Rp)</label>
-                <input type="number" name="amount" class="wd-input" id="wdAmount" value="0" min="10000" oninput="calcFee()">
+                <input type="number" name="amount" class="wd-input" id="wdAmount" value="0" min="<%= minAmount %>" oninput="calcFee()">
             </div>
-            <div class="wd-fee-row"><span class="label">Biaya Admin (3%):</span><span class="val red" id="feeDisplay">- Rp 0</span></div>
+            <div class="wd-fee-row"><span class="label">Biaya Admin (<%= feePct %>%):</span><span class="val red" id="feeDisplay">- Rp 0</span></div>
             <div class="wd-fee-row"><span class="label">Estimasi Diterima:</span><span class="val green" id="estDisplay">Rp 0</span></div>
+            
+            <% if(!isPro) { %>
+                <div style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:10px; margin:10px 0; font-size:11px; color:#92400e;">
+                    <i class="fas fa-info-circle"></i> Upgrade ke <strong>PRO</strong> untuk fee hanya 2% dan tarik dana bebas tanpa minimal!
+                </div>
+            <% } %>
+
             <div class="wd-input-group" style="margin-top:16px;">
                 <label class="wd-label">Metode Pembayaran</label>
                 <select name="bank_name" class="wd-input wd-select">
@@ -181,7 +204,9 @@ const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s,
 <script>
 function calcFee() {
     const amount = parseInt(document.getElementById('wdAmount').value) || 0;
-    const fee = Math.round(amount * 0.03);
+    const isPro = <%= isPro %>;
+    const feePct = isPro ? 0.02 : 0.03;
+    const fee = Math.round(amount * feePct);
     const est = amount - fee;
     document.getElementById('feeDisplay').textContent = '- Rp ' + fee.toLocaleString('id-ID');
     document.getElementById('estDisplay').textContent = 'Rp ' + est.toLocaleString('id-ID');

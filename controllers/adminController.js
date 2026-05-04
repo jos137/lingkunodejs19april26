@@ -576,13 +576,20 @@ exports.getWithdrawal = async (req, res) => {
             console.error('Affiliate Commission Calc Error:', e);
         }
 
+        // Fresh User Data for Plan
+        try { await db.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT "free"'); } catch(e) {}
+        try { await db.execute('ALTER TABLE withdrawals ADD COLUMN IF NOT EXISTS fee_amount DECIMAL(15,2) DEFAULT 0, ADD COLUMN IF NOT EXISTS net_amount DECIMAL(15,2) DEFAULT 0'); } catch(e) {}
+        
+        const [uRows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
+        const freshUser = uRows[0] || req.session.user;
+
         res.render('admin/withdrawal', {
             title: 'Tarik Dana',
             layout: './layouts/admin',
             balance,
             affiliate_commission,
             withdrawals,
-            user: req.session.user || res.locals.user
+            user: freshUser
         });
     } catch (err) {
         console.error(err.message);
@@ -594,26 +601,52 @@ exports.requestWithdrawal = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
         const { amount, bank_name, account_number, account_name } = req.body;
-        await db.execute(
-            'INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status) VALUES (?,?,?,?,?,?)',
-            [userId, amount, bank_name, account_number, account_name, 'pending']
-        );
+        const requestedAmount = parseFloat(amount);
 
-        // Notify Admin (User ID 1 is usually admin)
-        try {
-            const [userRows] = await db.execute("SELECT fullname FROM users WHERE id = ?", [userId]);
-            const requesterName = userRows.length > 0 ? userRows[0].fullname : 'User';
-            await db.execute(
-                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                [1, 'Permintaan WD Baru', `${requesterName} meminta penarikan sebesar Rp ${parseFloat(amount).toLocaleString('id-ID')}`, 'withdrawal', '/admin/withdrawal-queue']
-            );
-        } catch (notifErr) {
-            console.error('Failed to create admin notification:', notifErr.message);
+        // 1. Auto-Heal & Get User Info (Plan)
+        try { await db.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT "free"'); } catch(e) {}
+        const [userRows] = await db.execute("SELECT plan, fullname FROM users WHERE id = ?", [userId]);
+        const user = userRows[0];
+        const plan = user.plan || 'free';
+
+        // 2. Calculate Balance
+        const [rev] = await db.execute("SELECT COALESCE(SUM(total_price),0) as r FROM orders WHERE user_id = ? AND status='completed'", [userId]);
+        const [wd] = await db.execute("SELECT COALESCE(SUM(amount),0) as w FROM withdrawals WHERE user_id = ? AND status IN ('completed','pending')", [userId]);
+        const balance = parseFloat(rev[0].r) - parseFloat(wd[0].w);
+
+        if (requestedAmount > balance) {
+            return res.redirect('/admin/withdrawal?error=' + encodeURIComponent('Saldo tidak mencukupi.'));
         }
 
-        res.redirect(`/admin/withdrawal?success=true&amount=${amount}`);
+        // 3. Apply PRO / FREE Rules
+        const minWd = plan === 'pro' ? 0 : 100000;
+        const feePercent = plan === 'pro' ? 2 : 3;
+
+        if (requestedAmount < minWd) {
+            return res.redirect('/admin/withdrawal?error=' + encodeURIComponent(`Minimal penarikan untuk akun FREE adalah Rp ${minWd.toLocaleString('id-ID')}. Upgrade ke PRO untuk tarik saldo berapapun!`));
+        }
+
+        const feeAmount = (feePercent / 100) * requestedAmount;
+        const finalAmount = requestedAmount - feeAmount;
+
+        // 4. Save Withdrawal
+        await db.execute(
+            'INSERT INTO withdrawals (user_id, amount, fee_amount, net_amount, bank_name, account_number, account_name, status) VALUES (?,?,?,?,?,?,?,?)',
+            [userId, requestedAmount, feeAmount, finalAmount, bank_name, account_number, account_name, 'pending']
+        );
+
+        // Notify Admin
+        try {
+            const requesterName = user.fullname || 'User';
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%)`, 'withdrawal', '/admin/withdrawal-queue']
+            );
+        } catch (notifErr) { console.error('Notif Error:', notifErr.message); }
+
+        res.redirect(`/admin/withdrawal?success=true&amount=${requestedAmount}`);
     } catch (err) {
-        console.error(err.message);
+        console.error('Withdrawal Request Error:', err.message);
         res.redirect('/admin/withdrawal');
     }
 };
