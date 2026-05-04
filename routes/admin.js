@@ -157,6 +157,7 @@ router.post('/help/report', (req, res, next) => {
 }, adminController.submitReport);
 router.get('/reports', isAdmin, adminController.getAdminReports);
 router.post('/reports/:id/resolve', isAdmin, adminController.resolveTicket);
+router.post('/orders/block-ip', isAdmin, adminController.blockIp);
 
 // New Chat System Routes
 router.get('/help/ticket/:id', adminController.getTicketChat);

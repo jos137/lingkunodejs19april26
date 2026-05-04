@@ -130,7 +130,7 @@
                     <div class="prod-price">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
                     <div class="prod-meta">
                         <span><i class="fas fa-shopping-cart"></i> <%= p.sold || 0 %> Sold</span>
-                        <span><i class="fas fa-box"></i> <%= p.stock || 0 %> Stok</span>
+                        <span><i class="fas fa-box"></i> <%= p.stock == -1 ? 'Unlimited' : (p.stock || 0) %> Stok</span>
                     </div>
                 </div>
                 <div class="prod-actions">

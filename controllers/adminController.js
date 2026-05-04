@@ -1703,3 +1703,20 @@ exports.postTicketMessage = async (req, res) => {
         res.redirect('/admin/help');
     }
 };
+exports.blockIp = async (req, res) => {
+    try {
+        const { ip } = req.body;
+        if (!ip) return res.status(400).json({ success: false, message: 'IP tidak valid' });
+
+        // Block for 24 hours
+        await db.execute(
+            'INSERT INTO blocked_ips (ip_address, reason, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 DAY)) ON DUPLICATE KEY UPDATE expires_at = DATE_ADD(NOW(), INTERVAL 1 DAY), reason = ?', 
+            [ip, 'Blocked manually by admin', 'Blocked manually by admin']
+        );
+
+        res.json({ success: true, message: `IP ${ip} berhasil diblokir selama 24 jam.` });
+    } catch (err) {
+        console.error('Manual Block Error:', err.message);
+        res.status(500).json({ success: false, message: 'Gagal memblokir IP.' });
+    }
+};

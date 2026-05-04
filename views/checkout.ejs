@@ -46,6 +46,12 @@
             <p class="subtitle">Silakan lengkapi data diri Anda untuk melanjutkan pembayaran.</p>
         </div>
 
+        <% if (locals.query && locals.query.error) { %>
+            <div style="background: #fef2f2; color: #ef4444; padding: 14px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 24px; border: 1.5px solid #fee2e2;">
+                <i class="fas fa-exclamation-circle"></i> <%= locals.query.error %>
+            </div>
+        <% } %>
+
         <% 
             const thumb = product.processed_thumb;
             const thumbUrl = thumb && (thumb.startsWith('http') || thumb.startsWith('/')) 
