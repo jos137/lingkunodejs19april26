@@ -537,10 +537,12 @@ exports.processCheckout = async (req, res) => {
             } catch (e) { console.error('Affiliate Lookup Error:', e.message); }
         }
 
-        if (product.stock <= 0) return res.status(400).send('Stok produk habis.');
+        if (product.stock !== -1 && product.stock <= 0) return res.status(400).send('Stok produk habis.');
 
-        // 1. Decrease Stock (Balance with DB)
-        await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [product_id]);
+        // 1. Decrease Stock (Balance with DB) - Only if NOT unlimited
+        if (product.stock !== -1) {
+            await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [product_id]);
+        }
 
         // 2. Generate Reference ID
         const refId = 'INV-' + Date.now();
@@ -926,8 +928,8 @@ exports.ipaymuCallback = async (req, res) => {
                 if (order.status === 'pending') {
                     // Update order to expired
                     await db.execute('UPDATE orders SET status = ? WHERE id = ?', ['expired', order.id]);
-                    // Return stock
-                    await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ?', [order.product_id]);
+                    // Return stock (Only if NOT unlimited)
+                    await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ? AND stock >= 0', [order.product_id]);
                     console.log(`[EXPIRED] Order ${sid} expired. Stock returned.`);
                 }
             }

@@ -231,8 +231,13 @@ let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '
         <div class="edit-section">
             <div class="edit-section-title"><i class="fas fa-key" style="color:#f59e0b"></i> Akses & Stok</div>
             <div class="ef-group">
-                <label class="ef-label">Stok / Kuota Pembelian</label>
-                <input class="ef-input" type="number" name="stock" value="<%= p.stock || 0 %>" placeholder="0 = Tak terbatas">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                    <label class="ef-label" style="margin-bottom:0;">Stok / Kuota Pembelian</label>
+                    <label class="ef-checkbox" style="font-size:11px; color:#3b82f6;">
+                        <input type="checkbox" id="unlimitedStock" <%= p.stock == -1 ? 'checked' : '' %>> Stok Tidak Terbatas
+                    </label>
+                </div>
+                <input class="ef-input" type="number" name="stock" id="stockInput" value="<%= p.stock || 0 %>" placeholder="Contoh: 100 (0 = Habis)" <%= p.stock == -1 ? 'readonly style=background:#f1f5f9;color:#94a3b8;' : '' %>>
             </div>
             <div class="ef-group">
                 <label class="ef-label">Link Akses Produk (Setelah Bayar)</label>
@@ -344,6 +349,23 @@ document.getElementById('promoToggle').addEventListener('change', function() {
     } else {
         fields.style.opacity = '0.4';
         fields.style.pointerEvents = 'none';
+    }
+});
+
+// --- Unlimited Stock Toggle ---
+document.getElementById('unlimitedStock').addEventListener('change', function() {
+    const input = document.getElementById('stockInput');
+    if (this.checked) {
+        input.value = -1;
+        input.readOnly = true;
+        input.style.background = '#f1f5f9';
+        input.style.color = '#94a3b8';
+    } else {
+        input.value = 0;
+        input.readOnly = false;
+        input.style.background = '#fff';
+        input.style.color = '#111827';
+        input.focus();
     }
 });
 

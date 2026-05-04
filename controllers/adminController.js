@@ -342,7 +342,7 @@ exports.getOrders = async (req, res) => {
                 });
                 
                 for (let pid in productCounts) {
-                    await db.execute('UPDATE products SET stock = stock + ? WHERE id = ?', [productCounts[pid], pid]);
+                    await db.execute('UPDATE products SET stock = stock + ? WHERE id = ? AND stock >= 0', [productCounts[pid], pid]);
                 }
             }
         } catch(e) { console.error('Auto-expire err:', e.message); }
