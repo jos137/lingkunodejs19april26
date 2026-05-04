@@ -521,35 +521,17 @@ exports.processCheckout = async (req, res) => {
         if (products.length === 0) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
         const product = products[0];
 
-        // IP BLOCKING & PROTECTION LOGIC
-        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-        
+        // ANTI-SPAM: Block after 3 attempts with same email or phone
         try {
-            // Auto-heal: Ensure blocked_ips table and columns exist
-            await db.execute('CREATE TABLE IF NOT EXISTS blocked_ips (id INT AUTO_INCREMENT PRIMARY KEY, ip_address VARCHAR(255) UNIQUE, reason TEXT, expires_at DATETIME, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)');
-            try { await db.execute('ALTER TABLE blocked_ips ADD COLUMN IF NOT EXISTS expires_at DATETIME'); } catch(e) {}
-            try { await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ip VARCHAR(255)'); } catch(e) {}
-
-            // Check if IP is blocked & NOT EXPIRED
-            const [isBlocked] = await db.execute('SELECT id FROM blocked_ips WHERE ip_address = ? AND (expires_at IS NULL OR expires_at > NOW())', [clientIp]);
-            if (isBlocked.length > 0) {
-                return res.redirect(`/checkout/${product_id}?error=` + encodeURIComponent('Akses Anda diblokir sementara karena aktivitas mencurigakan. Silakan hubungi admin.'));
-            }
-
-            // Check if this IP is spamming (more than 10 pending orders in 30 mins)
-            const [spamCheck] = await db.execute(
-                'SELECT COUNT(*) as c FROM orders WHERE customer_ip = ? AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)',
-                [clientIp]
+            const [spamCount] = await db.execute(
+                'SELECT COUNT(*) as c FROM orders WHERE (customer_email = ? OR customer_whatsapp = ?) AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)',
+                [email, phone]
             );
-            if (spamCheck[0].c >= 10) {
-                // Auto block for 24 hours
-                await db.execute(
-                    'INSERT INTO blocked_ips (ip_address, reason, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 DAY)) ON DUPLICATE KEY UPDATE expires_at = DATE_ADD(NOW(), INTERVAL 1 DAY), reason = ?', 
-                    [clientIp, 'Spamming orders (10+ pending)', 'Spamming orders (10+ pending)']
-                );
-                return res.redirect(`/checkout/${product_id}?error=` + encodeURIComponent('Akses Anda diblokir 24 jam karena terlalu banyak membuat pesanan.'));
+            
+            if (spamCount[0].c >= 3) {
+                return res.redirect(`/checkout/${product_id}?error=` + encodeURIComponent('Anda sudah membuat terlalu banyak pesanan pending. Silakan selesaikan pembayaran sebelumnya atau tunggu 5 menit untuk mencoba lagi.'));
             }
-        } catch (err) { console.error('Security Check Error:', err.message); }
+        } catch (e) { console.error('Spam Limit Check Error:', e.message); }
 
         // ANTI-SPAM: Check for duplicate pending orders (Last 15 mins)
         try {
