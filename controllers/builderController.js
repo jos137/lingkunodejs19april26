@@ -492,23 +492,18 @@ exports.renderCheckoutPage = async (req, res) => {
 exports.processCheckout = async (req, res) => {
     try {
         const { product_id, name, email, phone, payment_method, payment_channel } = req.body;
+        const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '0.0.0.0';
 
         // 0. Ensure Users Table has iPaymu columns
         try {
-            await db.execute('SELECT ipaymu_va, ipaymu_apikey, ipaymu_sandbox, ipaymu_expiry FROM users LIMIT 1');
-        } catch (e) {
-            if (e.message.includes('Unknown column')) {
-                const cols = [
-                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS ipaymu_va VARCHAR(255)',
-                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS ipaymu_apikey VARCHAR(255)',
-                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS ipaymu_sandbox TINYINT(1) DEFAULT 1',
-                    'ALTER TABLE users ADD COLUMN IF NOT EXISTS ipaymu_expiry INT DEFAULT 60'
-                ];
-                for (let sql of cols) {
-                    try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(err) {}
-                }
+            const [cols] = await db.execute("SHOW COLUMNS FROM users LIKE 'ipaymu_va'");
+            if (cols.length === 0) {
+                await db.execute('ALTER TABLE users ADD COLUMN ipaymu_va VARCHAR(255)');
+                await db.execute('ALTER TABLE users ADD COLUMN ipaymu_apikey VARCHAR(255)');
+                await db.execute('ALTER TABLE users ADD COLUMN ipaymu_sandbox TINYINT(1) DEFAULT 1');
+                await db.execute('ALTER TABLE users ADD COLUMN ipaymu_expiry INT DEFAULT 60');
             }
-        }
+        } catch (e) {}
 
         // Get Product & Seller Details
         const [products] = await db.execute(`
@@ -579,7 +574,6 @@ exports.processCheckout = async (req, res) => {
             INSERT INTO orders (user_id, product_id, affiliate_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, commission_amount, payment_channel, status, customer_ip)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         `;
-
         try {
             await db.execute(insertQuery, orderParams);
             
@@ -594,25 +588,19 @@ exports.processCheckout = async (req, res) => {
         } catch (dbErr) {
             console.error('Initial DB Error:', dbErr.message);
             // Auto-Heal: Add missing columns if they don't exist
-            if (dbErr.message.includes('Unknown column')) {
-                const cols = [
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS affiliate_id INT DEFAULT NULL',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission_amount DECIMAL(15,2) DEFAULT 0',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INT',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS reference_id VARCHAR(100)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_whatsapp VARCHAR(50)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_price DECIMAL(15,2)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_channel VARCHAR(50)'
-                ];
-                for (let sql of cols) {
-                    try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
+            try {
+                const [oCols] = await db.execute("SHOW COLUMNS FROM orders LIKE 'affiliate_id'");
+                if (oCols.length === 0) {
+                    await db.execute('ALTER TABLE orders ADD COLUMN affiliate_id INT DEFAULT NULL');
+                    await db.execute('ALTER TABLE orders ADD COLUMN commission_amount DECIMAL(15,2) DEFAULT 0');
+                    await db.execute('ALTER TABLE orders ADD COLUMN customer_ip VARCHAR(50) DEFAULT NULL');
+                    await db.execute('ALTER TABLE orders ADD COLUMN payment_channel VARCHAR(50) DEFAULT NULL');
                 }
                 // Try again after healing
                 await db.execute(insertQuery, orderParams);
-            } else {
-                throw dbErr;
+            } catch (healErr) {
+                console.error('Healing Error:', healErr.message);
+                throw dbErr; // Re-throw original error if healing fails
             }
         }
 
