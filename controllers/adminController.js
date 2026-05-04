@@ -577,11 +577,19 @@ exports.getWithdrawal = async (req, res) => {
         }
 
         // Fresh User Data for Plan
-        try { await db.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT "free"'); } catch(e) {}
-        try { await db.execute('ALTER TABLE withdrawals ADD COLUMN IF NOT EXISTS fee_amount DECIMAL(15,2) DEFAULT 0, ADD COLUMN IF NOT EXISTS net_amount DECIMAL(15,2) DEFAULT 0'); } catch(e) {}
+        try {
+            const [uCols] = await db.execute("SHOW COLUMNS FROM users LIKE 'plan'");
+            if (uCols.length === 0) await db.execute('ALTER TABLE users ADD COLUMN plan VARCHAR(20) DEFAULT "free"');
+            
+            const [wCols] = await db.execute("SHOW COLUMNS FROM withdrawals LIKE 'fee_amount'");
+            if (wCols.length === 0) {
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN fee_amount DECIMAL(15,2) DEFAULT 0');
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN net_amount DECIMAL(15,2) DEFAULT 0');
+            }
+        } catch(e) {}
         
-        const [uRows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
-        const freshUser = uRows[0] || req.session.user;
+        const [uRowsFresh] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
+        const freshUser = uRowsFresh[0] || req.session.user;
 
         res.render('admin/withdrawal', {
             title: 'Tarik Dana',
