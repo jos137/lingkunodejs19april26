@@ -109,7 +109,7 @@ app.use(async (req, res, next) => {
     }
     try { await db.execute("ALTER TABLE users ADD COLUMN sidebar_theme VARCHAR(50) DEFAULT 'default' AFTER bio"); } catch(e){}
 
-    res.locals.user = req.session.user || null;
+    res.locals.user = req.session.user || { role: 'guest', name: 'Guest', plan: 'free' };
 
     // SMART IMAGE HELPER
     res.locals.img = (filename, folder = 'products') => {

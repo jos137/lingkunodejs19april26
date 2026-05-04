@@ -604,7 +604,11 @@ exports.requestWithdrawal = async (req, res) => {
         const requestedAmount = parseFloat(amount);
 
         // 1. Auto-Heal & Get User Info (Plan)
-        try { await db.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT "free"'); } catch(e) {}
+        try {
+            const [cols] = await db.execute("SHOW COLUMNS FROM users LIKE 'plan'");
+            if (cols.length === 0) await db.execute('ALTER TABLE users ADD COLUMN plan VARCHAR(20) DEFAULT "free"');
+        } catch(e) {}
+
         const [userRows] = await db.execute("SELECT plan, fullname FROM users WHERE id = ?", [userId]);
         const user = userRows[0];
         const plan = user.plan || 'free';
@@ -629,7 +633,16 @@ exports.requestWithdrawal = async (req, res) => {
         const feeAmount = (feePercent / 100) * requestedAmount;
         const finalAmount = requestedAmount - feeAmount;
 
-        // 4. Save Withdrawal
+        // 4. Ensure Withdrawal columns exist before insert
+        try {
+            const [wCols] = await db.execute("SHOW COLUMNS FROM withdrawals LIKE 'fee_amount'");
+            if (wCols.length === 0) {
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN fee_amount DECIMAL(15,2) DEFAULT 0');
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN net_amount DECIMAL(15,2) DEFAULT 0');
+            }
+        } catch(e) {}
+
+        // 5. Save Withdrawal
         await db.execute(
             'INSERT INTO withdrawals (user_id, amount, fee_amount, net_amount, bank_name, account_number, account_name, status) VALUES (?,?,?,?,?,?,?,?)',
             [userId, requestedAmount, feeAmount, finalAmount, bank_name, account_number, account_name, 'pending']
