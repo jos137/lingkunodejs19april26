@@ -1433,14 +1433,8 @@ exports.autoDeploy = async (req, res) => {
                 return res.json({ success: false, message: 'Gagal cek status git: ' + err.message });
             }
 
-            if (!stdout.trim()) {
-                return res.json({ success: true, message: 'Kodingan di Local sudah paling update (Nothing to push).' });
-            }
-
-            const commitMsg = `Update: ${new Date().toLocaleString()}`;
-            // Use GIT_TERMINAL_PROMPT=0 to prevent hanging
-            // Added --porcelain check and robust push
-            const command = `export GIT_TERMINAL_PROMPT=0 && git add . && (git commit -m "${commitMsg}" || true) && git push origin master 2>&1`;
+            const commitMsg = "Update from Dashboard";
+            const command = `git add . && (git commit -m "${commitMsg}" || true) && git push origin master 2>&1`;
             
             exec(command, { 
                 timeout: 120000, // Increase to 2 minutes
