@@ -109,13 +109,7 @@ app.use(async (req, res, next) => {
     }
     try { await db.execute("ALTER TABLE users ADD COLUMN sidebar_theme VARCHAR(50) DEFAULT 'default' AFTER bio"); } catch(e){}
 
-    res.locals.user = req.session.user || {
-        role: 'admin',
-        name: 'Admin JOS',
-        roleDisplay: 'Administrator',
-        slug: 'admin',
-        avatar: '/images/avatar.png'
-    };
+    res.locals.user = req.session.user || null;
 
     // SMART IMAGE HELPER
     res.locals.img = (filename, folder = 'products') => {

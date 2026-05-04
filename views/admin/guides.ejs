@@ -1,4 +1,4 @@
-<% const isAdmin = (user.role === 'admin'); %>
+<% const isAdmin = (user && user.role === 'admin'); %>
 <style>
 .g-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .g-title { font-size: 22px; font-weight: 850; color: #111827; letter-spacing: -0.5px; }

@@ -688,11 +688,16 @@ exports.getGuides = async (req, res) => {
         }
 
         const [guides] = await db.execute('SELECT * FROM guides ORDER BY id DESC');
+        // Fresh User Data for Admin Check
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : 0);
+        const [uRows] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
+        const freshUser = uRows[0] || req.session.user || { role: 'user' };
+
         res.render('admin/guides', { 
             title: 'Pusat Panduan', 
             layout: './layouts/admin', 
             guides, 
-            user: req.session.user || res.locals.user 
+            user: freshUser 
         });
     } catch (err) {
         console.error('Guides Error:', err.message);
