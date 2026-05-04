@@ -252,39 +252,35 @@ exports.getOrders = async (req, res) => {
     try {
         // Auto-Heal Email Logs table if missing
         try {
-            await db.execute("SELECT 1 FROM email_logs LIMIT 1");
+            await db.execute("SELECT id FROM email_logs LIMIT 1");
         } catch (e) {
-            if (e.message.includes("Table") && e.message.includes("doesn't exist")) {
-                await db.execute(`
-                    CREATE TABLE email_logs (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        order_id INT NOT NULL,
-                        event_name VARCHAR(50) NOT NULL,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                `);
-            }
+            await db.execute(`
+                CREATE TABLE IF NOT EXISTS email_logs (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    order_id INT NOT NULL,
+                    event_name VARCHAR(50) NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
         }
 
         // Auto-Heal Orders table columns if missing
         try {
-            await db.execute("SELECT user_id, reference_id, customer_name, customer_email, total_price, payment_channel FROM orders LIMIT 1");
-        } catch (e) {
-            if (e.message.includes('Unknown column')) {
-                const cols = [
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id INT',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS reference_id VARCHAR(100)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email VARCHAR(255)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_whatsapp VARCHAR(50)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_price DECIMAL(15,2)',
-                    'ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_channel VARCHAR(50)'
+            const [oCols] = await db.execute("SHOW COLUMNS FROM orders LIKE 'user_id'");
+            if (oCols.length === 0) {
+                const addCols = [
+                    'ALTER TABLE orders ADD COLUMN user_id INT',
+                    'ALTER TABLE orders ADD COLUMN reference_id VARCHAR(100)',
+                    'ALTER TABLE orders ADD COLUMN customer_name VARCHAR(255)',
+                    'ALTER TABLE orders ADD COLUMN customer_email VARCHAR(255)',
+                    'ALTER TABLE orders ADD COLUMN customer_whatsapp VARCHAR(50)',
+                    'ALTER TABLE orders ADD COLUMN total_price DECIMAL(15,2)',
+                    'ALTER TABLE orders ADD COLUMN payment_channel VARCHAR(50)',
+                    'ALTER TABLE orders ADD COLUMN customer_ip VARCHAR(50)'
                 ];
-                for (let sql of cols) {
-                    try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(err) {}
-                }
+                for (let sql of addCols) { try { await db.execute(sql); } catch(err) {} }
             }
-        }
+        } catch (e) {}
 
         // Auto-Heal: Ensure all possible product image columns exist to avoid SQL crashes
         const colsToHeal = [
