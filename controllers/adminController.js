@@ -380,8 +380,13 @@ exports.getOrders = async (req, res) => {
             if (thumb && !thumb.startsWith('http') && !thumb.startsWith('/')) {
                 thumb = '/uploads/products/' + thumb;
             }
+
+            // PRE-CALCULATE TIME LEFT FOR TIMER
+            const createdAt = new Date(o.created_at);
+            const expiryDate = new Date(createdAt.getTime() + (expiryMins * 60000));
+            const timeLeft = Math.floor((expiryDate - new Date()) / 1000);
             
-            return { ...o, product_thumbnail: thumb };
+            return { ...o, product_thumbnail: thumb, time_left: timeLeft };
         });
 
         res.render('admin/orders', {

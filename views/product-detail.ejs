@@ -1,224 +1,73 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>
-        <%= title %>
-    </title>
+    <title><%= title %></title>
     <link rel="icon" href="/images/fav.ico" type="image/x-icon">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --primary: #10b981;
+            --primary-soft: rgba(16, 185, 129, 0.1);
+            --danger: #ef4444;
+            --danger-soft: rgba(239, 68, 68, 0.1);
             --bg: #f8fafc;
-            --text-dark: #111827;
-            --text-muted: #6b7280;
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #f1f5f9;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--bg);
-            color: var(--text-dark);
-            margin: 0;
-            padding: 0;
-            line-height: 1.5;
-            display: flex;
-            justify-content: center;
-            min-height: 100vh;
-        }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); margin: 0; padding: 0; line-height: 1.5; display: flex; justify-content: center; min-height: 100vh; }
+        
+        .container { width: 100%; max-width: 480px; background: #fff; position: relative; min-height: 100vh; box-shadow: 0 0 50px rgba(0,0,0,0.05); }
 
-        .container {
-            width: 100%;
-            max-width: 480px;
-            background: #fff;
-            position: relative;
-            min-height: 100vh;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.05);
-        }
-
-        .header-nav {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            z-index: 100;
-        }
-
-        .back-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #111827;
-            text-decoration: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        }
-
-        .product-hero {
-            width: 100%;
-            position: relative;
-            background: #fff;
-            overflow: hidden;
-        }
-
-        .product-img {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
-
-        .content {
-            padding: 20px;
-            padding-bottom: 100px;
-        }
-
-        .badge-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .stock-badge {
-            background: #ef4444;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .discount-badge {
-            background: #10b981;
-            color: #fff;
-            font-size: 10px;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 6px;
-        }
-
-        .product-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin: 0 0 14px 0;
-            line-height: 1.4;
-            color: #1e293b;
-            letter-spacing: -0.5px;
-        }
-
+        .header-nav { position: absolute; top: 20px; left: 20px; z-index: 100; }
+        .back-btn { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; color: #111827; text-decoration: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: 0.2s; }
+        .back-btn:hover { transform: scale(1.1); }
+        
+        .product-hero { width: 100%; position: relative; background: #f8fafc; overflow: hidden; }
+        .product-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; display: block; }
+        
+        .content { padding: 24px; padding-bottom: 120px; }
+        
+        .product-title { font-size: 20px; font-weight: 800; margin: 0 0 20px 0; line-height: 1.4; color: #1e293b; letter-spacing: -0.5px; }
+        
+        /* PRICE BOX MODERN */
         .price-box {
-            margin-top: 8px;
-            margin-bottom: 20px;
-            padding: 14px 16px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .price-label-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .price-label {
-            font-size: 11px;
-            font-weight: 700;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .price-value-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .price-amounts {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .price-current {
-            font-size: 24px;
-            font-weight: 800;
-            color: #10b981;
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
-
-        .price-old {
-            font-size: 14px;
-            color: #94a3b8;
-            text-decoration: line-through;
-            font-weight: 500;
-        }
-
-        .description {
-            font-size: 14px;
-            color: #4b5563;
-            line-height: 1.7;
-        }
-
-        .description p {
-            margin-bottom: 12px;
-        }
-
-        .description img {
-            max-width: 100%;
-            border-radius: 12px;
-            margin: 10px 0;
-        }
-
-        .footer-action {
-            position: sticky;
-            bottom: 0;
-            width: 100%;
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 20px;
             padding: 20px;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #f1f5f9;
-            box-sizing: border-box;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 25px -10px rgba(0,0,0,0.05);
             display: flex;
-            justify-content: center;
-            z-index: 100;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .buy-btn {
-            width: 100%;
-            padding: 14px;
-            background: #10b981;
-            color: #fff;
-            border: none;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            text-decoration: none;
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.2);
-            transition: 0.2s;
-        }
+        .price-info { display: flex; flex-direction: column; gap: 4px; }
+        .price-label { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+        .price-main { display: flex; align-items: baseline; gap: 8px; }
+        .price-current { font-size: 24px; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; }
+        .price-old { font-size: 14px; color: var(--text-muted); text-decoration: line-through; font-weight: 500; }
+
+        .badges-stack { display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+        .badge-modern { font-size: 10px; font-weight: 700; padding: 6px 12px; border-radius: 10px; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; gap: 6px; }
+        .badge-discount { background: var(--primary); color: #fff; }
+        .badge-stock { background: var(--danger); color: #fff; }
+
+        .description { font-size: 14px; color: #4b5563; line-height: 1.8; }
+        .description p { margin-bottom: 12px; }
+        .description img { max-width: 100%; border-radius: 16px; margin: 16px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        .footer-action { position: sticky; bottom: 0; width: 100%; padding: 20px; background: rgba(255,255,255,0.9); backdrop-filter: blur(15px); border-top: 1px solid var(--border); box-sizing: border-box; display: flex; justify-content: center; z-index: 100; }
+        .buy-btn { width: 100%; padding: 16px; background: var(--primary); color: #fff; border: none; border-radius: 16px; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; box-shadow: 0 10px 20px -5px rgba(16,185,129,0.4); transition: 0.3s; }
+        .buy-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 25px -5px rgba(16,185,129,0.5); }
     </style>
 </head>
-
 <body>
     <div class="container">
         <div class="header-nav">
@@ -226,59 +75,64 @@
         </div>
 
         <div class="product-hero">
-            <img src="<%= img(product.processed_thumb, 'products') %>" class="product-img" alt="Product"
-                onerror="this.onerror=null; this.src='/images/placeholder.png'">
+            <img src="<%= img(product.processed_thumb, 'products') %>" class="product-img" alt="Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
         </div>
 
         <div class="content">
+            <h1 class="product-title"><%= product.name %></h1>
+
             <% 
-                const curPrice = parseFloat(String(product.price).replace(',', '.' )) || 0; 
-                const oldPrice = parseFloat(String(product.normal_price).replace(',', '.' )) || 0; 
+                const curPrice = parseFloat(String(product.price).replace(',', '.')) || 0;
+                const oldPrice = parseFloat(String(product.normal_price).replace(',', '.')) || 0;
             %>
 
-            <h1 class="product-title">
-                <%= product.name %>
-            </h1>
-
             <div class="price-box">
-                <div class="price-label-row">
+                <div class="price-info">
                     <div class="price-label">Harga Spesial</div>
-                    <% if (oldPrice > curPrice) { %>
-                        <% let save = Math.round((oldPrice - curPrice) / oldPrice * 100); %>
-                        <div class="discount-badge">Hemat <%= save %>%</div>
-                    <% } %>
-                </div>
-                <div class="price-value-row">
-                    <div class="price-amounts">
+                    <div class="price-main">
                         <div class="price-current">Rp <%= curPrice.toLocaleString('id-ID') %></div>
                         <% if (oldPrice > curPrice) { %>
-                            <span class="price-old">Rp <%= oldPrice.toLocaleString('id-ID') %></span>
+                            <div class="price-old">Rp <%= oldPrice.toLocaleString('id-ID') %></div>
                         <% } %>
                     </div>
+                </div>
+                
+                <div class="badges-stack">
+                    <% if (oldPrice > curPrice) { %>
+                        <% let save = Math.round((oldPrice - curPrice) / oldPrice * 100); %>
+                        <div class="badge-modern badge-discount">Hemat <%= save %>%</div>
+                    <% } %>
                     <% if (product.stock > 0) { %>
-                        <div class="stock-badge"><i class="fas fa-bolt"></i> SISA <%= product.stock %> SLOT</div>
+                        <div class="badge-modern badge-stock">
+                            <i class="fas fa-bolt"></i> <%= product.stock %> Slot Sisa
+                        </div>
                     <% } %>
                 </div>
             </div>
 
             <div class="description">
-                <% function manualDecode(str) { if(!str) return '' ; let s=str; for(let i=0; i<2; i++) {
-                    s=s.replace(/&lt;/g, '<' ).replace(/&gt;/g, '>' ).replace(/&quot;/g, '"' ).replace(/&#39;/g, "'"
-                    ).replace(/&amp;/g, '&' ); } return s; } const cleanDesc=manualDecode(product.description || '' );
-                    %>
-                    <%- cleanDesc %>
+                <% 
+                    function manualDecode(str) {
+                        if(!str) return '';
+                        let s = str;
+                        for(let i=0; i<2; i++) { 
+                            s = s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+                        }
+                        return s;
+                    }
+                    const cleanDesc = manualDecode(product.description || '');
+                %>
+                <%- cleanDesc %>
             </div>
         </div>
 
         <div class="footer-action">
             <% if (product.stock > 0 || product.stock === -1) { %>
                 <a href="/checkout/<%= product.id %>" class="buy-btn">Gabung Sekarang!</a>
-                <% } else { %>
-                    <button class="buy-btn" style="background:#94a3b8; box-shadow:none; cursor:not-allowed;"
-                        disabled>Stok Habis</button>
-                    <% } %>
+            <% } else { %>
+                <button class="buy-btn" style="background:#94a3b8; box-shadow:none; cursor:not-allowed;" disabled>Stok Habis</button>
+            <% } %>
         </div>
     </div>
 </body>
-
 </html>

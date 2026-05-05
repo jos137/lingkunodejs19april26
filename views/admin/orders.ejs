@@ -130,7 +130,10 @@
                     <div class="order-card" data-status="<%= o.status %>" data-buyer="<%= o.customer_name.toLowerCase() %>" onclick="selectOrder(this, <%= idx %>)">
                         <div class="order-info">
                             <div class="order-date"><%= o.formatted_date %></div>
-                            <div class="order-buyer"><%= o.customer_name %></div>
+                            <div class="order-buyer">
+                                <%= o.customer_name %>
+                                <span class="countdown-timer" style="font-size: 11px; font-weight: 800; color: #10b981; margin-left: 8px;" data-timeleft="<%= o.time_left %>">00:00</span>
+                            </div>
                             <div class="order-product"><%= o.product_name %></div>
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
                         </div>
@@ -142,13 +145,6 @@
                             <% } %>
                         </div>
                         <div class="order-status <%= o.status %>"><%= o.status.toUpperCase() %></div>
-                        
-                        <% if (o.status === 'pending') { %>
-                            <div class="countdown-timer" style="position: absolute; bottom: 24px; left: 32px; font-size: 11px; font-weight: 800; color: #f59e0b; border: 1.5px solid #f59e0b; padding: 2px 8px; border-radius: 100px;" 
-                                 data-timeleft="<%= o.time_left %>">
-                                00:00
-                            </div>
-                        <% } %>
 
                         <!-- For Mobile -->
                         <div class="order-detail-mobile"></div>
@@ -364,7 +360,7 @@ function startCountdowns() {
         timers.forEach(timer => {
             let timeLeft = parseInt(timer.getAttribute('data-timeleft'));
             if (timeLeft <= 0) {
-                timer.innerHTML = "EXPIRED";
+                timer.innerHTML = "00:00";
             } else {
                 const m = Math.floor(timeLeft / 60);
                 const s = timeLeft % 60;
