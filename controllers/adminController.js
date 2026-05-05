@@ -1424,37 +1424,26 @@ exports.getAffiliateStats = async (req, res) => {
 exports.autoDeploy = async (req, res) => {
     const { exec } = require('child_process');
     try {
-        console.log('--- AUTO DEPLOY STARTED ---');
+        console.log('--- AGGRESSIVE AUTO DEPLOY STARTED ---');
         
-        // 1. Check if there are any changes first
-        exec('git status --porcelain', (err, stdout) => {
-            if (err) {
-                console.error(`Git Status Error: ${err.message}`);
-                return res.json({ success: false, message: 'Gagal cek status git: ' + err.message });
+        // Langsung hajar: add, commit (abaikan error jika kosong), dan push
+        const commitMsg = "Auto-update from Dashboard: " + new Date().toLocaleString();
+        const command = `git add . && (git commit -m "${commitMsg}" || true) && git push origin master 2>&1`;
+        
+        exec(command, { 
+            timeout: 180000, // 3 menit
+            maxBuffer: 1024 * 1024 * 20 // 20MB buffer
+        }, (error, stdout, stderr) => {
+            const output = stdout + (stderr || '');
+            console.log('Git Output:', output);
+
+            if (error && !output.includes('Everything up-to-date')) {
+                console.error(`Git Push Error: ${output}`);
+                return res.json({ success: false, message: 'Gagal Push: ' + output });
             }
 
-            const commitMsg = "Update from Dashboard";
-            const command = `git add . && (git commit -m "${commitMsg}" || true) && git push origin master 2>&1`;
-            
-            exec(command, { 
-                timeout: 120000, // Increase to 2 minutes
-                maxBuffer: 1024 * 1024 * 10 // 10MB buffer
-            }, (error, stdout, stderr) => {
-                const output = stdout + (stderr || '');
-                console.log('Git Output:', output);
-
-                if (error && !output.includes('Everything up-to-date')) {
-                    console.error(`Git Push Error: ${output}`);
-                    let msg = output;
-                    if (msg.includes('terminal prompts disabled')) {
-                        msg = 'Git butuh login/password (SSH/Token).';
-                    }
-                    return res.json({ success: false, message: 'Gagal: ' + msg });
-                }
-
-                console.log('--- AUTO DEPLOY SUCCESS ---');
-                res.json({ success: true, message: 'BERHASIL! Kodingan sudah di-push ke Git.' });
-            });
+            console.log('--- AUTO DEPLOY SUCCESS ---');
+            res.json({ success: true, message: 'BERHASIL! Perubahan sudah dipaksa push ke Git dan siap ditarik hosting.' });
         });
     } catch (globalErr) {
         console.error('Auto Deploy Global Error:', globalErr);
