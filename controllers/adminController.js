@@ -351,6 +351,7 @@ exports.getOrders = async (req, res) => {
         // Safe query for Hostinger & Local DB
         const [orders] = await db.execute(
             `SELECT o.*, 
+                    COALESCE(o.status, 'pending') as status,
                     COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name, 
                     p.price as product_price, 
                     p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo,
