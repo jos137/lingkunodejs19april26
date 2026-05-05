@@ -20,10 +20,16 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         script: |
           cd domains/lingku.xyz/nodejs
-          git pull origin master
+          # Ambil data terbaru dan paksa reset agar sama persis dengan GitHub
+          git fetch origin master
+          git reset --hard origin/master
+          
           /opt/alt/alt-nodejs22/root/bin/npm install --production
-          # Safer restart logic
+          
+          # Matikan proses lama dan jalankan ulang
           pkill -u u427900331 node || true
-          sleep 2
+          sleep 3
           nohup /opt/alt/alt-nodejs22/root/bin/node server.js > out.log 2> err.log &
-          sleep 2
+          sleep 5
+          # Cek apakah sudah jalan
+          ps aux | grep node | grep server.js
