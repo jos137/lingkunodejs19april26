@@ -355,6 +355,7 @@ exports.getOrders = async (req, res) => {
                     p.price as product_price, 
                     p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo,
                     p.access_link,
+                    (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name = 'Delivered') as delivered_at,
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
              LEFT JOIN products p ON o.product_id = p.id
@@ -386,7 +387,13 @@ exports.getOrders = async (req, res) => {
             const expiryDate = new Date(createdAt.getTime() + (expiryMins * 60000));
             const timeLeft = Math.floor((expiryDate - new Date()) / 1000);
             
-            return { ...o, product_thumbnail: thumb, time_left: timeLeft };
+            return { 
+                ...o, 
+                product_thumbnail: thumb, 
+                time_left: timeLeft,
+                is_sent: !!o.delivered_at,
+                is_opened: !!o.last_opened_at
+            };
         });
 
         res.render('admin/orders', {

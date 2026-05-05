@@ -132,7 +132,9 @@
                             <div class="order-date"><%= o.formatted_date %></div>
                             <div class="order-buyer">
                                 <%= o.customer_name %>
-                                <span class="countdown-timer" style="font-size: 11px; font-weight: 800; color: #10b981; margin-left: 8px;" data-timeleft="<%= o.time_left %>">00:00</span>
+                                <% if (o.status === 'pending') { %>
+                                    <span class="countdown-timer" style="font-size: 11px; font-weight: 800; color: #10b981; margin-left: 8px;" data-timeleft="<%= o.time_left %>">00:00</span>
+                                <% } %>
                             </div>
                             <div class="order-product"><%= o.product_name %></div>
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
@@ -278,28 +280,32 @@ function renderOrderDetail(o) {
                 <div style="position:absolute; top:18px; left:0; right:0; height:2px; background:#f1f5f9; z-index:1;"></div>
                 <div style="position:absolute; top:18px; left:0; width:${o.is_opened ? '100%' : (o.is_sent ? '50%' : '0%')}; height:2px; background:#10b981; z-index:1; transition:0.5s;"></div>
 
+                <%# Step 0: Sistem (Orange if Pending, Green if Completed) %>
+                <% const step0Color = o => o.status === 'pending' ? '#f59e0b' : '#10b981'; %>
                 <div style="position:relative; z-index:2; text-align:center;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:#10b981; color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff, 0 8px 15px rgba(16,185,129,0.2);">
-                        <i class="fas fa-check" style="font-size:14px;"></i>
+                    <div style="width:36px; height:36px; border-radius:50%; background:${o.status === 'pending' ? '#f59e0b' : '#10b981'}; color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff, 0 8px 15px ${o.status === 'pending' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)'};">
+                        <i class="fas fa-${o.status === 'pending' ? 'clock' : 'check'}" style="font-size:14px;"></i>
                     </div>
                     <div style="font-size:11px; font-weight:800; color:#111827;">Sistem</div>
                     <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.formatted_date}</div>
                 </div>
 
+                <%# Step 1: Terkirim %>
                 <div style="position:relative; z-index:2; text-align:center;">
                     <div style="width:36px; height:36px; border-radius:50%; background:${o.is_sent ? '#10b981' : '#fff'}; color:${o.is_sent ? '#fff' : '#cbd5e1'}; border:${o.is_sent ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff;">
-                        <i class="fas fa-envelope" style="font-size:14px;"></i>
+                        <i class="fas fa-paper-plane" style="font-size:14px;"></i>
                     </div>
                     <div style="font-size:11px; font-weight:800; color:${o.is_sent ? '#111827' : '#cbd5e1'};">Terkirim</div>
-                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.is_sent ? o.formatted_date : '-'}</div>
+                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.delivered_at ? new Date(o.delivered_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : (o.status === 'pending' ? 'Menunggu' : '-')}</div>
                 </div>
 
+                <%# Step 2: Dibuka %>
                 <div style="position:relative; z-index:2; text-align:center;">
                     <div style="width:36px; height:36px; border-radius:50%; background:${o.is_opened ? '#10b981' : '#fff'}; color:${o.is_opened ? '#fff' : '#cbd5e1'}; border:${o.is_opened ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff;">
                         <i class="fas fa-envelope-open" style="font-size:14px;"></i>
                     </div>
                     <div style="font-size:11px; font-weight:800; color:${o.is_opened ? '#111827' : '#cbd5e1'};">Dibuka</div>
-                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.is_opened ? 'Sudah Dibuka' : '-'}</div>
+                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.last_opened_at ? new Date(o.last_opened_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-'}</div>
                 </div>
             </div>
         </div>
