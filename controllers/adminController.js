@@ -1846,9 +1846,19 @@ exports.processUpgrade = async (req, res) => {
         const price = 99000; // Harga Upgrade Pro
         const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
 
+        // Robust Phone Formatting (Required by iPaymu)
+        let phone = user.whatsapp || user.phone || '081234567890';
+        let cleanPhone = phone.replace(/[^0-9]/g, '');
+        if (cleanPhone.startsWith('0')) {
+            cleanPhone = '62' + cleanPhone.substring(1);
+        } else if (!cleanPhone.startsWith('62') && cleanPhone.length > 5) {
+            cleanPhone = '62' + cleanPhone;
+        }
+
         // Create Payment Link
         const body = {
-            name: user.fullname || user.name || 'User',
+            name: (user.fullname || user.name || 'User').replace(/[^a-zA-Z0-9 ]/g, ''),
+            phone: cleanPhone,
             email: user.email,
             amount: price,
             referenceId: referenceId,
@@ -1860,7 +1870,8 @@ exports.processUpgrade = async (req, res) => {
         };
 
         const bodyString = JSON.stringify(body);
-        const stringToSign = `POST:${va}:${crypto.createHash('sha256').update(bodyString).digest('hex').toLowerCase()}:${apiKey}`;
+        const bodyHash = crypto.createHash('sha256').update(bodyString).digest('hex').toLowerCase();
+        const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
 
         const response = await axios.post(url, bodyString, {
@@ -1875,8 +1886,9 @@ exports.processUpgrade = async (req, res) => {
         if (response.data && response.data.Data && response.data.Data.Url) {
             res.redirect(response.data.Data.Url);
         } else {
-            console.error('iPaymu Error:', response.data);
-            res.send('Gagal membuat tagihan pembayaran. Silakan coba lagi nanti.');
+            const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';
+            console.error('iPaymu Error:', errorMsg);
+            res.send(`Gagal membuat tagihan: ${errorMsg}. Pastikan pengaturan iPaymu (VA & ApiKey) di menu Pengaturan sudah benar.`);
         }
 
     } catch (err) {
