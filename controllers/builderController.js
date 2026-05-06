@@ -873,19 +873,28 @@ exports.ipaymuCallback = async (req, res) => {
 
                     // 3. Record as Platform Order (Admin ID 1, Product ID 0)
                     try {
-                        const [userData] = await db.execute("SELECT fullname, name, email, whatsapp, phone FROM users WHERE id = ?", [targetUserId]);
-                        const buyerName = userData[0] ? (userData[0].fullname || userData[0].name) : 'User';
-                        const buyerEmail = userData[0] ? userData[0].email : '';
-                        const buyerPhone = userData[0] ? (userData[0].whatsapp || userData[0].phone) : '';
-                        
-                        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-                        const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
-                        
-                        await db.execute(
-                            "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
-                            [1, 0, sid, price, 'completed', buyerName, buyerEmail, buyerPhone]
+                        // Try to update existing pending order first
+                        const [updateResult] = await db.execute(
+                            "UPDATE orders SET status = 'completed' WHERE reference_id = ? AND product_id = 0",
+                            [sid]
                         );
-                    } catch(orderErr) { console.error('Platform Order Log Error:', orderErr.message); }
+
+                        // If not found (maybe checkout log failed earlier), insert as fallback
+                        if (updateResult.affectedRows === 0) {
+                            const [userData] = await db.execute("SELECT fullname, name, email, whatsapp, phone FROM users WHERE id = ?", [targetUserId]);
+                            const buyerName = userData[0] ? (userData[0].fullname || userData[0].name) : 'User';
+                            const buyerEmail = userData[0] ? userData[0].email : '';
+                            const buyerPhone = userData[0] ? (userData[0].whatsapp || userData[0].phone) : '';
+                            
+                            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+                            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+                            
+                            await db.execute(
+                                "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                                [1, 0, sid, price, 'completed', buyerName, buyerEmail, buyerPhone]
+                            );
+                        }
+                    } catch(orderErr) { console.error('Platform Order Update Error:', orderErr.message); }
 
                     console.log(`[UPGRADE] User ID ${targetUserId} has been upgraded to PRO.`);
 

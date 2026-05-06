@@ -1950,7 +1950,15 @@ exports.processUpgrade = async (req, res) => {
         if (response.data && response.data.Data) {
             const d = response.data.Data;
             
-            // Send Instruction Email
+            // Record to orders table as PENDING immediately
+            try {
+                await db.execute(
+                    "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, payment_channel, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    [1, 0, referenceId, price, 'pending', body.name, body.email, body.phone, chan]
+                );
+            } catch(orderErr) { console.error('Initial Order Log Error:', orderErr.message); }
+
+            const { sendPaymentInstructionEmail } = require('../utils/mailer');
             const paymentInfo = d.Via === 'QRIS' ? `Silakan scan QRIS di halaman instruksi.` : `Transfer ke VA ${d.Channel}: ${d.PaymentNo}`;
             await sendPaymentInstructionEmail(email || user.email, name || user.fullname || user.name, 'Upgrade Paket PRO Lingku.xyz', price, d.Channel || 'QRIS', paymentInfo);
 
@@ -1975,6 +1983,24 @@ exports.processUpgrade = async (req, res) => {
 
 exports.getUpgradeOrders = async (req, res) => {
     try {
+        // AUTO-SYNC: Ensure historical PRO users are in the orders table
+        try {
+            const [proUsers] = await db.execute("SELECT * FROM users WHERE plan = 'pro'");
+            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+
+            for (const user of proUsers) {
+                const [existing] = await db.execute("SELECT id FROM orders WHERE product_id = 0 AND buyer_email = ?", [user.email]);
+                if (existing.length === 0) {
+                    const refId = `LEGACY-PRO-${user.id}-${Date.now()}`;
+                    await db.execute(
+                        "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        [1, 0, refId, price, 'completed', user.fullname || user.name || 'User', user.email, user.whatsapp || user.phone || '0', user.created_at]
+                    );
+                }
+            }
+        } catch(syncErr) { console.error('Auto-Sync PRO Error:', syncErr.message); }
+
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
         const offset = (page - 1) * limit;
