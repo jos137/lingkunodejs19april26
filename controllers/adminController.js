@@ -1935,7 +1935,7 @@ exports.processUpgrade = async (req, res) => {
             
             // Send Instruction Email
             const paymentInfo = d.Via === 'QRIS' ? `Silakan scan QRIS di halaman instruksi.` : `Transfer ke VA ${d.Channel}: ${d.PaymentNo}`;
-            await mailer.sendPaymentInstructionEmail(email || user.email, name || user.fullname || user.name, 'Upgrade Paket PRO Lingku.xyz', price, d.Channel || 'QRIS', paymentInfo);
+            await sendPaymentInstructionEmail(email || user.email, name || user.fullname || user.name, 'Upgrade Paket PRO Lingku.xyz', price, d.Channel || 'QRIS', paymentInfo);
 
             return res.render('admin/upgrade-payment', {
                 layout: false,
