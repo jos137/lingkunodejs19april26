@@ -1884,8 +1884,8 @@ exports.processUpgrade = async (req, res) => {
             cleanPhone = '62' + cleanPhone;
         }
 
-        // Use standard Payment Endpoint instead of Direct for better URL generation
-        const paymentUrl = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment' : 'https://my.ipaymu.com/api/v2/payment';
+        // Use DIRECT Payment Endpoint to target specific method selected by user
+        const directUrl = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
 
         // Create Payment Link
         const body = {
@@ -1909,7 +1909,7 @@ exports.processUpgrade = async (req, res) => {
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
 
-        const response = await axios.post(paymentUrl, bodyString, {
+        const response = await axios.post(directUrl, bodyString, {
             headers: {
                 'Content-Type': 'application/json',
                 'va': va,
@@ -1918,12 +1918,12 @@ exports.processUpgrade = async (req, res) => {
             }
         });
 
-        if (response.data && response.data.Data && response.data.Data.Url) {
-            res.redirect(response.data.Data.Url);
+        if (response.data && response.data.Data && (response.data.Data.Url || response.data.Data.PaymentUrl)) {
+            res.redirect(response.data.Data.Url || response.data.Data.PaymentUrl);
         } else {
             const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';
             console.error('iPaymu Error:', errorMsg);
-            res.send(`Gagal membuat tagihan: ${errorMsg}. Response: ${JSON.stringify(response.data.Data || {})}`);
+            res.send(`Gagal membuat tagihan: ${errorMsg}. Response: ${JSON.stringify(response.data)}`);
         }
 
     } catch (err) {
