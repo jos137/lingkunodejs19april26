@@ -1930,13 +1930,18 @@ exports.processUpgrade = async (req, res) => {
             }
         });
 
-        if (response.data && response.data.Data && (response.data.Data.Url || response.data.Data.PaymentUrl)) {
-            res.redirect(response.data.Data.Url || response.data.Data.PaymentUrl);
-        } else {
-            const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';
-            console.error('iPaymu Error:', errorMsg);
-            res.send(`Gagal membuat tagihan: ${errorMsg}. Response: ${JSON.stringify(response.data)}`);
+        if (response.data && response.data.Data) {
+            const d = response.data.Data;
+            const finalUrl = d.Url || d.PaymentUrl || d.QrImage || d.QrTemplate;
+            
+            if (finalUrl) {
+                return res.redirect(finalUrl);
+            }
         }
+        
+        const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';
+        console.error('iPaymu Error:', errorMsg);
+        res.send(`Gagal membuat tagihan: ${errorMsg}. Response: ${JSON.stringify(response.data)}`);
 
     } catch (err) {
         console.error('Process Upgrade Error:', err.message);
