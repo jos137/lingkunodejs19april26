@@ -1858,7 +1858,7 @@ exports.processUpgrade = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users[0];
 
-        if (user.plan === 'pro') return res.redirect('/admin');
+        if (user.plan === 'pro') return res.redirect('/admin?info=already_pro');
 
         // iPaymu Config (Using Admin Credentials)
         const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
@@ -1866,10 +1866,22 @@ exports.processUpgrade = async (req, res) => {
         const isSandbox = adminConfig.ipaymu_sandbox == 1;
         const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE);
         const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
-        const url = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
-
+        
         if (!va || !apiKey) {
             return res.send('Maaf, sistem pembayaran belum siap (VA/ApiKey Admin kosong).');
+        }
+
+        // Logic fix for paymentMethod/Channel mapping based on selection
+        let method = (payment_method || 'va').toLowerCase();
+        let chan = (payment_channel || 'qris').toLowerCase();
+        
+        if (chan === 'bca' || chan === 'mandiri' || chan === 'bni' || chan === 'bri') {
+            method = 'va';
+        } else if (chan === 'qris') {
+            method = 'qris';
+            chan = 'qris';
+        } else if (chan === 'alfamart' || chan === 'indomaret') {
+            method = 'cstore';
         }
 
         const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
@@ -1897,8 +1909,8 @@ exports.processUpgrade = async (req, res) => {
             notifyUrl: `${req.protocol}://${req.get('host')}/api/callback/ipaymu`,
             returnUrl: `${req.protocol}://${req.get('host')}/admin?success_upgrade=true`,
             cancelUrl: `${req.protocol}://${req.get('host')}/admin/upgrade`,
-            paymentMethod: payment_method || 'qr',
-            paymentChannel: payment_channel || 'qris',
+            paymentMethod: method,
+            paymentChannel: chan,
             product: ['Upgrade PRO Lingku'],
             qty: [1],
             price: [price]
