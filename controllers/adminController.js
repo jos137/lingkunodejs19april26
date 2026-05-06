@@ -1013,16 +1013,17 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key = 'price_pro'");
         const smtp = {};
         const affiliate = {};
-        let fee_free = '3', fee_pro = '1';
+        let fee_free = '3', fee_pro = '1', price_pro = '99000';
 
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
             if (r.setting_key.startsWith('aff_')) affiliate[r.setting_key] = r.setting_value;
             if (r.setting_key === 'fee_free') fee_free = r.setting_value;
             if (r.setting_key === 'fee_pro') fee_pro = r.setting_value;
+            if (r.setting_key === 'price_pro') price_pro = r.setting_value;
         });
 
         res.render('admin/settings', { 
@@ -1033,6 +1034,7 @@ exports.getSettings = async (req, res) => {
             affiliate: affiliate,
             fee_free,
             fee_pro,
+            price_pro,
             success: req.query.success,
             tab: req.query.tab || 'profil'
         });
@@ -1062,8 +1064,8 @@ exports.updateSMTPSettings = async (req, res) => {
 
 exports.updateFeeSettings = async (req, res) => {
     try {
-        const { fee_free, fee_pro } = req.body;
-        const keys = { fee_free, fee_pro };
+        const { fee_free, fee_pro, price_pro } = req.body;
+        const keys = { fee_free, fee_pro, price_pro };
 
         for (const [key, val] of Object.entries(keys)) {
             await db.execute(
@@ -1812,10 +1814,14 @@ exports.getUpgradePage = async (req, res) => {
             return res.redirect('/admin?info=already_pro');
         }
 
+        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+        const price_pro = priceRow[0] ? priceRow[0].setting_value : '99000';
+
         res.render('admin/upgrade', { 
             title: 'Upgrade Pro', 
             layout: './layouts/admin', 
-            user: req.session.user || res.locals.user 
+            user: req.session.user || res.locals.user,
+            price_pro
         });
     } catch (err) {
         console.error('Get Upgrade Page Error:', err.message);
@@ -1843,7 +1849,8 @@ exports.processUpgrade = async (req, res) => {
             return res.send('Maaf, sistem pembayaran belum siap (VA/ApiKey Admin kosong).');
         }
 
-        const price = 99000; // Harga Upgrade Pro
+        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+        const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
         const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
 
         // Robust Phone Formatting (Required by iPaymu)
