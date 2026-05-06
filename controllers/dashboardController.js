@@ -97,8 +97,24 @@ exports.getDashboardData = async (req, res) => {
                 today_sales: todaySales,
                 platform_sales: await (async () => {
                     try {
+                        // 1. Get from recorded orders (most accurate for future)
                         const [psRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed'");
-                        return psRow[0].total;
+                        let total = parseFloat(psRow[0].total);
+
+                        // 2. Fallback for historical data (Count PRO users not in orders)
+                        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+                        const currentPrice = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+                        
+                        const [orderCountRow] = await db.execute("SELECT COUNT(*) as count FROM orders WHERE product_id = 0 AND status = 'completed'");
+                        const recordedCount = orderCountRow[0].count;
+
+                        const [proUserRow] = await db.execute("SELECT COUNT(*) as count FROM users WHERE plan = 'pro'");
+                        const totalProUsers = proUserRow[0].count;
+
+                        const unrecordedProCount = Math.max(0, totalProUsers - recordedCount);
+                        total += (unrecordedProCount * currentPrice);
+
+                        return total;
                     } catch(e) { return 0; }
                 })(),
                 slug: slug

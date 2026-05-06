@@ -878,6 +878,23 @@ exports.getGlobalAnalytics = async (req, res) => {
         try { const [r] = await db.execute("SELECT COUNT(*) as c FROM orders"); total_orders = r[0].c; } catch(e) {}
         try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products"); total_products = r[0].c; } catch(e) {}
 
+        // Platform Income (Upgrade PRO)
+        try {
+            const [psRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed'");
+            platform_income = parseFloat(psRow[0].total);
+
+            // Fallback for historical data
+            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+            const currentPrice = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+            const [orderCountRow] = await db.execute("SELECT COUNT(*) as count FROM orders WHERE product_id = 0 AND status = 'completed'");
+            const [proUserRow] = await db.execute("SELECT COUNT(*) as count FROM users WHERE plan = 'pro'");
+            const unrecordedProCount = Math.max(0, proUserRow[0].count - orderCountRow[0].count);
+            platform_income += (unrecordedProCount * currentPrice);
+            
+            // Reuse proUserRow for "Dana Mengendap" replacement
+            dana_mengendap = proUserRow[0].count; // Kita pakai variabel ini sementara agar tidak merusak struktur view yang lama, nanti kita ganti labelnya di EJS
+        } catch(e) { console.log('Platform income error:', e.message); }
+
         // WD totals
         try { const [r] = await db.execute("SELECT COALESCE(SUM(amount),0) as c FROM withdrawals WHERE status='completed'"); total_wd = r[0].c; } catch(e) {}
         try { const [r] = await db.execute("SELECT COALESCE(SUM(amount),0) as c FROM withdrawals WHERE status='pending'"); pending_payouts = r[0].c; } catch(e) {}
@@ -1953,5 +1970,39 @@ exports.processUpgrade = async (req, res) => {
     } catch (err) {
         console.error('Process Upgrade Error:', err.message);
         res.redirect('/admin/upgrade?error=system');
+    }
+};
+
+exports.getUpgradeOrders = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        const [countRow] = await db.execute("SELECT COUNT(*) as total FROM orders WHERE product_id = 0");
+        const totalItems = countRow[0].total;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const [orders] = await db.execute(
+            `SELECT o.*, u.fullname as customer_name, u.email as customer_email, u.whatsapp as customer_whatsapp
+             FROM orders o
+             LEFT JOIN users u ON o.buyer_email = u.email
+             WHERE o.product_id = 0
+             ORDER BY o.id DESC
+             LIMIT ? OFFSET ?`,
+            [limit, offset]
+        );
+
+        res.render('admin/upgrade-orders', {
+            title: 'Laporan Penjualan Platform',
+            layout: './layouts/admin',
+            orders,
+            currentPage: page,
+            totalPages,
+            user: req.session.user || res.locals.user
+        });
+    } catch (err) {
+        console.error('Get Upgrade Orders Error:', err.message);
+        res.render('admin/upgrade-orders', { title: 'Laporan Penjualan Platform', layout: './layouts/admin', orders: [], currentPage: 1, totalPages: 1, user: req.session.user || res.locals.user });
     }
 };

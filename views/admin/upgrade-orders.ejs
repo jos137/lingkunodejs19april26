@@ -1,0 +1,93 @@
+<style>
+.uo-wrap { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 20px; padding: 30px; box-shadow: 0 10px 40px rgba(0,0,0,0.02); }
+.uo-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.uo-title { font-size: 20px; font-weight: 900; color: #111827; }
+
+.uo-table { width: 100%; border-collapse: collapse; }
+.uo-table th { text-align: left; padding: 16px; border-bottom: 1.5px solid #f1f5f9; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+.uo-table td { padding: 18px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; color: #374151; vertical-align: middle; }
+
+.uo-user { display: flex; align-items: center; gap: 12px; }
+.uo-avatar { width: 36px; height: 36px; border-radius: 10px; background: #8b5cf6; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
+.uo-name { font-weight: 800; color: #111827; margin-bottom: 2px; }
+.uo-email { font-size: 11px; color: #94a3b8; }
+
+.uo-badge { padding: 5px 12px; border-radius: 8px; font-size: 10px; font-weight: 1000; letter-spacing: 0.5px; display: inline-block; text-transform: uppercase; }
+.uo-badge.completed { background: rgba(16,185,129,0.1); color: #059669; }
+.uo-badge.pending { background: rgba(245,158,11,0.1); color: #d97706; }
+
+.uo-price { font-weight: 900; color: #111827; }
+.uo-date { color: #64748b; font-size: 12px; }
+
+/* Pagination */
+.uo-pagination { display: flex; justify-content: center; gap: 10px; margin-top: 30px; }
+.uo-page { padding: 8px 14px; border: 1px solid #e5e7eb; border-radius: 8px; color: #374151; text-decoration: none; font-size: 13px; font-weight: 700; transition: 0.2s; }
+.uo-page:hover { border-color: #3b82f6; color: #3b82f6; }
+.uo-page.active { background: #111827; color: #fff; border-color: #111827; }
+</style>
+
+<div class="uo-wrap">
+    <div class="uo-header">
+        <h2 class="uo-title">💎 Laporan Penjualan Platform</h2>
+        <div style="font-size: 12px; color: #64748b; font-weight: 600; background: #f8fafc; padding: 8px 16px; border-radius: 100px; border: 1px solid #e2e8f0;">
+            Total: <%= orders.length %> Transaksi Terakhir
+        </div>
+    </div>
+
+    <div style="overflow-x: auto;">
+        <table class="uo-table">
+            <thead>
+                <tr>
+                    <th>Pelanggan</th>
+                    <th>Reference ID</th>
+                    <th>Nominal</th>
+                    <th>Metode</th>
+                    <th>Status</th>
+                    <th>Tanggal</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% if (orders.length > 0) { %>
+                    <% orders.forEach(o => { %>
+                        <tr>
+                            <td>
+                                <div class="uo-user">
+                                    <div class="uo-avatar"><%= (o.customer_name || 'U').charAt(0).toUpperCase() %></div>
+                                    <div>
+                                        <div class="uo-name"><%= o.customer_name || o.buyer_name || 'User' %></div>
+                                        <div class="uo-email"><%= o.buyer_email %></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td style="font-family: monospace; font-weight: 700; color: #64748b;">#<%= o.reference_id %></td>
+                            <td class="uo-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></td>
+                            <td style="font-weight: 700; color: #3b82f6; text-transform: uppercase; font-size: 12px;"><%= o.payment_channel || 'QRIS' %></td>
+                            <td>
+                                <span class="uo-badge <%= o.status %>"><%= o.status.toUpperCase() %></span>
+                            </td>
+                            <td class="uo-date">
+                                <%= new Date(o.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) %><br>
+                                <span style="font-size:10px; opacity:0.6;"><%= new Date(o.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) %> WIB</span>
+                            </td>
+                        </tr>
+                    <% }) %>
+                <% } else { %>
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 50px; color: #94a3b8; font-weight: 600;">
+                            <i class="fas fa-receipt" style="font-size: 40px; margin-bottom: 10px; display: block; opacity: 0.3;"></i>
+                            Belum ada pesanan upgrade yang tercatat.
+                        </td>
+                    </tr>
+                <% } %>
+            </tbody>
+        </table>
+    </div>
+
+    <% if (totalPages > 1) { %>
+        <div class="uo-pagination">
+            <% for(let i = 1; i <= totalPages; i++) { %>
+                <a href="?page=<%= i %>" class="uo-page <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+            <% } %>
+        </div>
+    <% } %>
+</div>

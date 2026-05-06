@@ -177,6 +177,7 @@ router.get('/settings', adminController.getSettings);
 router.get('/upgrade', adminController.getUpgradePage);
 router.get('/upgrade/checkout', adminController.getUpgradeCheckout);
 router.post('/upgrade/process', adminController.processUpgrade);
+router.get('/upgrade-orders', isAdmin, adminController.getUpgradeOrders);
 
 // Profile photo upload (separate multer for profiles dir)
 const profileStorage = multer.diskStorage({
