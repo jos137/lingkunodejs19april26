@@ -1829,9 +1829,32 @@ exports.getUpgradePage = async (req, res) => {
     }
 };
 
+exports.getUpgradeCheckout = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
+        const user = users[0];
+
+        if (user.plan === 'pro') return res.redirect('/admin');
+
+        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
+        const price_pro = priceRow[0] ? priceRow[0].setting_value : '99000';
+
+        res.render('admin/upgrade-checkout', { 
+            layout: false, // Clean page, no sidebar
+            user: user,
+            price_pro
+        });
+    } catch (err) {
+        console.error('Get Upgrade Checkout Error:', err.message);
+        res.redirect('/admin/upgrade');
+    }
+};
+
 exports.processUpgrade = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const { name, email, phone, payment_method, payment_channel } = req.body;
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users[0];
 
@@ -1854,8 +1877,7 @@ exports.processUpgrade = async (req, res) => {
         const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
 
         // Robust Phone Formatting
-        let phone = user.whatsapp || user.phone || '081234567890';
-        let cleanPhone = phone.replace(/[^0-9]/g, '');
+        let cleanPhone = (phone || user.whatsapp || user.phone || '081234567890').replace(/[^0-9]/g, '');
         if (cleanPhone.startsWith('0')) {
             cleanPhone = '62' + cleanPhone.substring(1);
         } else if (!cleanPhone.startsWith('62') && cleanPhone.length > 5) {
@@ -1867,14 +1889,16 @@ exports.processUpgrade = async (req, res) => {
 
         // Create Payment Link
         const body = {
-            name: (user.fullname || user.name || 'User').replace(/[^a-zA-Z0-9 ]/g, ''),
+            name: (name || user.fullname || user.name || 'User').replace(/[^a-zA-Z0-9 ]/g, ''),
             phone: cleanPhone,
-            email: user.email,
+            email: email || user.email,
             amount: price,
             referenceId: referenceId,
             notifyUrl: `${req.protocol}://${req.get('host')}/api/callback/ipaymu`,
             returnUrl: `${req.protocol}://${req.get('host')}/admin?success_upgrade=true`,
             cancelUrl: `${req.protocol}://${req.get('host')}/admin/upgrade`,
+            paymentMethod: payment_method || 'qr',
+            paymentChannel: payment_channel || 'qris',
             product: ['Upgrade PRO Lingku'],
             qty: [1],
             price: [price]

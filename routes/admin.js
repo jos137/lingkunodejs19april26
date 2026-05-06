@@ -175,6 +175,7 @@ router.post('/help/ticket/:id/message', (req, res, next) => {
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);
 router.get('/upgrade', adminController.getUpgradePage);
+router.get('/upgrade/checkout', adminController.getUpgradeCheckout);
 router.post('/upgrade/process', adminController.processUpgrade);
 
 // Profile photo upload (separate multer for profiles dir)
