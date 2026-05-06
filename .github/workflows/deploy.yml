@@ -12,7 +12,7 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
+      uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
@@ -20,6 +20,7 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         timeout: 60s
         command_timeout: 30m
+        debug: true
         script: |
           cd domains/lingku.xyz/nodejs
           # Ambil data terbaru dan paksa reset agar sama persis dengan GitHub
