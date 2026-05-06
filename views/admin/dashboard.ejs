@@ -214,10 +214,12 @@
         <div class="dash-stat-label">Jumlah Produk</div>
         <div class="dash-stat-value"><%= totalProducts %> <span class="dash-stat-sub">Katalog</span></div>
     </div>
+    <% if (user.role === 'admin') { %>
     <div class="dash-stat-card">
         <div class="dash-stat-label">Penjualan Platform</div>
         <div class="dash-stat-value"><small>Rp</small><%= platformSales.toLocaleString('id-ID') %></div>
     </div>
+    <% } %>
 </div>
 
 <!-- CHART -->
