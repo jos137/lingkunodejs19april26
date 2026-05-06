@@ -854,6 +854,37 @@ exports.ipaymuCallback = async (req, res) => {
         const isExpired = status === 'expired' || String(status_code) === '-2';
 
         if (isSuccess && sid) {
+            // ===== AUTO-HEAL UPGRADE PRO =====
+            if (sid.startsWith('UPGRADE-PRO-')) {
+                try {
+                    const parts = sid.split('-');
+                    const targetUserId = parts[2]; // UPGRADE-PRO-{userId}-{timestamp}
+                    
+                    // 1. Ensure expired_at column exists
+                    try { await db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS expired_at DATETIME AFTER plan"); } catch(err2) {
+                        try { await db.execute("ALTER TABLE users ADD COLUMN expired_at DATETIME AFTER plan"); } catch(err3) {}
+                    }
+                    
+                    // 2. Update Plan
+                    await db.execute(
+                        "UPDATE users SET plan = 'pro', expired_at = DATE_ADD(NOW(), INTERVAL 1 YEAR) WHERE id = ?",
+                        [targetUserId]
+                    );
+
+                    // 3. Optional: Add to Admin Notifications
+                    await db.execute(
+                        "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                        [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system']
+                    );
+
+                    console.log(`[UPGRADE] User ID ${targetUserId} has been upgraded to PRO automatically.`);
+                    return res.send('OK');
+                } catch (upgradeErr) {
+                    console.error('Upgrade Process Error:', upgradeErr.message);
+                    return res.status(500).send('Upgrade Processing Failed');
+                }
+            }
+
             // Auto-Heal: Ensure trx_id column exists
             try {
                 await db.execute("ALTER TABLE orders ADD COLUMN IF NOT EXISTS trx_id VARCHAR(100) AFTER reference_id");

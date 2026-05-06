@@ -1,5 +1,6 @@
 const db = require('../config/db');
 const axios = require('axios');
+const crypto = require('crypto');
 const { exec } = require('child_process');
 const { sendAccessEmail, sendFollowUpEmail, sendReplyNotificationEmail } = require('../utils/mailer');
 
@@ -1797,5 +1798,89 @@ exports.blockIp = async (req, res) => {
     } catch (err) {
         console.error('Manual Block Error:', err.message);
         res.status(500).json({ success: false, message: 'Gagal memblokir IP.' });
+    }
+};
+
+// ===================== UPGRADE PRO =====================
+exports.getUpgradePage = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const [users] = await db.execute('SELECT plan FROM users WHERE id = ?', [userId]);
+        const user = users[0];
+
+        if (user.plan === 'pro') {
+            return res.redirect('/admin?info=already_pro');
+        }
+
+        res.render('admin/upgrade', { 
+            title: 'Upgrade Pro', 
+            layout: './layouts/admin', 
+            user: req.session.user || res.locals.user 
+        });
+    } catch (err) {
+        console.error('Get Upgrade Page Error:', err.message);
+        res.redirect('/admin');
+    }
+};
+
+exports.processUpgrade = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
+        const user = users[0];
+
+        if (user.plan === 'pro') return res.redirect('/admin');
+
+        // iPaymu Config (Using Admin Credentials)
+        const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
+        const adminConfig = adminRows[0] || {};
+        const isSandbox = adminConfig.ipaymu_sandbox == 1;
+        const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE);
+        const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
+        const url = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
+
+        if (!va || !apiKey) {
+            return res.send('Maaf, sistem pembayaran belum siap (VA/ApiKey Admin kosong).');
+        }
+
+        const price = 99000; // Harga Upgrade Pro
+        const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
+
+        // Create Payment Link
+        const body = {
+            name: user.fullname || user.name || 'User',
+            email: user.email,
+            amount: price,
+            referenceId: referenceId,
+            notifyUrl: `${req.protocol}://${req.get('host')}/api/callback/ipaymu`,
+            returnUrl: `${req.protocol}://${req.get('host')}/admin?success_upgrade=true`,
+            cancelUrl: `${req.protocol}://${req.get('host')}/admin/upgrade`,
+            paymentMethod: 'qris',
+            paymentChannel: 'qris'
+        };
+
+        const bodyString = JSON.stringify(body);
+        const stringToSign = `POST:${va}:${crypto.createHash('sha256').update(bodyString).digest('hex').toLowerCase()}:${apiKey}`;
+        const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
+
+        const response = await axios.post(url, bodyString, {
+            headers: {
+                'Content-Type': 'application/json',
+                'va': va,
+                'signature': signature,
+                'timestamp': new Date().toISOString().replace(/[-:T]/g, '').split('.')[0]
+            }
+        });
+
+        if (response.data && response.data.Data && response.data.Data.Url) {
+            res.redirect(response.data.Data.Url);
+        } else {
+            console.error('iPaymu Error:', response.data);
+            res.send('Gagal membuat tagihan pembayaran. Silakan coba lagi nanti.');
+        }
+
+    } catch (err) {
+        console.error('Process Upgrade Error:', err.message);
+        res.redirect('/admin/upgrade?error=system');
     }
 };

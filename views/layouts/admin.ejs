@@ -462,6 +462,17 @@
         </nav>
 
         <div class="sidebar-bottom">
+            <% if (user.role !== 'admin' && user.plan === 'free' && locals.features && features.enable_pro_upgrade) { %>
+                <a href="/admin/upgrade" class="upgrade-card" style="display:block; margin: 0 15px 15px; padding:15px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius:16px; text-decoration:none; color:white; box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4); transition: 0.3s;">
+                    <div style="font-size:10px; font-weight:800; text-transform:uppercase; opacity:0.8; margin-bottom:4px; letter-spacing:0.5px;">Premium Plan</div>
+                    <div style="font-size:13px; font-weight:800; margin-bottom:8px;">Upgrade ke PRO Sekarang!</div>
+                    <div style="font-size:10px; opacity:0.9; line-height:1.4; margin-bottom:12px;">Nikmati fee penarikan hanya 1% dan fitur tanpa batas.</div>
+                    <div style="background:rgba(255,255,255,0.2); text-align:center; padding:6px; border-radius:8px; font-size:11px; font-weight:800; display:flex; align-items:center; justify-content:center; gap:6px;">
+                        Pelajari Selengkapnya <i class="fas fa-arrow-right"></i>
+                    </div>
+                </a>
+            <% } %>
+
             <% if (locals.isLocal) { %>
                 <button onclick="triggerDeploy(this)" class="sidebar-link" style="width:100%; border:none; background: #059669; color: white; cursor:pointer;">
                     <i class="fas fa-code-branch"></i><span>Push to Git</span>

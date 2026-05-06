@@ -174,6 +174,8 @@ router.post('/help/ticket/:id/message', (req, res, next) => {
 
 // ===== SETTINGS =====
 router.get('/settings', adminController.getSettings);
+router.get('/upgrade', adminController.getUpgradePage);
+router.post('/upgrade/process', adminController.processUpgrade);
 
 // Profile photo upload (separate multer for profiles dir)
 const profileStorage = multer.diskStorage({

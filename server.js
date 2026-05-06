@@ -264,7 +264,8 @@ app.use(async (req, res, next) => {
         const defaultFlags = [
             { key: 'enable_announcement', desc: 'Menampilkan pengumuman di dashboard', val: 1 },
             { key: 'enable_affiliate', desc: 'Menampilkan menu affiliate di sidebar', val: 1 },
-            { key: 'show_today_sales', desc: 'Menampilkan statistik penjualan hari ini', val: 1 }
+            { key: 'show_today_sales', desc: 'Menampilkan statistik penjualan hari ini', val: 1 },
+            { key: 'enable_pro_upgrade', desc: 'Menampilkan penawaran Upgrade ke Paket PRO', val: 1 }
         ];
         for (const f of defaultFlags) {
             try {
