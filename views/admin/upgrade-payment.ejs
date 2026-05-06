@@ -42,7 +42,14 @@
         <% if (data.Via === 'QRIS') { %>
             <div class="qr-container">
                 <div class="qr-label">Silakan Scan QRIS</div>
-                <img src="<%= data.QrImage || data.QrTemplate %>" class="qr-image" alt="QRIS">
+                <!-- Gunakan QR Image dari iPaymu, jika gagal atau kosong, generate pakai API cadangan dari QrString -->
+                <% 
+                    let qrUrl = data.QrImage || data.QrTemplate;
+                    if (!qrUrl && data.QrString) {
+                        qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(data.QrString)}`;
+                    }
+                %>
+                <img src="<%= qrUrl %>" class="qr-image" alt="QRIS" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=<%= encodeURIComponent(data.QrString || '') %>'">
             </div>
         <% } else { %>
             <div class="va-container">

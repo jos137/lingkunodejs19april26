@@ -95,7 +95,12 @@ exports.getDashboardData = async (req, res) => {
                 total_sales: totalSales,
                 total_products: totalProducts,
                 today_sales: todaySales,
-                platform_sales: 0,
+                platform_sales: await (async () => {
+                    try {
+                        const [psRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed'");
+                        return psRow[0].total;
+                    } catch(e) { return 0; }
+                })(),
                 slug: slug
             },
             chartData,
