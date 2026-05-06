@@ -871,6 +871,13 @@ exports.ipaymuCallback = async (req, res) => {
                         [targetUserId]
                     );
 
+                    // Fetch user details for email
+                    const [userData] = await db.execute("SELECT fullname, name, email FROM users WHERE id = ?", [targetUserId]);
+                    if (userData[0]) {
+                        const { sendProActivationEmail } = require('../utils/mailer');
+                        await sendProActivationEmail(userData[0].email, userData[0].fullname || userData[0].name);
+                    }
+
                     // 3. Optional: Add to Admin Notifications
                     await db.execute(
                         "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",

@@ -189,6 +189,55 @@ exports.sendPaymentInstructionEmail = async (orderData) => {
     }
 };
 
+exports.sendProActivationEmail = async (email, fullname) => {
+    try {
+        const transporter = await getTransporter();
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); padding: 40px 30px; text-align: center;">
+                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Selamat Datang di Lingku PRO!</h2>
+                    </div>
+                    <div style="padding: 40px 30px; text-align: center;">
+                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${fullname}</strong>,<br>Pembayaran Anda telah kami terima. Sekarang akun Anda telah resmi menjadi <strong>PRO</strong> selama 1 tahun ke depan!</p>
+                        
+                        <div style="padding: 20px; background: #f5f3ff; border-radius: 16px; margin-bottom: 32px; text-align: left;">
+                            <p style="margin: 0 0 12px; font-size: 13px; font-weight: 800; color: #7c3aed; text-transform: uppercase;">Keuntungan Anda:</p>
+                            <ul style="margin: 0; padding: 0 0 0 20px; color: #1e293b; font-size: 14px; line-height: 1.8;">
+                                <li>Fee Penarikan (Withdraw) hanya 1%</li>
+                                <li>Masa aktif paket selama 1 tahun</li>
+                                <li>Akses fitur eksklusif lainnya</li>
+                            </ul>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <a href="https://lingku.xyz/admin" style="display: inline-block; background-color: #8b5cf6; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 14px; font-weight: 800; font-size: 14px;">MULAI EXPLORE DASHBOARD</a>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Lingku.xyz — Partner Bisnis Digital Anda</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku PRO" <${fromEmail}>`,
+            to: email,
+            subject: '🎉 Selamat! Akun Lingku PRO Anda Telah Aktif',
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email aktivasi PRO:", err);
+        return false;
+    }
+};
+
 exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
     try {
         const transporter = await getTransporter();

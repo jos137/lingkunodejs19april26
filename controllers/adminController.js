@@ -2,7 +2,7 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendFollowUpEmail, sendReplyNotificationEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail } = require('../utils/mailer');
 
 // ===================== DASHBOARD =====================
 exports.getDashboard = async (req, res) => {
@@ -1932,11 +1932,18 @@ exports.processUpgrade = async (req, res) => {
 
         if (response.data && response.data.Data) {
             const d = response.data.Data;
-            const finalUrl = d.Url || d.PaymentUrl || d.QrImage || d.QrTemplate;
             
-            if (finalUrl) {
-                return res.redirect(finalUrl);
-            }
+            // Send Instruction Email
+            const paymentInfo = d.Via === 'QRIS' ? `Silakan scan QRIS di halaman instruksi.` : `Transfer ke VA ${d.Channel}: ${d.PaymentNo}`;
+            await mailer.sendPaymentInstructionEmail(email || user.email, name || user.fullname || user.name, 'Upgrade Paket PRO Lingku.xyz', price, d.Channel || 'QRIS', paymentInfo);
+
+            return res.render('admin/upgrade-payment', {
+                layout: false,
+                data: {
+                    ...d,
+                    price: price
+                }
+            });
         }
         
         const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';

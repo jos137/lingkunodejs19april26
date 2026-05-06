@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instruksi Pembayaran PRO - Lingku.xyz</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #8b5cf6; --secondary: #6d28d9; --bg: #f8fafc; --text: #1e293b; --text-muted: #64748b; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .payment-card { background: #fff; width: 100%; max-width: 480px; border-radius: 32px; padding: 40px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.08); text-align: center; }
+        
+        .timer-box { background: #fff1f2; color: #e11d48; padding: 12px; border-radius: 16px; margin-bottom: 30px; border: 1.5px solid #ffe4e6; }
+        .timer-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .timer-value { font-size: 24px; font-weight: 900; }
+
+        .qr-container { background: #f0fdf4; border: 2px dashed #22c55e; border-radius: 24px; padding: 30px; margin-bottom: 30px; position: relative; }
+        .qr-label { color: #166534; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 1px; }
+        .qr-image { width: 100%; max-width: 240px; height: auto; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
+        
+        .va-container { background: #f0f9ff; border: 2px dashed #0ea5e9; border-radius: 24px; padding: 30px; margin-bottom: 30px; }
+        .va-label { color: #0369a1; font-size: 12px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; }
+        .va-number { font-size: 28px; font-weight: 900; color: #0c4a6e; letter-spacing: 2px; margin-bottom: 10px; }
+        .copy-btn { background: #0ea5e9; color: white; border: none; padding: 8px 16px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+        .summary-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .summary-label { color: var(--text-muted); font-weight: 600; }
+        .summary-value { font-weight: 800; color: var(--text); }
+        .total-value { color: #22c55e; font-size: 18px; }
+
+        .home-btn { width: 100%; padding: 18px; background: #1e293b; color: #fff; border: none; border-radius: 16px; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.2s; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 30px; }
+        .home-btn:hover { background: #0f172a; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="payment-card">
+        <div class="timer-box">
+            <div class="timer-label">Selesaikan Pembayaran Dalam</div>
+            <div class="timer-value" id="countdown">23:59:59</div>
+        </div>
+
+        <% if (data.Via === 'QRIS') { %>
+            <div class="qr-container">
+                <div class="qr-label">Silakan Scan QRIS</div>
+                <img src="<%= data.QrImage || data.QrTemplate %>" class="qr-image" alt="QRIS">
+            </div>
+        <% } else { %>
+            <div class="va-container">
+                <div class="va-label">Transfer ke Nomor <%= data.Channel %></div>
+                <div class="va-number" id="vaNum"><%= data.PaymentNo %></div>
+                <button class="copy-btn" onclick="copyVA()">Salin Nomor</button>
+            </div>
+        <% } %>
+
+        <div style="text-align: left; margin-bottom: 20px;">
+            <div class="summary-row">
+                <span class="summary-label">Produk</span>
+                <span class="summary-value">Upgrade PRO Lingku</span>
+            </div>
+            <div class="summary-row">
+                <span class="summary-label">Metode</span>
+                <span class="summary-value"><%= data.Via %> (<%= data.Channel %>)</span>
+            </div>
+            <div class="summary-row" style="border-bottom: none;">
+                <span class="summary-label">Total Bayar</span>
+                <span class="summary-value total-value">Rp <%= Number(data.Total || data.price).toLocaleString('id-ID') %></span>
+            </div>
+        </div>
+
+        <a href="/admin" class="home-btn">Selesai & Ke Beranda</a>
+
+        <script>
+            function copyVA() {
+                const text = document.getElementById('vaNum').innerText;
+                navigator.clipboard.writeText(text);
+                alert('Nomor VA berhasil disalin!');
+            }
+
+            // Simple Countdown (Simulation)
+            let time = 24 * 60 * 60;
+            const display = document.getElementById('countdown');
+            setInterval(() => {
+                let h = Math.floor(time / 3600);
+                let m = Math.floor((time % 3600) / 60);
+                let s = time % 60;
+                display.innerText = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+                if (time > 0) time--;
+            }, 1000);
+        </script>
+    </div>
+</body>
+</html>
