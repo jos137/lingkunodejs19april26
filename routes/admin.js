@@ -193,6 +193,7 @@ router.post('/settings/update-store', adminController.updateStoreSettings);
 router.post('/settings/update-admin-theme', adminController.updateAdminTheme);
 router.post('/settings/update-announcement', adminController.updateAnnouncement);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
+router.post('/settings/update-fee', adminController.updateFeeSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
 router.post('/settings/update-affiliate', adminController.updateAffiliateSettings);
 router.post('/settings/upload-photo', uploadProfile.single('profile_photo'), adminController.uploadProfilePhoto);

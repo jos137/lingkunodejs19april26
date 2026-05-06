@@ -639,12 +639,16 @@ exports.requestWithdrawal = async (req, res) => {
             return res.redirect('/admin/withdrawal?error=' + encodeURIComponent('Saldo tidak mencukupi.'));
         }
 
-        // 3. Apply PRO / FREE Rules
-        const minWd = plan === 'pro' ? 0 : 100000;
-        const feePercent = plan === 'pro' ? 2 : 3;
+        // 3. Apply PRO / FREE Rules (Updated Strategy - Dynamic from DB)
+        const [feeSettings] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('fee_free', 'fee_pro')");
+        const fees = {};
+        feeSettings.forEach(s => fees[s.setting_key] = s.setting_value);
+        
+        const minWd = 100000; // Minimal 100rb for everyone
+        const feePercent = plan === 'pro' ? parseFloat(fees.fee_pro || 1) : parseFloat(fees.fee_free || 3);
 
         if (requestedAmount < minWd) {
-            return res.redirect('/admin/withdrawal?error=' + encodeURIComponent(`Minimal penarikan untuk akun FREE adalah Rp ${minWd.toLocaleString('id-ID')}. Upgrade ke PRO untuk tarik saldo berapapun!`));
+            return res.redirect('/admin/withdrawal?error=' + encodeURIComponent(`Minimal penarikan dana adalah Rp ${minWd.toLocaleString('id-ID')}. Kumpulkan saldo Anda dulu ya!`));
         }
 
         const feeAmount = (feePercent / 100) * requestedAmount;
@@ -1008,12 +1012,16 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%'");
         const smtp = {};
         const affiliate = {};
+        let fee_free = '3', fee_pro = '1';
+
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
             if (r.setting_key.startsWith('aff_')) affiliate[r.setting_key] = r.setting_value;
+            if (r.setting_key === 'fee_free') fee_free = r.setting_value;
+            if (r.setting_key === 'fee_pro') fee_pro = r.setting_value;
         });
 
         res.render('admin/settings', { 
@@ -1022,6 +1030,8 @@ exports.getSettings = async (req, res) => {
             user: user,
             smtp: smtp,
             affiliate: affiliate,
+            fee_free,
+            fee_pro,
             success: req.query.success,
             tab: req.query.tab || 'profil'
         });
@@ -1046,6 +1056,24 @@ exports.updateSMTPSettings = async (req, res) => {
     } catch (err) {
         console.error('SMTP update error:', err.message);
         res.redirect('/admin/settings?tab=smtp&error=true');
+    }
+};
+
+exports.updateFeeSettings = async (req, res) => {
+    try {
+        const { fee_free, fee_pro } = req.body;
+        const keys = { fee_free, fee_pro };
+
+        for (const [key, val] of Object.entries(keys)) {
+            await db.execute(
+                "INSERT INTO settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+                [key, val, val]
+            );
+        }
+        res.redirect('/admin/settings?tab=fee&success=true');
+    } catch (err) {
+        console.error('Fee update error:', err.message);
+        res.redirect('/admin/settings?tab=fee&error=true');
     }
 };
 

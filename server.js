@@ -343,7 +343,16 @@ app.get('*', (req, res) => {
     res.status(404).send('Page not found');
 });
 
-// Start Server
-app.listen(port, () => {
-    console.log(`App running on port ${port}`);
+// Start Server with Error Handling
+const server = app.listen(port, () => {
+    console.log(`🚀 Lingku Server Berjalan di Port ${port}`);
+}).on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`\n❌ ERROR: Port ${port} sudah terpakai!`);
+        console.error(`👉 Silakan jalankan perintah ini untuk mematikan proses lama: kill -9 $(lsof -t -i:${port})`);
+        console.error(`Lalu jalankan ulang: npm run dev\n`);
+        process.exit(1);
+    } else {
+        console.error('❌ Server Error:', err.message);
+    }
 });
