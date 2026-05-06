@@ -871,20 +871,28 @@ exports.ipaymuCallback = async (req, res) => {
                         [targetUserId]
                     );
 
-                    // Fetch user details for email
-                    const [userData] = await db.execute("SELECT fullname, name, email FROM users WHERE id = ?", [targetUserId]);
-                    if (userData[0]) {
-                        const { sendProActivationEmail } = require('../utils/mailer');
-                        await sendProActivationEmail(userData[0].email, userData[0].fullname || userData[0].name);
-                    }
+                    console.log(`[UPGRADE] User ID ${targetUserId} has been upgraded to PRO.`);
 
-                    // 3. Optional: Add to Admin Notifications
-                    await db.execute(
-                        "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                        [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system']
-                    );
+                    // Run secondary tasks in background so they don't block the OK response
+                    (async () => {
+                        try {
+                            // Fetch user details for email
+                            const [userData] = await db.execute("SELECT fullname, name, email FROM users WHERE id = ?", [targetUserId]);
+                            if (userData[0]) {
+                                const { sendProActivationEmail } = require('../utils/mailer');
+                                await sendProActivationEmail(userData[0].email, userData[0].fullname || userData[0].name);
+                            }
 
-                    console.log(`[UPGRADE] User ID ${targetUserId} has been upgraded to PRO automatically.`);
+                            // Add to Admin Notifications
+                            await db.execute(
+                                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
+                                [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system']
+                            );
+                        } catch (bgErr) {
+                            console.error('Secondary Upgrade Task Error:', bgErr.message);
+                        }
+                    })();
+
                     return res.send('OK');
                 } catch (upgradeErr) {
                     console.error('Upgrade Process Error:', upgradeErr.message);
