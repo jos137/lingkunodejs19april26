@@ -24,12 +24,22 @@ jobs:
           git fetch origin master
           git reset --hard origin/master
           
-          /opt/alt/alt-nodejs22/root/bin/npm install --production
+          # Hapus log lama agar tidak menumpuk
+          rm -f out.log err.log
           
-          # Matikan proses lama dan jalankan ulang
+          # Install dengan mode hemat memori
+          /opt/alt/alt-nodejs22/root/bin/npm install --production --no-audit --no-fund
+          
+          # Matikan proses lama dan jalankan ulang dengan pemutusan koneksi yang benar
           pkill -u u427900331 node || true
-          sleep 3
-          nohup /opt/alt/alt-nodejs22/root/bin/node server.js > out.log 2> err.log &
+          sleep 2
+          nohup /opt/alt/alt-nodejs22/root/bin/node server.js < /dev/null > out.log 2> err.log &
           sleep 5
-          # Cek apakah sudah jalan
-          ps aux | grep node | grep server.js
+          
+          # Verifikasi keberhasilan
+          if pgrep -f "node server.js" > /dev/null; then
+            echo "🚀 Server berhasil dijalankan!"
+          else
+            echo "❌ Gagal menjalankan server. Cek err.log"
+            exit 1
+          fi

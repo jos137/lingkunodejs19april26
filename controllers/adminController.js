@@ -1850,10 +1850,10 @@ exports.processUpgrade = async (req, res) => {
         }
 
         const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-        const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+        const price = Math.floor(parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000'));
         const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
 
-        // Robust Phone Formatting (Required by iPaymu)
+        // Robust Phone Formatting
         let phone = user.whatsapp || user.phone || '081234567890';
         let cleanPhone = phone.replace(/[^0-9]/g, '');
         if (cleanPhone.startsWith('0')) {
@@ -1861,6 +1861,9 @@ exports.processUpgrade = async (req, res) => {
         } else if (!cleanPhone.startsWith('62') && cleanPhone.length > 5) {
             cleanPhone = '62' + cleanPhone;
         }
+
+        // Use standard Payment Endpoint instead of Direct for better URL generation
+        const paymentUrl = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment' : 'https://my.ipaymu.com/api/v2/payment';
 
         // Create Payment Link
         const body = {
@@ -1872,8 +1875,9 @@ exports.processUpgrade = async (req, res) => {
             notifyUrl: `${req.protocol}://${req.get('host')}/api/callback/ipaymu`,
             returnUrl: `${req.protocol}://${req.get('host')}/admin?success_upgrade=true`,
             cancelUrl: `${req.protocol}://${req.get('host')}/admin/upgrade`,
-            paymentMethod: 'qris',
-            paymentChannel: 'qris'
+            product: ['Upgrade PRO Lingku'],
+            qty: [1],
+            price: [price]
         };
 
         const bodyString = JSON.stringify(body);
@@ -1881,7 +1885,7 @@ exports.processUpgrade = async (req, res) => {
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
 
-        const response = await axios.post(url, bodyString, {
+        const response = await axios.post(paymentUrl, bodyString, {
             headers: {
                 'Content-Type': 'application/json',
                 'va': va,
@@ -1895,7 +1899,7 @@ exports.processUpgrade = async (req, res) => {
         } else {
             const errorMsg = response.data ? (response.data.Message || JSON.stringify(response.data)) : 'Unknown iPaymu Error';
             console.error('iPaymu Error:', errorMsg);
-            res.send(`Gagal membuat tagihan: ${errorMsg}. Pastikan pengaturan iPaymu (VA & ApiKey) di menu Pengaturan sudah benar.`);
+            res.send(`Gagal membuat tagihan: ${errorMsg}. Response: ${JSON.stringify(response.data.Data || {})}`);
         }
 
     } catch (err) {
