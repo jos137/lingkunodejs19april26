@@ -1515,14 +1515,36 @@ exports.autoDeploy = async (req, res) => {
 exports.readNotification = async (req, res) => {
     try {
         const { id } = req.params;
-        const [rows] = await db.execute("SELECT link FROM notifications WHERE id = ?", [id]);
+        const [rows] = await db.execute("SELECT * FROM notifications WHERE id = ?", [id]);
         
+        if (rows.length === 0) return res.redirect('/admin');
+        const notif = rows[0];
+
         await db.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", [id]);
         
-        if (rows.length > 0 && rows[0].link) {
-            return res.redirect(rows[0].link);
+        // 1. If explicit link exists, use it
+        if (notif.link) {
+            return res.redirect(notif.link);
         }
-        res.redirect('/admin');
+
+        // 2. SMART FALLBACK: If link is empty (old data), guess based on Title/Type
+        let targetLink = '/admin';
+        const title = notif.title.toLowerCase();
+        const msg = notif.message.toLowerCase();
+
+        if (title.includes('pesanan') || title.includes('pembayaran') || title.includes('sale')) {
+            targetLink = '/admin/orders';
+        } else if (title.includes('pro') || title.includes('upgrade')) {
+            targetLink = '/admin/upgrade-orders';
+        } else if (title.includes('wd') || title.includes('tarik') || notif.type === 'withdrawal') {
+            targetLink = '/admin/withdrawal-queue';
+        } else if (title.includes('komisi') || notif.type === 'pay') {
+            targetLink = '/admin/affiliate';
+        } else if (title.includes('bug') || notif.type === 'bug') {
+            targetLink = '/admin/reports';
+        }
+
+        res.redirect(targetLink);
     } catch (err) {
         console.error('Read Notification Error:', err.message);
         res.redirect('/admin');
@@ -1953,8 +1975,14 @@ exports.processUpgrade = async (req, res) => {
             // Record to orders table as PENDING immediately
             try {
                 await db.execute(
-                    "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, payment_channel, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                    "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, customer_name, customer_email, customer_whatsapp, payment_channel, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())",
                     [1, 0, referenceId, price, 'pending', body.name, body.email, body.phone, chan]
+                );
+
+                // Notify Admin about NEW PENDING UPGRADE
+                await db.execute(
+                    "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                    [1, '👑 Niat Upgrade PRO', `${body.name} sedang memproses upgrade paket PRO.`, 'info', '/admin/upgrade-orders']
                 );
             } catch(orderErr) { console.error('Initial Order Log Error:', orderErr.message); }
 
@@ -1990,11 +2018,11 @@ exports.getUpgradeOrders = async (req, res) => {
             const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
 
             for (const user of proUsers) {
-                const [existing] = await db.execute("SELECT id FROM orders WHERE product_id = 0 AND buyer_email = ?", [user.email]);
+                const [existing] = await db.execute("SELECT id FROM orders WHERE product_id = 0 AND customer_email = ?", [user.email]);
                 if (existing.length === 0) {
                     const refId = `LEGACY-PRO-${user.id}-${Date.now()}`;
                     await db.execute(
-                        "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, customer_name, customer_email, customer_whatsapp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         [1, 0, refId, price, 'completed', user.fullname || user.name || 'User', user.email, user.whatsapp || user.phone || '0', user.created_at]
                     );
                 }
@@ -2012,7 +2040,7 @@ exports.getUpgradeOrders = async (req, res) => {
         const [orders] = await db.execute(
             `SELECT o.*, u.fullname as customer_name, u.email as customer_email, u.whatsapp as customer_whatsapp
              FROM orders o
-             LEFT JOIN users u ON o.buyer_email = u.email
+             LEFT JOIN users u ON o.customer_email = u.email
              WHERE o.product_id = 0
              ORDER BY o.id DESC
              LIMIT ? OFFSET ?`,

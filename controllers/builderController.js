@@ -580,8 +580,8 @@ exports.processCheckout = async (req, res) => {
             // Notify Merchant about NEW PENDING ORDER
             try {
                 await db.execute(
-                    "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                    [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info']
+                    "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                    [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info', '/admin/orders']
                 );
             } catch (notifErr) { console.error('Notif Error:', notifErr.message); }
 
@@ -890,7 +890,7 @@ exports.ipaymuCallback = async (req, res) => {
                             const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
                             
                             await db.execute(
-                                "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, buyer_name, buyer_email, buyer_phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
+                                "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, customer_name, customer_email, customer_whatsapp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
                                 [1, 0, sid, price, 'completed', buyerName, buyerEmail, buyerPhone]
                             );
                         }
@@ -910,8 +910,8 @@ exports.ipaymuCallback = async (req, res) => {
 
                             // Add to Admin Notifications
                             await db.execute(
-                                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                                [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system']
+                                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                                [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system', '/admin/upgrade-orders']
                             );
                         } catch (bgErr) {
                             console.error('Secondary Upgrade Task Error:', bgErr.message);
@@ -969,8 +969,8 @@ exports.ipaymuCallback = async (req, res) => {
                         // Notify Affiliate
                         try {
                             await db.execute(
-                                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                                [order.affiliate_id, '💸 Komisi Cair!', `Anda mendapat komisi Rp ${commAmt.toLocaleString('id-ID')} dari penjualan ${order.product_name}`, 'pay']
+                                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                                [order.affiliate_id, '💸 Komisi Cair!', `Anda mendapat komisi Rp ${commAmt.toLocaleString('id-ID')} dari penjualan ${order.product_name}`, 'pay', '/admin/affiliate']
                             );
                         } catch (e) {}
                     }
@@ -993,8 +993,8 @@ exports.ipaymuCallback = async (req, res) => {
                     try {
                         const formattedPrice = parseFloat(order.total_price || 0).toLocaleString('id-ID');
                         await db.execute(
-                            "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                            [order.user_id, '💰 Pembayaran Berhasil!', `Rp ${formattedPrice} masuk dari ${order.customer_name}`, 'pay']
+                            "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                            [order.user_id, '💰 Pembayaran Berhasil!', `Rp ${formattedPrice} masuk dari ${order.customer_name}`, 'pay', '/admin/orders']
                         );
                     } catch (e) {
                         console.error('Notification Error:', e.message);
