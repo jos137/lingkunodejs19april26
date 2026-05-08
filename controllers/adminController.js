@@ -399,9 +399,15 @@ exports.getOrders = async (req, res) => {
             const expiryDate = new Date(createdAt.getTime() + (expiryMins * 60000));
             const timeLeft = Math.floor((expiryDate - new Date()) / 1000);
             
+            // Format Date & Time
+            const dateObj = new Date(o.created_at);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}, ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+
             return { 
                 ...o, 
                 product_thumbnail: thumb, 
+                formatted_date: formattedDate,
                 time_left: timeLeft,
                 is_sent: !!o.delivered_at,
                 is_opened: !!o.last_opened_at
