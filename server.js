@@ -11,7 +11,21 @@ const { rateLimit } = require('express-rate-limit');
 
 const app = express();
 const port = process.env.PORT || 3000;
+console.log('--- LINGKU SERVER INITIALIZATION ---');
 const db = require('./config/db');
+
+// Test Database Connection immediately
+(async () => {
+    try {
+        console.log('⏳ Testing Database Connection...');
+        const [rows] = await db.execute('SELECT 1 + 1 AS result');
+        console.log('✔ Database Connected (Test Query Success).');
+    } catch (err) {
+        console.error('❌ DATABASE CONNECTION FAILED!');
+        console.error('Error:', err.message);
+        console.error('Please check your .env file and DB server status.');
+    }
+})();
 
 // Security Hardening
 app.use(helmet({
@@ -36,14 +50,16 @@ app.use(cookieParser());
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session Persistence (Move from RAM to MySQL)
+console.log('🚀 Connecting to Session Store...');
 const sessionStore = new MySQLStore({
     clearExpired: true,
     checkExpirationInterval: 900000, // 15 minutes
-    expiration: 86400000 // 1 day
+    expiration: 86400000, // 1 day
+    createDatabaseTable: true // Ensure table exists
 }, db);
+console.log('✔ Session Store Configured.');
 
-app.set('trust proxy', 1); // Trust first proxy (Hostinger/Nginx)
+app.set('trust proxy', 1);
 
 app.use(session({
     key: 'lingku_session',
@@ -52,7 +68,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false, // Set to false to allow login via HTTP or if SSL is handled by proxy
+        secure: false, 
         maxAge: 1000 * 60 * 60 * 24 // 1 day
     }
 }));
@@ -113,43 +129,66 @@ app.use(async (req, res, next) => {
 
     // SMART IMAGE HELPER
     res.locals.img = (filename, folder = 'products') => {
-        if (!filename || filename === 'null' || filename === 'undefined') return '/images/placeholder.png';
-        if (typeof filename !== 'string') return '/images/placeholder.png';
-        if (filename.startsWith('http')) return filename;
+        const placeholder = 'https://placehold.co/600x400?text=No+Image';
+        if (!filename || filename === 'null' || filename === 'undefined' || filename === '') return placeholder;
         
-        let cleanFile = filename.trim();
+        let target = String(filename).trim();
         
         // Handle JSON array format ["image.jpg"]
-        if (cleanFile.startsWith('[') && cleanFile.endsWith(']')) {
+        if (target.startsWith('[') && target.endsWith(']')) {
             try { 
-                const arr = JSON.parse(cleanFile);
-                if (Array.isArray(arr) && arr.length > 0) cleanFile = arr[0];
+                const arr = JSON.parse(target);
+                if (Array.isArray(arr) && arr.length > 0) target = arr[0];
             } catch(e) {}
         }
 
-        // If filename ALREADY contains /uploads/, extract just the filename
-        // Example: /uploads/products/foto.png -> foto.png
-        if (cleanFile.includes('/uploads/')) {
-            const parts = cleanFile.split('/');
-            cleanFile = parts[parts.length - 1];
-        }
+        if (target.startsWith('http')) return target;
 
-        const relativePath = `/uploads/${folder}/${cleanFile}`;
-
-        // If on PRODUCTION (Live Site), always use local path
-        if (!res.locals.isLocal) {
-            return relativePath;
+        // Ensure it starts with /uploads/
+        if (!target.startsWith('/uploads/') && !target.startsWith('uploads/')) {
+            target = `/uploads/${folder}/${target.startsWith('/') ? target.substring(1) : target}`;
         }
         
-        // If on LOCALHOST, check if file exists, else fallback to Live
+        // Normalize leading slash for target
+        if (!target.startsWith('/')) target = '/' + target;
+        
+        // Local check & Production Fallback
+        let result = target;
         try {
-            const localPath = path.join(__dirname, 'public', 'uploads', folder, cleanFile);
-            if (fs.existsSync(localPath)) {
-                return relativePath;
+            // Normalize path for fs.existsSync (remove leading slash for join)
+            const cleanTarget = target.startsWith('/') ? target.substring(1) : target;
+            const localFile = path.join(__dirname, 'public', cleanTarget);
+            
+            if (!fs.existsSync(localFile)) {
+                // FUZZY CHECK 1: Maybe it's in the root /uploads/ instead of /uploads/products/ (or vice versa)
+                const fileNameOnly = path.basename(target);
+                const rootUploadsFile = path.join(__dirname, 'public/uploads', fileNameOnly);
+                const productsUploadsFile = path.join(__dirname, 'public/uploads/products', fileNameOnly);
+                
+                if (fs.existsSync(rootUploadsFile)) {
+                    result = `/uploads/${fileNameOnly}`;
+                } else if (fs.existsSync(productsUploadsFile)) {
+                    result = `/uploads/products/${fileNameOnly}`;
+                } else {
+                    // FUZZY CHECK 2: Check for timestamp prefix in public/uploads/
+                    const uploadsDir = path.join(__dirname, 'public/uploads');
+                    if (fs.existsSync(uploadsDir)) {
+                        const files = fs.readdirSync(uploadsDir);
+                        const found = files.find(f => f.endsWith(fileNameOnly));
+                        if (found) {
+                            result = `/uploads/${found}`;
+                        } else {
+                            result = `https://lingku.xyz${target}`;
+                        }
+                    } else {
+                        result = `https://lingku.xyz${target}`;
+                    }
+                }
             }
-        } catch(e) {}
-
-        return `https://lingku.xyz/uploads/${folder}/${cleanFile}`;
+        } catch (e) {
+            console.error('Image helper error:', e.message);
+        }
+        return result;
     };
 
     // Fetch notifications and WD count
@@ -338,6 +377,7 @@ app.use('/auth', authRoutes);
 app.use('/login', (req, res) => res.redirect('/auth/login'));
 app.use('/register', (req, res) => res.redirect('/auth/register'));
 app.use('/', indexRoutes);
+console.log('✔ Routes Registered.');
 
 // 404 Route
 app.get('*', (req, res) => {

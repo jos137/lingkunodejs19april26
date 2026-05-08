@@ -140,8 +140,8 @@
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
                         </div>
                         <div class="order-thumb-wrap">
-                            <% if (o.thumbnail) { %>
-                                <img src="<%= img(o.thumbnail, 'products') %>" alt="Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                            <% if (o.product_thumbnail) { %>
+                                <img src="<%= img(o.product_thumbnail, 'products') %>" alt="Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
                             <% } else { %>
                                 <i class="fas fa-shopping-bag"></i>
                             <% } %>

@@ -1,35 +1,32 @@
-const db = require('../config/db');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-async function checkDatabase() {
+async function debug() {
+    console.log('Attempting to connect to DB...');
+    console.log('Host:', process.env.DB_HOST);
+    console.log('User:', process.env.DB_USER);
+    
     try {
-        console.log('--- Mengecek Database Hostinger ---');
+        const connection = await mysql.createConnection({
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASS,
+            database: process.env.DB_NAME,
+            connectTimeout: 5000
+        });
         
-        // 1. Cek semua order upgrade (product_id = 0)
-        const [orders] = await db.execute("SELECT * FROM orders WHERE product_id = 0 ORDER BY id DESC LIMIT 10");
-        console.log(`Ditemukan ${orders.length} pesanan upgrade PRO.`);
-        
-        if (orders.length > 0) {
-            console.table(orders.map(o => ({
-                id: o.id,
-                email: o.buyer_email,
-                status: o.status,
-                ref: o.reference_id,
-                tgl: o.created_at
-            })));
-        } else {
-            console.log('TIDAK ADA data di tabel orders dengan product_id = 0.');
-        }
-
-        // 2. Cek user yang sudah PRO
-        const [proUsers] = await db.execute("SELECT id, email, plan FROM users WHERE plan = 'pro' LIMIT 5");
-        console.log(`\nContoh User PRO di tabel users:`);
-        console.table(proUsers);
-
+        console.log('✔ Connected successfully!');
+        const [rows] = await connection.execute('SELECT 1 + 1 AS result');
+        console.log('Query result:', rows[0].result);
+        await connection.end();
         process.exit(0);
     } catch (err) {
-        console.error('Koneksi Gagal:', err.message);
+        console.error('❌ Connection failed!');
+        console.error('Error Code:', err.code);
+        console.error('Error Message:', err.message);
+        console.error('Full Error:', err);
         process.exit(1);
     }
 }
 
-checkDatabase();
+debug();

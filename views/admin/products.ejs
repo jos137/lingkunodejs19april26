@@ -114,7 +114,7 @@
         <% products.forEach(function(p) {
             const type = (p.type || p.product_type || 'digital').toLowerCase();
             const typeLabel = type === 'tiket' ? 'TIKET' : type === 'webinar' ? 'WEBINAR' : type === 'mentoring' ? 'MENTORING' : 'DIGITAL';
-            const thumbUrl = p.thumbnail || p.thumb || '';
+            const thumbUrl = p.thumb || p.thumbnail || p.image_url || '';
         %>
             <div class="prod-card">
                 <div class="prod-thumb">

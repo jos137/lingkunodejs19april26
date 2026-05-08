@@ -8,9 +8,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/images/fav.ico">
     <style>
-        :root { --primary: #2271b1; --bg: #f8fafc; --text-dark: #1e293b; --text-muted: #64748b; }
+        :root { --primary: #2271b1; --bg: #f1f5f9; --text-dark: #1e293b; --text-muted: #64748b; }
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-dark); margin: 0; padding: 0; display: flex; justify-content: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 480px; padding: 15px 20px 50px 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { 
+            width: 100%; max-width: 480px; padding: 15px 20px 50px 20px; 
+            display: flex; flex-direction: column; align-items: center; 
+            background: #ffffff; box-shadow: 0 0 40px rgba(0,0,0,0.03);
+            min-height: 100vh;
+        }
         .profile { 
             width: 100%; background: <%= user.profile_box_color || '#ffffff' %>; 
             padding: 20px;
@@ -65,10 +70,11 @@
         .block-image { width: 100%; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 10px; }
 
         .block-product {
-            display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; border: 1.5px solid #f1f5f9;
+            display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; 
+            border: 1px solid #10b98155;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); text-decoration: none; color: inherit; transition: 0.2s;
         }
-        .block-product:hover { transform: scale(1.02); border-color: var(--primary); }
+        .block-product:hover { transform: scale(1.01); border-color: #10b981; }
         .product-thumb { width: 55px; height: 55px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px; overflow: hidden; border: 1px solid #f1f5f9; flex-shrink: 0; }
         .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .product-info { flex: 1; min-width: 0; }
@@ -103,7 +109,7 @@
                     <div class="block-text"><%- block.text %></div>
                 
                 <% } else if (block.type === 'image' && block.url) { %>
-                    <img src="<%= block.url %>" class="block-image" alt="Image">
+                    <img src="<%= img(block.url, 'builder') %>" class="block-image" alt="Image">
                 
                 <% } else if (block.type === 'video' && block.url) { %>
                     <% 

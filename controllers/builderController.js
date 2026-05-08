@@ -369,7 +369,12 @@ exports.renderUserPage = async (req, res) => {
             
             const allRows = [...ownerRows, ...extraRows];
             products = allRows.map(p => {
-                let thumbValue = p.thumbnail || p.image_url || p.image_small || p.cover_image || p.photo || '';
+                const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+                const candidates = [p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo];
+                let thumbValue = candidates.find(c => {
+                    if (!c || typeof c !== 'string') return false;
+                    return !invalidStrings.includes(c.toLowerCase().trim());
+                }) || '';
                 let thumb = '';
                 if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
                     try {
@@ -436,7 +441,12 @@ exports.renderProductPage = async (req, res) => {
         const product = products[0];
 
         // Process image (Robust detection)
-        let thumbValue = product.thumbnail || product.image_url || product.image_small || product.cover_image || product.photo || '';
+        const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+        const candidates = [product.thumbnail, product.image_url, product.image_small, product.cover_image, product.photo];
+        let thumbValue = candidates.find(c => {
+            if (!c || typeof c !== 'string') return false;
+            return !invalidStrings.includes(c.toLowerCase().trim());
+        }) || '';
         let thumb = '';
         
         if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {
@@ -469,7 +479,12 @@ exports.renderCheckoutPage = async (req, res) => {
         const product = products[0];
 
         // Process image (Robust detection)
-        let thumbValue = product.thumbnail || product.image_url || product.image_small || product.cover_image || product.photo || '';
+        const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+        const candidates = [product.thumbnail, product.image_url, product.image_small, product.cover_image, product.photo];
+        let thumbValue = candidates.find(c => {
+            if (!c || typeof c !== 'string') return false;
+            return !invalidStrings.includes(c.toLowerCase().trim());
+        }) || '';
         let thumb = '';
         
         if (typeof thumbValue === 'string' && thumbValue.startsWith('[')) {

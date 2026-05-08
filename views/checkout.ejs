@@ -52,16 +52,9 @@
             </div>
         <% } %>
 
-        <% 
-            const thumb = product.processed_thumb;
-            const thumbUrl = thumb && (thumb.startsWith('http') || thumb.startsWith('/')) 
-                ? thumb 
-                : (thumb ? '/uploads/products/' + thumb : 'https://via.placeholder.com/150');
-        %>
-
         <div class="product-summary">
             <div class="product-icon" style="background: none; overflow: hidden; border: 1px solid #f1f5f9;">
-                <img src="<%= thumbUrl %>" style="width: 100%; height: 100%; object-fit: cover;">
+                <img src="<%= img(product.processed_thumb, 'products') %>" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='/images/placeholder.png'">
             </div>
             <div class="product-info">
                 <div class="product-name"><%= product.name %></div>
@@ -93,7 +86,7 @@
                 <label class="label">Pilih Metode Pembayaran</label>
                 <div class="payment-grid">
                     <div class="pay-option active" data-method="qr" data-channel="qris" onclick="selectPay(this)">
-                        <img src="https://img.icons8.com/color/48/000000/qr-code.png" alt="QRIS">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e0/QRIS_Logo.svg" alt="QRIS">
                         <span>QRIS</span>
                     </div>
                     <div class="pay-option" data-method="va" data-channel="bca" onclick="selectPay(this)">
@@ -105,11 +98,11 @@
                         <span>Mandiri</span>
                     </div>
                     <div class="pay-option" data-method="va" data-channel="bni" onclick="selectPay(this)">
-                        <img src="https://upload.wikimedia.org/wikipedia/id/thumb/5/55/BNI_logo.svg/1280px-BNI_logo.svg.png" alt="BNI">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/f/f0/Bank_Negara_Indonesia_logo_%282004%29.svg" alt="BNI">
                         <span>BNI</span>
                     </div>
                     <div class="pay-option" data-method="va" data-channel="bri" onclick="selectPay(this)">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_Logo.svg/1280px-BRI_Logo.svg.png" alt="BRI">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/1/1e/Bank-Rakyat-Indonesia-Logo.svg" alt="BRI">
                         <span>BRI</span>
                     </div>
                     <div class="pay-option" data-method="cstore" data-channel="alfamart" onclick="selectPay(this)">

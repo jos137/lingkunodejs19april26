@@ -238,7 +238,7 @@
                         <% if (block.type === 'image') { %>
                             <input type="file" class="b-input b-file" accept="image/*" onchange="uploadBlockImage(this)">
                             <div class="block-image-preview" style="margin-top:10px;">
-                                <% if (block.content) { %><img src="<%= block.content %>" style="width:80px;height:80px;border-radius:10px;object-fit:cover;"><% } %>
+                                <% if (block.content) { %><img src="<%= img(block.content, 'builder') %>" style="width:80px;height:80px;border-radius:10px;object-fit:cover;"><% } %>
                             </div>
                         <% } else if (block.type === 'product') { %>
                             <label class="b-label">Pilih Produk</label>
@@ -581,7 +581,11 @@ function updatePreview() {
             const prod = productList.find(p => p.id == pid);
             if (prod) {
                 let thumbRaw = prod.thumbnail || prod.image_url || '';
-                let thumbSrc = thumbRaw && (thumbRaw.startsWith('/') ? thumbRaw : '/uploads/products/' + thumbRaw);
+                let thumbSrc = thumbRaw;
+                if (thumbRaw && !thumbRaw.startsWith('http')) {
+                    if (!thumbRaw.startsWith('/')) thumbRaw = '/uploads/products/' + thumbRaw;
+                    thumbSrc = thumbRaw;
+                }
                 html += `
                     <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1.5px solid #e5e7eb;border-radius:12px;margin-bottom:12px;background:#fff;">
                         <div style="width:40px;height:40px;border-radius:8px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #f1f5f9;flex-shrink:0;">
@@ -623,7 +627,11 @@ function updatePreview() {
             const prod = marketplaceList.find(p => p.id == pid);
             if (prod) {
                 let thumbRaw = prod.thumbnail || prod.image_url || '';
-                let thumbSrc = thumbRaw && (thumbRaw.startsWith('/') ? thumbRaw : '/uploads/products/' + thumbRaw);
+                let thumbSrc = thumbRaw;
+                if (thumbRaw && !thumbRaw.startsWith('http')) {
+                    if (!thumbRaw.startsWith('/')) thumbRaw = '/uploads/products/' + thumbRaw;
+                    thumbSrc = thumbRaw;
+                }
                 html += `
                     <div style="display:flex;align-items:center;gap:12px;padding:12px;border:1.5px solid #f59e0b;border-radius:12px;margin-bottom:12px;background:#fff;">
                         <div style="width:40px;height:40px;border-radius:8px;background:#fff7ed;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #ffedd5;flex-shrink:0;">

@@ -38,7 +38,12 @@ exports.getProducts = async (req, res) => {
 
         // Detect thumbnail column name and handle JSON array format
         products = products.map(p => {
-            let raw = p.thumbnail || p.cover_image || p.image || p.image_url || p.photo || '';
+            const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+            const candidates = [p.thumbnail, p.cover_image, p.image, p.image_url, p.photo];
+            let raw = candidates.find(c => {
+                if (!c || typeof c !== 'string') return false;
+                return !invalidStrings.includes(c.toLowerCase().trim());
+            }) || '';
             let thumb = '';
             
             if (raw) {
@@ -128,7 +133,6 @@ exports.updateProduct = async (req, res) => {
         
         if (req.file) {
             thumbUpdate = ', thumbnail = ?';
-            params.push('/uploads/products/' + req.file.filename);
         }
         const query = `UPDATE products SET 
             name = ?, description = ?, price = ?, stock = ?, download_url = ?, 
@@ -141,6 +145,7 @@ exports.updateProduct = async (req, res) => {
         params.push(req.body.is_affiliate === 'on' ? 1 : 0);
         params.push(req.body.commission_percent || 20);
         params.push(req.body.type || 'digital');
+        if (req.file) params.push('/uploads/products/' + req.file.filename);
         params.push(req.params.id);
 
         try {
@@ -369,8 +374,13 @@ exports.getOrders = async (req, res) => {
 
         // Clean up data (handle multiple image columns and JSON prefixing)
         const cleanedOrders = orders.map(o => {
-            // Find the first non-empty image column
-            let thumb = o.thumbnail || o.image_url || o.image_small || o.cover_image || o.photo || '';
+            // Find the first non-empty image column, skipping invalid legacy strings
+            const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+            const candidates = [o.thumbnail, o.image_url, o.image_small, o.cover_image, o.photo];
+            let thumb = candidates.find(c => {
+                if (!c || typeof c !== 'string') return false;
+                return !invalidStrings.includes(c.toLowerCase().trim());
+            }) || '';
             // Handle JSON Array format
             if (typeof thumb === 'string' && thumb.startsWith('[')) {
                 try {
@@ -2032,31 +2042,59 @@ exports.getUpgradeOrders = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
         const offset = (page - 1) * limit;
+        const { date } = req.query;
 
-        const [countRow] = await db.execute("SELECT COUNT(*) as total FROM orders WHERE product_id = 0");
+        let whereClause = "WHERE o.product_id = 0";
+        let queryParams = [];
+
+        if (date) {
+            whereClause += " AND DATE(o.created_at) = ?";
+            queryParams.push(date);
+        }
+
+        const [countRow] = await db.execute(`SELECT COUNT(*) as total FROM orders o ${whereClause}`, queryParams);
         const totalItems = countRow[0].total;
         const totalPages = Math.ceil(totalItems / limit);
 
         const [orders] = await db.execute(
-            `SELECT o.*, u.fullname as customer_name, u.email as customer_email, u.whatsapp as customer_whatsapp
+            `SELECT o.*, u.fullname as buyer_name, u.email as buyer_email
              FROM orders o
              LEFT JOIN users u ON o.customer_email = u.email
-             WHERE o.product_id = 0
+             ${whereClause}
              ORDER BY o.id DESC
              LIMIT ? OFFSET ?`,
-            [limit, offset]
+            [...queryParams, limit, offset]
         );
 
+        const [stats] = await db.execute(`
+            SELECT 
+                COUNT(*) as total_count,
+                SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END) as total_revenue
+            FROM orders o
+            ${whereClause}
+        `, queryParams);
+
         res.render('admin/upgrade-orders', {
-            title: 'Laporan Penjualan Platform',
+            title: 'Penjualan Platform',
             layout: './layouts/admin',
             orders,
             currentPage: page,
             totalPages,
+            stats: stats[0],
+            filters: { date },
             user: req.session.user || res.locals.user
         });
     } catch (err) {
         console.error('Get Upgrade Orders Error:', err.message);
-        res.render('admin/upgrade-orders', { title: 'Laporan Penjualan Platform', layout: './layouts/admin', orders: [], currentPage: 1, totalPages: 1, user: req.session.user || res.locals.user });
+        res.render('admin/upgrade-orders', { 
+            title: 'Penjualan Platform', 
+            layout: './layouts/admin', 
+            orders: [], 
+            currentPage: 1, 
+            totalPages: 1, 
+            stats: { total_count: 0, total_revenue: 0 },
+            filters: {},
+            user: req.session.user || res.locals.user 
+        });
     }
 };
