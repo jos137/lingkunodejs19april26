@@ -1,0 +1,14 @@
+{
+  "watch": ["."],
+  "ext": "js,ejs",
+  "ignore": [
+    "node_modules",
+    ".git/*",
+    "public/uploads/*",
+    "scratch/*",
+    "nodemon.json",
+    ".env",
+    "package-lock.json"
+  ],
+  "delay": "3000"
+}

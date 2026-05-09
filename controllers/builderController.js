@@ -531,28 +531,7 @@ exports.processCheckout = async (req, res) => {
         if (products.length === 0) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
         const product = products[0];
 
-        // ANTI-SPAM: Block after 3 attempts with same email or phone
-        try {
-            const [spamCount] = await db.execute(
-                'SELECT COUNT(*) as c FROM orders WHERE (customer_email = ? OR customer_whatsapp = ?) AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE)',
-                [email, phone]
-            );
-            
-            if (spamCount[0].c >= 3) {
-                return res.redirect(`/checkout/${product_id}?error=` + encodeURIComponent('Anda sudah membuat terlalu banyak pesanan pending. Silakan selesaikan pembayaran sebelumnya atau tunggu 5 menit untuk mencoba lagi.'));
-            }
-        } catch (e) { console.error('Spam Limit Check Error:', e.message); }
-
-        // ANTI-SPAM: Check for duplicate pending orders (Last 15 mins)
-        try {
-            const [existing] = await db.execute(
-                'SELECT id FROM orders WHERE customer_email = ? AND product_id = ? AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 5 MINUTE) LIMIT 1',
-                [email, product_id]
-            );
-            if (existing.length > 0) {
-                return res.redirect(`/checkout/${product_id}?error=` + encodeURIComponent('Anda sudah memiliki pesanan pending untuk produk ini. Silakan cek email Anda atau tunggu 5 menit.'));
-            }
-        } catch (e) { console.error('Anti-Spam Check Error:', e.message); }
+        // Anti-Spam Removed as requested
 
         // 3. AFFILIATE TRACKING LOGIC
         let affiliateId = null;
@@ -624,8 +603,10 @@ exports.processCheckout = async (req, res) => {
         const adminConfig = adminRows.length > 0 ? adminRows[0] : {};
 
         const isSandbox = adminConfig.ipaymu_sandbox == 1;
+        
         const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE); 
         const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
+        
         const url = isSandbox ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
         const expiryMins = adminConfig.ipaymu_expiry || 60; 
 
@@ -661,9 +642,9 @@ exports.processCheckout = async (req, res) => {
 
         // Official Direct Payment Body Structure
         const body = {
-            name: name.replace(/[^a-zA-Z0-9 ]/g, '') || 'Pembeli',
+            name: name.replace(/[^a-zA-Z0-9 ]/g, '').trim() || 'Pembeli',
             phone: cleanPhone, 
-            email: email || 'customer@gmail.com',
+            email: (email || 'customer@gmail.com').trim(),
             amount: finalAmount, 
             notifyUrl: `https://lingku.xyz/api/callback/ipaymu`,
             returnUrl: `https://lingku.xyz/`,
@@ -681,6 +662,13 @@ exports.processCheckout = async (req, res) => {
         const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`;
         const signature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
 
+        // Debug Payload (Will show in Terminal)
+        console.log('--- IPAYMU REQUEST ---');
+        console.log('URL:', url);
+        console.log('Body:', jsonBody);
+        console.log('Signature:', signature);
+        console.log('VA:', va);
+
         try {
             const response = await axios.post(url, jsonBody, {
                 headers: {
@@ -690,8 +678,11 @@ exports.processCheckout = async (req, res) => {
                     'signature': signature,
                     'timestamp': timestamp
                 },
-                timeout: 45000 
+                timeout: 30000 
             });
+
+            console.log('--- IPAYMU RESPONSE ---');
+            console.log(JSON.stringify(response.data, null, 2));
 
             if (response.data && response.data.Status === 200) {
                 const ipayData = response.data.Data || {};
@@ -816,12 +807,23 @@ exports.processCheckout = async (req, res) => {
             }
 
         } catch (err) {
-            console.error('Checkout Critical Error:', err.message);
+            console.error('--- IPAYMU CRITICAL ERROR ---');
+            console.error('Message:', err.message);
+            if (err.response) {
+                console.error('iPaymu Response Data:', err.response.data);
+                console.error('iPaymu Response Status:', err.response.status);
+            }
+            
             try { await db.execute('UPDATE orders SET status = "rejected" WHERE reference_id = ?', [refId]); } catch(e){}
+            
+            // Show more helpful error if in local/debug mode
+            const isLocal = req.hostname === 'localhost';
+            const errorDetail = (isLocal && err.response && err.response.data) ? JSON.stringify(err.response.data) : 'Terjadi kesalahan saat menghubungi gateway pembayaran.';
+
             res.status(500).send(`
                 <html>
-                <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Koneksi Terputus</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#f59e0b;margin-top:0;} p{color:#64748b;line-height:1.5;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
-                <body><div class="box"><h2>Koneksi Terputus</h2><p>Terjadi kesalahan saat menghubungi gateway pembayaran. Silakan periksa koneksi Anda dan coba lagi.</p><a href="javascript:history.back()">Kembali</a></div></body>
+                <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Koneksi Terputus</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#f59e0b;margin-top:0;} p{color:#64748b;line-height:1.5;font-size:14px;} .err-code{background:#f1f5f9;padding:8px;border-radius:8px;font-family:monospace;font-size:12px;margin-top:10px;word-break:break-all;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
+                <body><div class="box"><h2>Koneksi Terputus</h2><p>${errorDetail}</p><a href="javascript:history.back()">Kembali</a></div></body>
                 </html>
             `);
         }
