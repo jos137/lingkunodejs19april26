@@ -46,9 +46,9 @@
 
 .order-info { flex: 1; min-width: 0; padding-right: 90px; }
 .order-date { font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 6px; }
-.order-buyer { font-size: 15px; font-weight: 900; color: #111827; display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.order-product { font-size: 12px; font-weight: 800; color: #f59e0b; margin-top: 5px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.order-price { font-size: 16px; font-weight: 600; color: #111827; margin-top: 10px; }
+.order-buyer { font-size: 15px; font-weight: 900; color: #111827; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.order-product { font-size: 11px; font-weight: 800; color: #f59e0b; margin-top: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
+.order-price { font-size: 16px; font-weight: 600; color: #111827; margin-top: 8px; }
 
 .order-status {
     position: absolute; top: 24px; right: 32px;
@@ -132,11 +132,13 @@
                             <div class="order-date"><%= o.formatted_date %></div>
                             <div class="order-buyer">
                                 <%= o.customer_name %>
+                            </div>
+                            <div class="order-product">
+                                <%= o.product_name %>
                                 <% if (o.status === 'pending') { %>
-                                    <span class="countdown-timer" style="font-size: 11px; font-weight: 800; color: #10b981; margin-left: 8px;" data-timeleft="<%= o.time_left %>">00:00</span>
+                                    <span class="countdown-timer" style="font-size: 11px; font-weight: 850; color: #10b981; background: #f0fdf4; padding: 2px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #10b98133;" data-timeleft="<%= o.time_left %>" data-idx="<%= idx %>">00:00</span>
                                 <% } %>
                             </div>
-                            <div class="order-product"><%= o.product_name %></div>
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
                         </div>
                         <div class="order-thumb-wrap">
@@ -219,20 +221,28 @@ function filterOrders() {
     });
 }
 
-function renderOrderDetail(o) {
+function renderOrderDetail(o, idx) {
     const isCompleted = o.status === 'completed';
     const statusColor = isCompleted ? '#10b981' : '#f59e0b';
     const btnColor = isCompleted ? '#3b82f6' : '#10b981';
     const btnLabel = isCompleted ? 'Kirim Akses' : 'Follow Up';
     
     return `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:24px;">
             <div>
                 <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Invoice Reference</div>
                 <div style="font-size:16px; font-weight:900; color:#111827;">#${o.reference_id}</div>
             </div>
-            <div style="background:${statusColor}15; color:${statusColor}; padding:6px 16px; border-radius:100px; font-size:11px; font-weight:900; letter-spacing:0.5px;">
-                ${o.status.toUpperCase()}
+            <div style="text-align:right;">
+                <div style="background:${statusColor}15; color:${statusColor}; padding:6px 16px; border-radius:100px; font-size:11px; font-weight:900; letter-spacing:0.5px; border:1px solid ${statusColor}33; display:inline-block; margin-bottom:6px;">
+                    ${(o.status || 'PENDING').toUpperCase()}
+                </div>
+                ${o.status === 'pending' ? `
+                    <div style="font-size:10px; color:#ef4444; font-weight:700; display:flex; align-items:center; justify-content:end; gap:4px;">
+                        <i class="fas fa-history"></i>
+                        <span class="countdown-timer" data-timeleft="${o.time_left}" data-idx="${idx}">--:--</span>
+                    </div>
+                ` : ''}
             </div>
         </div>
 
@@ -317,7 +327,7 @@ function selectOrder(el, idx) {
     document.querySelectorAll('.order-card').forEach(c => c.classList.remove('active'));
     el.classList.add('active');
 
-    const html = renderOrderDetail(o);
+    const html = renderOrderDetail(o, idx);
 
     if (isMobile) {
         const mDetail = el.querySelector('.order-detail-mobile');
@@ -355,19 +365,25 @@ async function sendOrderEmail(id, status) {
 if (ordersData.length > 0) selectOrder(document.querySelector('.order-card'), 0);
 
 function startCountdowns() {
-    const timers = document.querySelectorAll('.countdown-timer');
-    if (timers.length === 0) return;
-    
     setInterval(() => {
+        const timers = document.querySelectorAll('.countdown-timer');
         timers.forEach(timer => {
             let timeLeft = parseInt(timer.getAttribute('data-timeleft'));
+            const orderIdx = timer.getAttribute('data-idx');
+            
             if (timeLeft <= 0) {
                 timer.innerHTML = "00:00";
             } else {
                 const m = Math.floor(timeLeft / 60);
                 const s = timeLeft % 60;
                 timer.innerHTML = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-                timer.setAttribute('data-timeleft', timeLeft - 1);
+                const nextTime = timeLeft - 1;
+                timer.setAttribute('data-timeleft', nextTime);
+                
+                // Keep the global data synchronized so detail panel stays accurate
+                if (orderIdx !== null && ordersData[orderIdx]) {
+                    ordersData[orderIdx].time_left = nextTime;
+                }
             }
         });
     }, 1000);

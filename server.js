@@ -1,25 +1,31 @@
-require('dotenv').config();
-const express = require('express');
-const expressLayouts = require('express-ejs-layouts');
+console.log('>>> DEBUG: STARTING SERVER.JS');
+require('dotenv').config(); console.log('>>> DEBUG: DOTENV LOADED');
+const express = require('express'); console.log('>>> DEBUG: EXPRESS LOADED');
+const expressLayouts = require('express-ejs-layouts'); console.log('>>> DEBUG: LAYOUTS LOADED');
 const path = require('path');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session);
+const session = require('express-session'); console.log('>>> DEBUG: SESSION LOADED');
+const MySQLStore = require('express-mysql-session')(session); console.log('>>> DEBUG: SESSION STORE LOADED');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const helmet = require('helmet');
-const { rateLimit } = require('express-rate-limit');
+const { rateLimit } = require('express-rate-limit'); console.log('>>> DEBUG: RATE LIMIT LOADED');
 
-const app = express();
+const app = express(); console.log('>>> DEBUG: APP INITIALIZED');
 const port = process.env.PORT || 3000;
 console.log('--- LINGKU SERVER INITIALIZATION ---');
 const db = require('./config/db');
 
-// Test Database Connection immediately
+// Test Database Connection & Run Auto-Heal
 (async () => {
     try {
         console.log('⏳ Testing Database Connection...');
         const [rows] = await db.execute('SELECT 1 + 1 AS result');
         console.log('✔ Database Connected (Test Query Success).');
+        
+        // RUN PERMANENT AUTO-HEAL ONCE AT STARTUP
+        const { runAutoHeal } = require('./utils/autoHeal');
+        await runAutoHeal();
+        
     } catch (err) {
         console.error('❌ DATABASE CONNECTION FAILED!');
         console.error('Error:', err.message);
@@ -115,15 +121,7 @@ app.use(async (req, res, next) => {
         } catch(e) { console.error('Session refresh error:', e.message); }
     }
 
-    // AUTO-HEAL: Ensure expired_at exists
-    try {
-        await db.execute("SELECT expired_at FROM users LIMIT 1");
-    } catch (e) {
-        if (e.message.includes('Unknown column')) {
-            await db.execute("ALTER TABLE users ADD COLUMN expired_at DATETIME DEFAULT NULL AFTER plan");
-        }
-    }
-    try { await db.execute("ALTER TABLE users ADD COLUMN sidebar_theme VARCHAR(50) DEFAULT 'default' AFTER bio"); } catch(e){}
+    res.locals.user = req.session.user || { role: 'guest', name: 'Guest', plan: 'free' };
 
     res.locals.user = req.session.user || { role: 'guest', name: 'Guest', plan: 'free' };
 
@@ -193,27 +191,6 @@ app.use(async (req, res, next) => {
 
     // Fetch notifications and WD count
     try {
-        // Auto-Heal: Ensure notifications table exists
-        try {
-            await db.execute("SELECT link FROM notifications LIMIT 1");
-        } catch (e) {
-            if (e.message.includes('Unknown table') || e.message.includes('doesn\'t exist')) {
-                await db.execute(`
-                    CREATE TABLE IF NOT EXISTS notifications (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        user_id INT NOT NULL,
-                        title VARCHAR(255),
-                        message TEXT,
-                        type VARCHAR(50) DEFAULT 'info',
-                        link VARCHAR(255),
-                        is_read TINYINT(1) DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                `);
-            } else if (e.message.includes("Unknown column 'link'")) {
-                await db.execute("ALTER TABLE notifications ADD COLUMN link VARCHAR(255) AFTER type");
-            }
-        }
 
         // Fetch unread notifications for current user
         let notifs = [];
@@ -230,38 +207,16 @@ app.use(async (req, res, next) => {
         const [rows] = await db.execute("SELECT COUNT(*) as count FROM withdrawals WHERE status = 'pending'");
         res.locals.pendingWDCount = rows[0].count || 0;
 
-        // ===== AUTO-HEAL: AFFILIATE SYSTEM =====
+        // ===== AFFILIATE SYSTEM =====
         let cookieDays = 30; // Default
         try {
-            const [cols] = await db.execute("SHOW COLUMNS FROM users LIKE 'affiliate_code'");
-            if (cols.length === 0) {
-                await db.execute("ALTER TABLE users ADD COLUMN affiliate_code VARCHAR(50) UNIQUE DEFAULT NULL AFTER email");
-                await db.execute("ALTER TABLE users ADD COLUMN referred_by INT DEFAULT NULL AFTER affiliate_code");
-            }
-            
-            // Ensure every user has an affiliate_code (for existing users)
-            const [usersNoCode] = await db.execute("SELECT id, fullname FROM users WHERE affiliate_code IS NULL OR affiliate_code = '' LIMIT 50");
-            for (const u of usersNoCode) {
-                const cleanName = (u.fullname || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 8);
-                const randomCode = cleanName + Math.floor(1000 + Math.random() * 9000);
-                await db.execute("UPDATE users SET affiliate_code = ? WHERE id = ?", [randomCode, u.id]);
-            }
-
-            // Ensure basic settings exist & fetch cookie duration
-            const affSettings = [
-                { key: 'aff_commission_percent', val: '20' },
-                { key: 'aff_cookie_duration', val: '30' }
-            ];
-            for (const s of affSettings) {
-                const [check] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key = ?", [s.key]);
-                if (check.length === 0) {
-                    await db.execute("INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)", [s.key, s.val]);
-                } else if (s.key === 'aff_cookie_duration') {
-                    cookieDays = parseInt(check[0].setting_value) || 30;
-                }
+            // Fetch cookie duration from settings
+            const [check] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'aff_cookie_duration'");
+            if (check.length > 0) {
+                cookieDays = parseInt(check[0].setting_value) || 30;
             }
         } catch (affErr) {
-            console.error('Affiliate Auto-Heal Error:', affErr.message);
+            console.error('Affiliate Fetch Error:', affErr.message);
         }
 
         // ===== GLOBAL AFFILIATE SENSOR (via Query Param ?ref= or ?aff=) =====
@@ -273,50 +228,7 @@ app.use(async (req, res, next) => {
                 path: '/' 
             });
         }
-        // ===== AUTO-HEAL: FEATURE FLAGS =====
-        try {
-            // Check if table and essential columns exist
-            await db.execute("SELECT is_enabled FROM feature_flags LIMIT 1");
-        } catch (e) {
-            if (e.message.includes("doesn't exist")) {
-                await db.execute(`
-                    CREATE TABLE IF NOT EXISTS feature_flags (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        feature_key VARCHAR(50) UNIQUE NOT NULL,
-                        feature_name VARCHAR(100) NOT NULL,
-                        flag_key VARCHAR(100) UNIQUE,
-                        description TEXT,
-                        is_enabled TINYINT(1) DEFAULT 0,
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                `);
-            } else if (e.message.includes("Unknown column 'is_enabled'")) {
-                await db.execute("ALTER TABLE feature_flags ADD COLUMN is_enabled TINYINT(1) DEFAULT 0 AFTER description");
-            }
-        }
-        
-        // Auto-heal new announcement columns
-        try { await db.execute("ALTER TABLE feature_flags ADD COLUMN text_value TEXT AFTER is_enabled"); } catch(err){}
-        try { await db.execute("ALTER TABLE feature_flags ADD COLUMN color_value VARCHAR(50) AFTER text_value"); } catch(err){}
-
-        // Ensure default flags exist
-        const defaultFlags = [
-            { key: 'enable_announcement', desc: 'Menampilkan pengumuman di dashboard', val: 1 },
-            { key: 'enable_affiliate', desc: 'Menampilkan menu affiliate di sidebar', val: 1 },
-            { key: 'show_today_sales', desc: 'Menampilkan statistik penjualan hari ini', val: 1 },
-            { key: 'enable_pro_upgrade', desc: 'Menampilkan penawaran Upgrade ke Paket PRO', val: 1 }
-        ];
-        for (const f of defaultFlags) {
-            try {
-                await db.execute(`
-                    INSERT IGNORE INTO feature_flags (feature_key, feature_name, flag_key, description, is_enabled) 
-                    VALUES (?, ?, ?, ?, ?)`, 
-                    [f.key, f.desc || f.key, f.key, f.desc || '', f.val]
-                );
-            } catch (err) {
-                console.error(`Error ensuring flag ${f.key}:`, err.message);
-            }
-        }
+        // ===== FEATURE FLAGS =====
 
         // Fetch all feature flags
         const [featureRows] = await db.execute("SELECT feature_key, is_enabled, text_value, color_value FROM feature_flags");
@@ -332,30 +244,7 @@ app.use(async (req, res, next) => {
         });
         res.locals.features = features;
         
-        // ===== AUTO-HEAL: WITHDRAWALS =====
-        try {
-            await db.execute("SELECT bank_name, account_name FROM withdrawals LIMIT 1");
-        } catch (e) {
-            if (e.message.includes("doesn't exist")) {
-                await db.execute(`
-                    CREATE TABLE IF NOT EXISTS withdrawals (
-                        id INT AUTO_INCREMENT PRIMARY KEY,
-                        user_id INT NOT NULL,
-                        amount DECIMAL(15,2) NOT NULL,
-                        bank_name VARCHAR(100),
-                        account_number VARCHAR(100),
-                        account_name VARCHAR(100),
-                        status ENUM('pending', 'completed', 'rejected') DEFAULT 'pending',
-                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                    )
-                `);
-            } else if (e.message.includes("Unknown column 'bank_name'")) {
-                await db.execute("ALTER TABLE withdrawals ADD COLUMN bank_name VARCHAR(100) AFTER amount");
-                await db.execute("ALTER TABLE withdrawals ADD COLUMN account_name VARCHAR(100) AFTER account_number");
-            } else if (e.message.includes("Unknown column 'account_name'")) {
-                await db.execute("ALTER TABLE withdrawals ADD COLUMN account_name VARCHAR(100) AFTER account_number");
-            }
-        }
+        // Skip withdrawal schema checks (handled by startup auto-heal)
 
     } catch (e) {
         res.locals.notifications = [];
