@@ -716,6 +716,7 @@ exports.processCheckout = async (req, res) => {
                             <meta charset="UTF-8">
                             <meta name="viewport" content="width=device-width, initial-scale=1.0">
                             <title>Instruksi Pembayaran</title>
+                            <link rel="icon" type="image/x-icon" href="/images/fav.ico">
                             <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
                             <style>
                                 body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
@@ -800,7 +801,12 @@ exports.processCheckout = async (req, res) => {
                 try { await db.execute('UPDATE orders SET status = "rejected" WHERE reference_id = ?', [refId]); } catch(e){}
                 return res.status(500).send(`
                     <html>
-                    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Pembayaran Gagal</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#ef4444;margin-top:0;} p{color:#64748b;line-height:1.5;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>Pembayaran Gagal</title>
+                        <link rel="icon" type="image/x-icon" href="/images/fav.ico">
+                        <style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#ef4444;margin-top:0;} p{color:#64748b;line-height:1.5;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style>
+                    </head>
                     <body><div class="box"><h2>Pembayaran Gagal</h2><p>Sistem pembayaran sedang sibuk atau menolak transaksi Anda. Silakan coba kembali beberapa saat lagi.</p><a href="javascript:history.back()">Kembali & Coba Lagi</a></div></body>
                     </html>
                 `);
@@ -822,7 +828,12 @@ exports.processCheckout = async (req, res) => {
 
             res.status(500).send(`
                 <html>
-                <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Koneksi Terputus</title><style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#f59e0b;margin-top:0;} p{color:#64748b;line-height:1.5;font-size:14px;} .err-code{background:#f1f5f9;padding:8px;border-radius:8px;font-family:monospace;font-size:12px;margin-top:10px;word-break:break-all;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style></head>
+                <head>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Koneksi Terputus</title>
+                    <link rel="icon" type="image/x-icon" href="/images/fav.ico">
+                    <style>body{font-family:sans-serif;background:#f8fafc;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;} .box{background:#fff;padding:30px;border-radius:16px;box-shadow:0 4px 12px rgba(0,0,0,0.05);text-align:center;max-width:400px;width:90%;} h2{color:#f59e0b;margin-top:0;} p{color:#64748b;line-height:1.5;font-size:14px;} .err-code{background:#f1f5f9;padding:8px;border-radius:8px;font-family:monospace;font-size:12px;margin-top:10px;word-break:break-all;} a{display:inline-block;margin-top:20px;padding:12px 24px;background:#1e293b;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;}</style>
+                </head>
                 <body><div class="box"><h2>Koneksi Terputus</h2><p>${errorDetail}</p><a href="javascript:history.back()">Kembali</a></div></body>
                 </html>
             `);
