@@ -729,7 +729,7 @@ exports.processCheckout = async (req, res) => {
                                 .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
                                 .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
                                 .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
-                                .qr-img { width: 220px; height: 220px; margin: 0 auto; display: block; border-radius: 12px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+                                .qr-img { width: 150px; height: 150px; margin: 0 auto; display: block; border-radius: 50%; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                                 .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
                                 .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
                                 .detail-label { color: #64748b; font-weight: 600; }
@@ -749,7 +749,7 @@ exports.processCheckout = async (req, res) => {
                                     </div>
                                     <div class="info-box">
                                         <div class="pay-label">${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
-                                        ${isQR ? `<img src="${qrImageUrl}" class="qr-img">` : `<h1 class="pay-no">${payNo}</h1>`}
+                                        ${isQR ? `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;"><img src="${qrImageUrl}" class="qr-img"><a href="${qrImageUrl}" download="QRIS.png" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#f0fdf4;color:#10b981;text-decoration:none;border-radius:20px;font-size:11px;font-weight:800;border:1px solid #10b98133;"><i class="fas fa-download"></i> SIMPAN QRIS</a></div>` : `<h1 class="pay-no">${payNo}</h1>`}
                                     </div>
                                     <div class="details">
                                         <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${product.name}</span></div>
