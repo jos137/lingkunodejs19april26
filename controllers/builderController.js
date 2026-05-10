@@ -531,6 +531,17 @@ exports.processCheckout = async (req, res) => {
         if (products.length === 0) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
         const product = products[0];
 
+        // SMART RECOVERY: Check for existing pending order to prevent duplicates
+        const [existingOrders] = await db.execute(
+            'SELECT * FROM orders WHERE customer_email = ? AND product_id = ? AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE) LIMIT 1',
+            [email, product_id]
+        );
+
+        if (existingOrders.length > 0 && existingOrders[0].payment_no) {
+            console.log('Duplicate prevented: Found existing pending order', existingOrders[0].reference_id);
+            return res.redirect(`/checkout/payment/${existingOrders[0].reference_id}`);
+        }
+
         // Anti-Spam Removed as requested
 
         // 3. AFFILIATE TRACKING LOGIC
@@ -581,20 +592,16 @@ exports.processCheckout = async (req, res) => {
 
         } catch (dbErr) {
             console.error('Initial DB Error:', dbErr.message);
-            // Auto-Heal: Add missing columns if they don't exist
+            // Try adding missing columns then try again
             try {
-                const [oCols] = await db.execute("SHOW COLUMNS FROM orders LIKE 'affiliate_id'");
-                if (oCols.length === 0) {
-                    await db.execute('ALTER TABLE orders ADD COLUMN affiliate_id INT DEFAULT NULL');
-                    await db.execute('ALTER TABLE orders ADD COLUMN commission_amount DECIMAL(15,2) DEFAULT 0');
-                    await db.execute('ALTER TABLE orders ADD COLUMN customer_ip VARCHAR(50) DEFAULT NULL');
-                    await db.execute('ALTER TABLE orders ADD COLUMN payment_channel VARCHAR(50) DEFAULT NULL');
-                }
-                // Try again after healing
+                await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS affiliate_id INT DEFAULT NULL');
+                await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission_amount DECIMAL(15,2) DEFAULT 0');
+                await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ip VARCHAR(50) DEFAULT NULL');
+                await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_channel VARCHAR(50) DEFAULT NULL');
                 await db.execute(insertQuery, orderParams);
             } catch (healErr) {
                 console.error('Healing Error:', healErr.message);
-                throw dbErr; // Re-throw original error if healing fails
+                throw dbErr;
             }
         }
 
@@ -687,6 +694,16 @@ exports.processCheckout = async (req, res) => {
             if (response.data && response.data.Status === 200) {
                 const ipayData = response.data.Data || {};
                 
+                // SAVE IPAYMU DATA TO DATABASE (Important for refresh recovery)
+                const paymentNo = ipayData.PaymentNo || ipayData.SessionID || '';
+                const qrUrl = ipayData.QrUrl || ipayData.Url || '';
+                try {
+                    await db.execute(
+                        'UPDATE orders SET payment_no = ?, qr_url = ? WHERE reference_id = ?',
+                        [paymentNo, qrUrl, refId]
+                    );
+                } catch (saveErr) { console.error('Error saving payment data:', saveErr.message); }
+
                 // 5. Send Payment Instruction Email
                 sendPaymentInstructionEmail({
                     customerEmail: email,
@@ -694,107 +711,12 @@ exports.processCheckout = async (req, res) => {
                     productName: product.name,
                     totalPrice: product.price,
                     channel: chan,
-                    paymentNo: ipayData.PaymentNo || '',
-                    qrUrl: ipayData.QrUrl || ipayData.Url || ''
+                    paymentNo: paymentNo,
+                    qrUrl: qrUrl
                 }).catch(e => console.error('Email Error:', e));
 
-                // Handle Redirect for QRIS
-                if (ipayData.Url && method === 'qris') {
-                    return res.redirect(ipayData.Url);
-                } 
-                
-                // Handle Direct Instruction Page (VA/CStore)
-                if (ipayData.PaymentNo || ipayData.QrUrl) {
-                    const isQR = chan === 'qris';
-                    const payNo = ipayData.PaymentNo || ipayData.SessionID;
-                    const qrImageUrl = ipayData.QrUrl || (isQR ? `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(payNo)}` : '');
-                    
-                    return res.send(`
-                        <!DOCTYPE html>
-                        <html>
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <title>Instruksi Pembayaran</title>
-                            <link rel="icon" type="image/x-icon" href="/images/fav.ico">
-                            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-                            <style>
-                                body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-                                .card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); overflow: hidden; }
-                                .header { background: #10b981; height: 5px; }
-                                .content { padding: 40px 30px; }
-                                .timer-container { text-align: center; margin-bottom: 20px; background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3; }
-                                .timer-label { font-size: 11px; font-weight: 700; color: #e11d48; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-                                .timer-value { font-size: 20px; font-weight: 900; color: #be123c; font-variant-numeric: tabular-nums; }
-                                .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
-                                .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
-                                .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
-                                .qr-img { width: 160px; height: 160px; margin: 0 auto; display: block; border-radius: 16px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-                                .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
-                                .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
-                                .detail-label { color: #64748b; font-weight: 600; }
-                                .detail-val { font-weight: 800; color: #1e293b; }
-                                .footer { padding: 0 30px 40px; text-align: center; }
-                                .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; transition: 0.2s; }
-                                .back-btn:hover { background: #000; transform: translateY(-2px); }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="card">
-                                <div class="header"></div>
-                                <div class="content">
-                                    <div class="timer-container">
-                                        <div class="timer-label">Selesaikan Pembayaran Dalam</div>
-                                        <div id="countdown" class="timer-value">--:--</div>
-                                    </div>
-                                    <div class="info-box">
-                                        <div class="pay-label">${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
-                                        ${isQR ? `<div style="display:flex;flex-direction:column;align-items:center;gap:12px;"><img src="${qrImageUrl}" class="qr-img"><a href="${qrImageUrl}" download="QRIS.png" style="display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:#f0fdf4;color:#10b981;text-decoration:none;border-radius:20px;font-size:11px;font-weight:800;border:1px solid #10b98133;"><i class="fas fa-download"></i> SIMPAN QRIS</a></div>` : `<h1 class="pay-no">${payNo}</h1>`}
-                                    </div>
-                                    <div class="details">
-                                        <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${product.name}</span></div>
-                                        <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp ${Number(product.price).toLocaleString('id-ID')}</span></div>
-                                    </div>
-                                </div>
-                                <div class="footer">
-                                    <a href="/" class="back-btn">Selesai & Ke Beranda</a>
-                                </div>
-                            </div>
-                            <script>
-                                // Timer Logic
-                                let timeLeft = ${expiryMins} * 60;
-                                const timerDisplay = document.getElementById('countdown');
-
-                                function updateTimer() {
-                                    if (timeLeft <= 0) {
-                                        timerDisplay.innerHTML = "WAKTU HABIS";
-                                        return;
-                                    }
-                                    const m = Math.floor(timeLeft / 60);
-                                    const s = timeLeft % 60;
-                                    timerDisplay.innerHTML = \`\${m.toString().padStart(2, '0')}:\${s.toString().padStart(2, '0')}\`;
-                                    timeLeft--;
-                                }
-                                setInterval(updateTimer, 1000);
-                                updateTimer();
-
-                                // Status Check Logic
-                                const rid = '${refId}';
-                                setInterval(async () => {
-                                    try {
-                                        const r = await fetch('/api/order/status/' + rid);
-                                        const d = await r.json();
-                                        if (d.status === 'completed') window.location.href = '/access/go/' + d.orderId;
-                                    } catch(e) {}
-                                }, 5000);
-                            </script>
-                        </body>
-                        </html>
-                    `);
-                }
-
-                // If somehow nothing matched but Status was 200
-                return res.redirect(ipayData.Url || '/');
+                // Redirect to permanent payment page (PRG Pattern)
+                return res.redirect(`/checkout/payment/${refId}`);
 
             } else {
                 console.error('iPaymu Error:', response.data);
@@ -841,6 +763,132 @@ exports.processCheckout = async (req, res) => {
     } catch (globalErr) {
         console.error('Global Error:', globalErr);
         res.status(500).send('Sistem Error: ' + globalErr.message);
+    }
+};
+
+exports.getPaymentPage = async (req, res) => {
+    try {
+        const { referenceId } = req.params;
+        const [orders] = await db.execute(`
+            SELECT o.*, p.name as product_name, p.price as product_price 
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE o.reference_id = ?
+        `, [referenceId]);
+
+        if (orders.length === 0) return res.status(404).send('Pesanan tidak ditemukan.');
+        const order = orders[0];
+
+        if (order.status !== 'pending') {
+            return res.redirect('/');
+        }
+
+        const chan = order.payment_channel || 'qris';
+        const isQR = chan.toLowerCase() === 'qris';
+        const payNo = order.payment_no;
+        const qrImageUrl = order.qr_url;
+        const expiryMins = 60; // Default
+
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Instruksi Pembayaran - Lingku</title>
+                <link rel="icon" type="image/x-icon" href="/images/fav.ico">
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                <style>
+                    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+                    .card { background: white; width: 100%; max-width: 450px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.05); overflow: hidden; }
+                    .header { background: #10b981; height: 5px; }
+                    .content { padding: 40px 30px; }
+                    .timer-container { text-align: center; margin-bottom: 20px; background: #fff1f2; padding: 12px; border-radius: 12px; border: 1px solid #fecdd3; }
+                    .timer-label { font-size: 11px; font-weight: 700; color: #e11d48; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+                    .timer-value { font-size: 20px; font-weight: 900; color: #be123c; font-variant-numeric: tabular-nums; }
+                    .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
+                    .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
+                    .pay-no { font-size: \${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
+                    .qr-container { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+                    .qr-img { width: 160px; height: 160px; margin: 0 auto; display: block; border-radius: 16px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+                    .download-qr { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f0fdf4; color: #10b981; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b98133; transition: 0.2s; margin-top: 5px; }
+                    .download-qr:hover { background: #10b981; color: white; transform: translateY(-1px); }
+                    .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
+                    .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
+                    .detail-label { color: #64748b; font-weight: 600; }
+                    .detail-val { font-weight: 800; color: #1e293b; }
+                    .footer { padding: 0 30px 40px; text-align: center; }
+                    .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; transition: 0.2s; }
+                    .back-btn:hover { background: #000; transform: translateY(-2px); }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="header"></div>
+                    <div class="content">
+                        <div class="timer-container">
+                            <div class="timer-label">Selesaikan Pembayaran Dalam</div>
+                            <div id="countdown" class="timer-value">--:--</div>
+                        </div>
+                        <div class="info-box">
+                            <div class="pay-label">\${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
+                            \${isQR ? \`
+                                <div class="qr-container">
+                                    <img src="\${qrImageUrl}" class="qr-img">
+                                    <a href="\${qrImageUrl}" download="QRIS-Lingku.png" class="download-qr">
+                                        <i class="fas fa-download"></i> SIMPAN QRIS
+                                    </a>
+                                </div>
+                            \` : \`<h1 class="pay-no">\${payNo}</h1>\`}
+                        </div>
+                        <div class="details">
+                            <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">\${order.product_name}</span></div>
+                            <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp \${Number(order.total_price).toLocaleString('id-ID')}</span></div>
+                        </div>
+                    </div>
+                    <div class="footer">
+                        <a href="/" class="back-btn">Selesai & Ke Beranda</a>
+                    </div>
+                </div>
+                <script>
+                    // Timer Logic
+                    const createdAt = new Date('\${order.created_at}').getTime();
+                    const now = new Date().getTime();
+                    const diffSeconds = Math.floor((now - createdAt) / 1000);
+                    let timeLeft = (\${expiryMins} * 60) - diffSeconds;
+                    
+                    const timerDisplay = document.getElementById('countdown');
+
+                    function updateTimer() {
+                        if (timeLeft <= 0) {
+                            timerDisplay.innerHTML = "WAKTU HABIS";
+                            return;
+                        }
+                        const m = Math.floor(timeLeft / 60);
+                        const s = timeLeft % 60;
+                        timerDisplay.innerHTML = \`\${m.toString().padStart(2, '0')}:\${s.toString().padStart(2, '0')}\`;
+                        timeLeft--;
+                    }
+                    setInterval(updateTimer, 1000);
+                    updateTimer();
+
+                    // Status Check Logic
+                    const rid = '\${referenceId}';
+                    setInterval(async () => {
+                        try {
+                            const r = await fetch('/api/order/status/' + rid);
+                            const d = await r.json();
+                            if (d.status === 'completed') window.location.href = '/access/go/' + d.orderId;
+                        } catch(e) {}
+                    }, 5000);
+                </script>
+            </body>
+            </html>
+        `);
+
+    } catch (err) {
+        console.error('Payment Page Error:', err);
+        res.status(500).send('Terjadi kesalahan saat memuat halaman pembayaran.');
     }
 };
 

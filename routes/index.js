@@ -34,6 +34,7 @@ router.get('/p/:productId', indexController.renderProductPage);
 // Checkout Flow
 router.get('/checkout/:productId', indexController.renderCheckoutPage);
 router.post('/checkout/process', indexController.processCheckout);
+router.get('/checkout/payment/:referenceId', indexController.getPaymentPage);
 router.post('/api/callback/ipaymu', indexController.ipaymuCallback);
 router.get('/api/order/status/:refId', indexController.checkOrderStatus);
 
