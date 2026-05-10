@@ -696,7 +696,15 @@ exports.processCheckout = async (req, res) => {
                 
                 // SAVE IPAYMU DATA TO DATABASE (Important for refresh recovery)
                 const paymentNo = ipayData.PaymentNo || ipayData.SessionID || '';
-                const qrUrl = ipayData.QrUrl || ipayData.Url || '';
+                
+                // For QRIS, iPaymu might return QrUrl or just Url
+                let qrUrl = ipayData.QrUrl || ipayData.Url || '';
+                
+                // Fallback for QRIS if it's just a PaymentNo
+                if (chan.toLowerCase() === 'qris' && !qrUrl && paymentNo) {
+                    qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${paymentNo}`;
+                }
+
                 try {
                     await db.execute(
                         'UPDATE orders SET payment_no = ?, qr_url = ? WHERE reference_id = ?',
