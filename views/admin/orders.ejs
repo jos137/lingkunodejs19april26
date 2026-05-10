@@ -98,11 +98,42 @@
 /* Mobile */
 .order-detail-mobile { display: none; width: 100%; border-top: 1.5px solid #f1f5f9; margin-top: 20px; padding-top: 25px; }
 
+/* Mobile Fixes */
+.mobile-timer-wrap { display: none; }
 @media (max-width: 1100px) { 
     .orders-wrap { grid-template-columns: 1fr; } 
     .detail-panel { display: none; }
-    .order-card { flex-direction: column; align-items: flex-start; }
+    .order-card { flex-direction: column; align-items: flex-start; padding: 25px 20px; }
     .order-card.active .order-detail-mobile { display: block; }
+    
+    /* Hide desktop timer on mobile */
+    .desktop-timer { display: none !important; }
+    
+    /* Position image to the right of buyer info */
+    .order-thumb-wrap { 
+        position: absolute; top: 62px; right: 20px; 
+        width: 50px; height: 50px; margin-top: 0;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    
+    /* Show mobile timer next to status */
+    .mobile-timer-wrap { 
+        display: flex; align-items: center; gap: 8px;
+        position: absolute; top: 24px; right: 98px;
+    }
+    
+    /* Align Status badge nicely on mobile */
+    .order-status { top: 24px; right: 20px; }
+
+    /* Hide status in detail panel on mobile */
+    .detail-status-badge { display: none !important; }
+    .mobile-timer-val {
+        font-size: 11px; font-weight: 850; color: #10b981; 
+        background: #f0fdf4; padding: 2px 8px; border-radius: 6px; border: 1px solid #10b98133;
+    }
+    
+    /* Remove timer from detail panel on mobile */
+    .detail-timer-wrap { display: none !important; }
 }
 </style>
 
@@ -136,7 +167,7 @@
                             <div class="order-product">
                                 <%= o.product_name %>
                                 <% if (o.status === 'pending') { %>
-                                    <span class="countdown-timer" style="font-size: 11px; font-weight: 850; color: #10b981; background: #f0fdf4; padding: 2px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #10b98133;" data-timeleft="<%= o.time_left %>" data-idx="<%= idx %>">00:00</span>
+                                    <span class="countdown-timer desktop-timer" style="font-size: 11px; font-weight: 850; color: #10b981; background: #f0fdf4; padding: 2px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #10b98133;" data-timeleft="<%= o.time_left %>" data-idx="<%= idx %>">00:00</span>
                                 <% } %>
                             </div>
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
@@ -148,6 +179,14 @@
                                 <i class="fas fa-shopping-bag"></i>
                             <% } %>
                         </div>
+                        
+                        <!-- Mobile Timer -->
+                        <% if (o.status === 'pending') { %>
+                            <div class="mobile-timer-wrap">
+                                <span class="countdown-timer mobile-timer-val" data-timeleft="<%= o.time_left %>" data-idx="<%= idx %>">00:00</span>
+                            </div>
+                        <% } %>
+
                         <div class="order-status <%= (o.status || 'pending') %>"><%= (o.status || 'pending').toUpperCase() %></div>
 
                         <!-- For Mobile -->
@@ -234,11 +273,11 @@ function renderOrderDetail(o, idx) {
                 <div style="font-size:16px; font-weight:900; color:#111827;">#${o.reference_id}</div>
             </div>
             <div style="text-align:right;">
-                <div style="background:${statusColor}15; color:${statusColor}; padding:6px 16px; border-radius:100px; font-size:11px; font-weight:900; letter-spacing:0.5px; border:1px solid ${statusColor}33; display:inline-block; margin-bottom:6px;">
+                <div class="detail-status-badge" style="background:${statusColor}15; color:${statusColor}; padding:6px 16px; border-radius:100px; font-size:11px; font-weight:900; letter-spacing:0.5px; border:1px solid ${statusColor}33; display:inline-block; margin-bottom:6px;">
                     ${(o.status || 'PENDING').toUpperCase()}
                 </div>
                 ${o.status === 'pending' ? `
-                    <div style="font-size:10px; color:#ef4444; font-weight:700; display:flex; align-items:center; justify-content:end; gap:4px;">
+                    <div class="detail-timer-wrap" style="font-size:10px; color:#ef4444; font-weight:700; display:flex; align-items:center; justify-content:end; gap:4px;">
                         <i class="fas fa-history"></i>
                         <span class="countdown-timer" data-timeleft="${o.time_left}" data-idx="${idx}">--:--</span>
                     </div>
@@ -324,19 +363,32 @@ function selectOrder(el, idx) {
     const o = ordersData[idx];
     if (!o) return;
 
+    // Check if it's already active
+    const wasActive = el.classList.contains('active');
+
+    // Close all first
     document.querySelectorAll('.order-card').forEach(c => c.classList.remove('active'));
-    el.classList.add('active');
+    document.querySelectorAll('.order-detail-mobile').forEach(inner => inner.innerHTML = '');
 
-    const html = renderOrderDetail(o, idx);
+    // If it wasn't active before, open it
+    if (!wasActive) {
+        el.classList.add('active');
+        const html = renderOrderDetail(o, idx);
 
-    if (isMobile) {
-        const mDetail = el.querySelector('.order-detail-mobile');
-        document.querySelectorAll('.order-detail-mobile').forEach(inner => inner.innerHTML = '');
-        mDetail.innerHTML = html;
-        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        if (isMobile) {
+            const mDetail = el.querySelector('.order-detail-mobile');
+            mDetail.innerHTML = html;
+            setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 100);
+        } else {
+            const p = document.getElementById('detailPanel');
+            if (p) p.innerHTML = html;
+        }
     } else {
-        const p = document.getElementById('detailPanel');
-        if (p) p.innerHTML = html;
+        // If it was active and we're on desktop, maybe clear the detail panel or leave it empty
+        if (!isMobile) {
+            const p = document.getElementById('detailPanel');
+            if (p) p.innerHTML = '<div style="text-align:center; color:#94a3b8; padding-top:100px;"><i class="fas fa-receipt" style="font-size:40px; margin-bottom:10px;"></i><p>Pilih pesanan untuk melihat detail</p></div>';
+        }
     }
 }
 
