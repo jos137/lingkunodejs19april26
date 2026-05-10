@@ -808,7 +808,7 @@ exports.getPaymentPage = async (req, res) => {
                     .timer-value { font-size: 20px; font-weight: 900; color: #be123c; font-variant-numeric: tabular-nums; }
                     .info-box { background: #f0fdf4; border: 1.5px dashed #10b981; border-radius: 24px; padding: 25px; text-align: center; margin-bottom: 30px; }
                     .pay-label { font-size: 11px; font-weight: 900; color: #065f46; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 15px; }
-                    .pay-no { font-size: \${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
+                    .pay-no { font-size: ${isQR ? '12px' : '28px'}; font-weight: 900; color: #065f46; word-break: break-all; }
                     .qr-container { display: flex; flex-direction: column; align-items: center; gap: 12px; }
                     .qr-img { width: 160px; height: 160px; margin: 0 auto; display: block; border-radius: 16px; background: white; padding: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
                     .download-qr { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f0fdf4; color: #10b981; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b98133; transition: 0.2s; margin-top: 5px; }
@@ -831,19 +831,19 @@ exports.getPaymentPage = async (req, res) => {
                             <div id="countdown" class="timer-value">--:--</div>
                         </div>
                         <div class="info-box">
-                            <div class="pay-label">\${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
-                            \${isQR ? \`
+                            <div class="pay-label">${isQR ? 'SILAKAN SCAN QRIS' : 'NOMOR VA ' + chan.toUpperCase()}</div>
+                            ${isQR ? `
                                 <div class="qr-container">
-                                    <img src="\${qrImageUrl}" class="qr-img">
-                                    <a href="\${qrImageUrl}" download="QRIS-Lingku.png" class="download-qr">
+                                    <img src="${qrImageUrl}" class="qr-img">
+                                    <a href="${qrImageUrl}" download="QRIS-Lingku.png" class="download-qr">
                                         <i class="fas fa-download"></i> SIMPAN QRIS
                                     </a>
                                 </div>
-                            \` : \`<h1 class="pay-no">\${payNo}</h1>\`}
+                            ` : `<h1 class="pay-no">${payNo}</h1>`}
                         </div>
                         <div class="details">
-                            <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">\${order.product_name}</span></div>
-                            <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp \${Number(order.total_price).toLocaleString('id-ID')}</span></div>
+                            <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${order.product_name}</span></div>
+                            <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp ${Number(order.total_price).toLocaleString('id-ID')}</span></div>
                         </div>
                     </div>
                     <div class="footer">
@@ -852,10 +852,10 @@ exports.getPaymentPage = async (req, res) => {
                 </div>
                 <script>
                     // Timer Logic
-                    const createdAt = new Date('\${order.created_at}').getTime();
+                    const createdAt = new Date('${order.created_at}').getTime();
                     const now = new Date().getTime();
                     const diffSeconds = Math.floor((now - createdAt) / 1000);
-                    let timeLeft = (\${expiryMins} * 60) - diffSeconds;
+                    let timeLeft = (${expiryMins} * 60) - diffSeconds;
                     
                     const timerDisplay = document.getElementById('countdown');
 
@@ -866,14 +866,14 @@ exports.getPaymentPage = async (req, res) => {
                         }
                         const m = Math.floor(timeLeft / 60);
                         const s = timeLeft % 60;
-                        timerDisplay.innerHTML = \`\${m.toString().padStart(2, '0')}:\${s.toString().padStart(2, '0')}\`;
+                        timerDisplay.innerHTML = m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0');
                         timeLeft--;
                     }
                     setInterval(updateTimer, 1000);
                     updateTimer();
 
                     // Status Check Logic
-                    const rid = '\${referenceId}';
+                    const rid = '${referenceId}';
                     setInterval(async () => {
                         try {
                             const r = await fetch('/api/order/status/' + rid);
