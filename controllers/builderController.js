@@ -413,7 +413,8 @@ exports.renderUserPage = async (req, res) => {
                 header_type: user.header_type,
                 profile_text_color: user.profile_text_color,
                 name_font_size: user.name_font_size,
-                bio_font_size: user.bio_font_size
+                bio_font_size: user.bio_font_size,
+                plan: user.plan || 'free'
             },
             blocks: mappedBlocks,
             products,
