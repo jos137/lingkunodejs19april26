@@ -399,10 +399,19 @@ exports.getOrders = async (req, res) => {
             const expiryDate = new Date(createdAt.getTime() + (expiryMins * 60000));
             const timeLeft = Math.floor((expiryDate - new Date()) / 1000);
             
-            // Format Date & Time
-            const dateObj = new Date(o.created_at);
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            const formattedDate = `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}, ${dateObj.getHours().toString().padStart(2, '0')}:${dateObj.getMinutes().toString().padStart(2, '0')}`;
+            // Format Date & Time to WIB (Asia/Jakarta)
+            const dateOptions = { 
+                timeZone: 'Asia/Jakarta',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            };
+            // Map months to Indonesian manually to match existing style if needed, 
+            // but Intl with 'id-ID' is cleaner.
+            const formattedDate = new Date(o.created_at).toLocaleString('id-ID', dateOptions).replace(/\./g, ':');
 
             return { 
                 ...o, 
