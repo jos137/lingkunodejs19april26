@@ -132,6 +132,14 @@
         background: #f0fdf4; padding: 2px 8px; border-radius: 6px; border: 1px solid #10b98133;
     }
     
+    /* NEW: Detail Grid Responsive Fix */
+    .detail-grid { grid-template-columns: 1.2fr 1fr; }
+    @media (max-width: 768px) {
+        .detail-grid { grid-template-columns: 1fr !important; gap: 15px !important; }
+        .detail-total-price { font-size: 16px !important; }
+        .detail-total-price span { font-size: 11px !important; }
+    }
+
     /* Remove timer from detail panel on mobile */
     .detail-timer-wrap { display: none !important; }
 }
@@ -267,90 +275,87 @@ function renderOrderDetail(o, idx) {
     const btnLabel = isCompleted ? 'Kirim Akses' : 'Follow Up';
     
     return `
-        <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:24px;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:12px; border-bottom:1px solid #f1f5f9;">
             <div>
-                <div style="font-size:11px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">Invoice Reference</div>
-                <div style="font-size:16px; font-weight:900; color:#111827;">#${o.reference_id}</div>
+                <div style="font-size:9px; color:#94a3b8; font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:2px;">Invoice Reference</div>
+                <div style="font-size:14px; font-weight:900; color:#111827;">#${o.reference_id}</div>
             </div>
-            <div style="text-align:right;">
-                <div class="detail-status-badge" style="background:${statusColor}15; color:${statusColor}; padding:6px 16px; border-radius:100px; font-size:11px; font-weight:900; letter-spacing:0.5px; border:1px solid ${statusColor}33; display:inline-block; margin-bottom:6px;">
-                    ${(o.status || 'PENDING').toUpperCase()}
-                </div>
+            <div style="display:flex; align-items:center; gap:12px;">
                 ${o.status === 'pending' ? `
-                    <div class="detail-timer-wrap" style="font-size:10px; color:#ef4444; font-weight:700; display:flex; align-items:center; justify-content:end; gap:4px;">
+                    <div style="font-size:11px; color:#ef4444; font-weight:700; display:flex; align-items:center; gap:4px;">
                         <i class="fas fa-history"></i>
                         <span class="countdown-timer" data-timeleft="${o.time_left}" data-idx="${idx}">--:--</span>
                     </div>
                 ` : ''}
+                <div class="detail-status-badge" style="background:${statusColor}15; color:${statusColor}; padding:4px 12px; border-radius:100px; font-size:10px; font-weight:900; letter-spacing:0.5px; border:1px solid ${statusColor}33;">
+                    ${(o.status || 'PENDING').toUpperCase()}
+                </div>
             </div>
         </div>
 
-        <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:20px;">
+        <div class="detail-grid" style="display:grid; gap:12px;">
             <!-- Transaction Detail -->
-            <div style="background:#f8fafc; border:1px solid #f1f5f9; border-radius:20px; padding:24px;">
-                <div style="font-size:10px; color:#94a3b8; font-weight:800; letter-spacing:1px; margin-bottom:16px; text-transform:uppercase;">Detail Transaksi</div>
-                <div style="margin-bottom:12px;">
-                    <div style="font-size:11px; color:#64748b; margin-bottom:4px;">Produk</div>
-                    <div style="font-size:13px; font-weight:800; color:#1e293b; line-height:1.4;">${o.product_name}</div>
+            <div style="background:#f8fafc; border:1px solid #f1f5f9; border-radius:14px; padding:15px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                    <div style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase;">Detail Transaksi</div>
+                    <div style="font-size:11px; font-weight:800; color:#3b82f6; text-transform:uppercase;">${o.payment_channel || 'N/A'}</div>
                 </div>
-                <div style="margin-bottom:20px; display:flex; gap:24px;">
-                    <div>
-                        <div style="font-size:11px; color:#64748b; margin-bottom:4px;">Metode</div>
-                        <div style="font-size:12px; font-weight:800; color:#3b82f6; text-transform:uppercase;">${o.payment_channel || 'N/A'}</div>
-                    </div>
-                </div>
-                <div style="padding-top:16px; border-top:1px dashed #e2e8f0;">
-                    <div style="font-size:11px; color:#64748b; margin-bottom:4px;">Total Bayar</div>
-                    <div style="font-size:28px; font-weight:600; color:#059669; letter-spacing:-1px;">
-                        <span style="font-size:16px; font-weight:700; margin-right:2px;">Rp</span>${parseFloat(o.total_price || 0).toLocaleString('id-ID')}
+                <div style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:12px; line-height:1.4;">${o.product_name}</div>
+                
+                <div class="detail-total-wrap" style="padding-top:10px; border-top:1px dashed #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:11px; color:#64748b;">Total Bayar</div>
+                    <div class="detail-total-price" style="font-size:20px; font-weight:800; color:#059669; letter-spacing:-0.5px;">
+                        <span style="font-size:13px; font-weight:700; margin-right:2px;">Rp</span>${parseFloat(o.total_price || 0).toLocaleString('id-ID')}
                     </div>
                 </div>
             </div>
 
-            <!-- Buyer Info -->
-            <div style="background:#fff; border:1px solid #f1f5f9; border-radius:20px; padding:24px; box-shadow:0 10px 30px -10px rgba(0,0,0,0.04);">
-                <div style="font-size:10px; color:#94a3b8; font-weight:800; letter-spacing:1px; margin-bottom:16px; text-transform:uppercase;">Informasi Pembeli</div>
-                <div style="font-size:16px; font-weight:850; color:#111827; margin-bottom:6px;">${o.customer_name || 'N/A'}</div>
-                <div style="font-size:12px; color:#64748b; word-break:break-all; margin-bottom:8px;">${o.customer_email || ''}</div>
-                <div style="font-size:12px; font-weight:700; color:#111827; margin-bottom:24px;">
-                    <i class="fab fa-whatsapp" style="color:#10b981; margin-right:4px;"></i> ${o.customer_whatsapp || '-'}
-                </div>
+            <!-- Buyer Info (Compact Row) -->
+            <div style="background:#fff; border:1px solid #f1f5f9; border-radius:14px; padding:15px; box-shadow:0 4px 15px rgba(0,0,0,0.02);">
+                <div style="font-size:10px; color:#94a3b8; font-weight:800; text-transform:uppercase; margin-bottom:12px;">Informasi Pembeli</div>
                 
-                <div onclick="sendOrderEmail(${o.id}, '${o.status}')" style="width:100%; padding:14px; background:${btnColor}; color:#fff; border-radius:14px; text-align:center; font-size:13px; font-weight:800; cursor:pointer; box-shadow:0 8px 20px -5px ${btnColor}44; transition:0.2s;">
-                    <i class="fas fa-paper-plane" style="margin-right:6px;"></i> ${btnLabel}
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:15px; flex-wrap:wrap;">
+                    <div style="flex:1; min-width:200px;">
+                        <div style="font-size:14px; font-weight:850; color:#111827; margin-bottom:2px;">${o.customer_name || 'N/A'}</div>
+                        <div style="display:flex; gap:12px; font-size:11px; color:#64748b;">
+                            <span><i class="far fa-envelope" style="margin-right:3px;"></i> ${o.customer_email || ''}</span>
+                            <span><i class="fab fa-whatsapp" style="color:#10b981; margin-right:3px;"></i> ${o.customer_whatsapp || '-'}</span>
+                        </div>
+                    </div>
+                    
+                    <div onclick="sendOrderEmail(${o.id}, '${o.status}')" style="padding:10px 20px; background:${btnColor}; color:#fff; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px ${btnColor}33; transition:0.2s; white-space:nowrap;">
+                        <i class="fas fa-paper-plane" style="margin-right:6px;"></i> ${btnLabel}
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Email Status Timeline -->
-        <div style="margin-top:32px; padding-top:24px; border-top:1px solid #f1f5f9;">
-            <div style="font-size:10px; color:#94a3b8; font-weight:800; letter-spacing:1px; margin-bottom:24px; text-transform:uppercase; text-align:center;">Status Pengiriman Email</div>
-            <div style="display:flex; justify-content:space-between; position:relative; max-width:400px; margin:0 auto;">
-                <div style="position:absolute; top:18px; left:0; right:0; height:2px; background:#f1f5f9; z-index:1;"></div>
-                <div style="position:absolute; top:18px; left:0; width:${o.is_opened ? '100%' : (o.is_sent ? '50%' : '0%')}; height:2px; background:#10b981; z-index:1; transition:0.5s;"></div>
+        <!-- Email Status Timeline (Ultra Compact) -->
+        <div style="margin-top:15px; padding-top:12px; border-top:1px solid #f1f5f9;">
+            <div style="display:flex; justify-content:space-between; position:relative; max-width:350px; margin:0 auto; padding-bottom:5px;">
+                <div style="position:absolute; top:12px; left:0; right:0; height:2px; background:#f1f5f9; z-index:1;"></div>
+                <div style="position:absolute; top:12px; left:0; width:${o.is_opened ? '100%' : (o.is_sent ? '50%' : '0%')}; height:2px; background:#10b981; z-index:1; transition:0.5s;"></div>
 
                 <div style="position:relative; z-index:2; text-align:center;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:${o.status === 'pending' ? '#f59e0b' : '#10b981'}; color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff, 0 8px 15px ${o.status === 'pending' ? 'rgba(245,158,11,0.2)' : 'rgba(16,185,129,0.2)'};">
-                        <i class="fas fa-${o.status === 'pending' ? 'clock' : 'check'}" style="font-size:14px;"></i>
+                    <div style="width:24px; height:24px; border-radius:50%; background:${o.status === 'pending' ? '#f59e0b' : '#10b981'}; color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 4px; box-shadow:0 0 0 3px #fff;">
+                        <i class="fas fa-${o.status === 'pending' ? 'clock' : 'check'}" style="font-size:10px;"></i>
                     </div>
-                    <div style="font-size:11px; font-weight:800; color:#111827;">Sistem</div>
-                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.formatted_date}</div>
+                    <div style="font-size:9px; font-weight:800; color:#111827;">Sistem</div>
                 </div>
 
                 <div style="position:relative; z-index:2; text-align:center;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:${o.is_sent ? '#10b981' : '#fff'}; color:${o.is_sent ? '#fff' : '#cbd5e1'}; border:${o.is_sent ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff;">
-                        <i class="fas fa-paper-plane" style="font-size:14px;"></i>
+                    <div style="width:24px; height:24px; border-radius:50%; background:${o.is_sent ? '#10b981' : '#fff'}; color:${o.is_sent ? '#fff' : '#cbd5e1'}; border:${o.is_sent ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 4px; box-shadow:0 0 0 3px #fff;">
+                        <i class="fas fa-paper-plane" style="font-size:10px;"></i>
                     </div>
-                    <div style="font-size:11px; font-weight:800; color:${o.is_sent ? '#111827' : '#cbd5e1'};">Terkirim</div>
-                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.delivered_at ? new Date(o.delivered_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : (o.status === 'pending' ? 'Menunggu' : '-')}</div>
+                    <div style="font-size:9px; font-weight:800; color:${o.is_sent ? '#111827' : '#cbd5e1'};">Terkirim</div>
                 </div>
 
                 <div style="position:relative; z-index:2; text-align:center;">
-                    <div style="width:36px; height:36px; border-radius:50%; background:${o.is_opened ? '#10b981' : '#fff'}; color:${o.is_opened ? '#fff' : '#cbd5e1'}; border:${o.is_opened ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; box-shadow:0 0 0 4px #fff;">
-                        <i class="fas fa-envelope-open" style="font-size:14px;"></i>
+                    <div style="width:24px; height:24px; border-radius:50%; background:${o.is_opened ? '#10b981' : '#fff'}; color:${o.is_opened ? '#fff' : '#cbd5e1'}; border:${o.is_opened ? 'none' : '2px solid #f1f5f9'}; display:flex; align-items:center; justify-content:center; margin:0 auto 4px; box-shadow:0 0 0 3px #fff;">
+                        <i class="fas fa-envelope-open" style="font-size:10px;"></i>
                     </div>
-                    <div style="font-size:11px; font-weight:800; color:${o.is_opened ? '#111827' : '#cbd5e1'};">Dibuka</div>
-                    <div style="font-size:9px; color:#94a3b8; margin-top:2px;">${o.last_opened_at ? new Date(o.last_opened_at).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '-'}</div>
+                    <div style="font-size:9px; font-weight:800; color:${o.is_opened ? '#111827' : '#cbd5e1'};">Dibuka</div>
                 </div>
             </div>
         </div>
