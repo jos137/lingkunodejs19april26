@@ -120,7 +120,7 @@ exports.updateProduct = async (req, res) => {
             name, description, price, stock, download_url, normal_price,
             promo_enabled, promo_duration, min_price, 
             sale_start_date, sale_start_time, sale_end_date, sale_end_time,
-            show_forever
+            show_forever, thumbnail_style, subtitle, button_text, button_color, theme_style
         } = req.body;
         
         let thumbUpdate = '';
@@ -128,7 +128,9 @@ exports.updateProduct = async (req, res) => {
             name, description, price || 0, stock || 0, download_url || '', 
             normal_price || null, promo_enabled === 'on' ? 1 : 0, promo_duration || 0, 
             min_price || null, sale_start_date || null, sale_start_time || null, 
-            sale_end_date || null, sale_end_time || null, show_forever === 'on' ? 1 : 0
+            sale_end_date || null, sale_end_time || null, show_forever === 'on' ? 1 : 0,
+            thumbnail_style || 'callout', subtitle || '', button_text || 'Ambil Sekarang',
+            button_color || '#10b981', theme_style || 'light'
         ];
         
         if (req.file) {
@@ -139,6 +141,7 @@ exports.updateProduct = async (req, res) => {
             normal_price = ?, promo_enabled = ?, promo_duration = ?, 
             min_price = ?, sale_start_date = ?, sale_start_time = ?, 
             sale_end_date = ?, sale_end_time = ?, show_forever = ?,
+            thumbnail_style = ?, subtitle = ?, button_text = ?, button_color = ?, theme_style = ?,
             is_affiliate = ?, commission_percent = ?, product_type = ?
             ${thumbUpdate} WHERE id = ?`;
             
@@ -188,7 +191,7 @@ exports.createProductPost = async (req, res) => {
             name, description, price, stock, type, download_url, normal_price,
             promo_enabled, promo_duration, min_price, 
             sale_start_date, sale_start_time, sale_end_date, sale_end_time,
-            show_forever
+            show_forever, thumbnail_style, subtitle, button_text, button_color, theme_style
         } = req.body;
 
         let thumbnail = '';
@@ -198,8 +201,9 @@ exports.createProductPost = async (req, res) => {
             user_id, name, description, price, stock, product_type, download_url, 
             normal_price, promo_enabled, promo_duration, min_price, 
             sale_start_date, sale_start_time, sale_end_date, sale_end_time, 
-            show_forever, is_affiliate, commission_percent, thumbnail
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+            show_forever, is_affiliate, commission_percent, thumbnail,
+            thumbnail_style, subtitle, button_text, button_color, theme_style
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
         const params = [
             userId, name, description || '', price || 0, stock || 999, type || 'digital', 
@@ -207,7 +211,9 @@ exports.createProductPost = async (req, res) => {
             promo_duration || 0, min_price || null, sale_start_date || null, 
             sale_start_time || null, sale_end_date || null, sale_end_time || null, 
             show_forever === 'on' ? 1 : 0, req.body.is_affiliate === 'on' ? 1 : 0, 
-            req.body.commission_percent || 20, thumbnail
+            req.body.commission_percent || 20, thumbnail,
+            thumbnail_style || 'callout', subtitle || '', button_text || 'Ambil Sekarang',
+            button_color || '#10b981', theme_style || 'light'
         ];
 
         try {
@@ -227,7 +233,12 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_time TIME',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_affiliate TINYINT(1) DEFAULT 1',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS thumbnail_style VARCHAR(50) DEFAULT "callout"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS subtitle VARCHAR(255) DEFAULT ""',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS button_text VARCHAR(100) DEFAULT "Ambil Sekarang"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS button_color VARCHAR(20) DEFAULT "#10b981"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS theme_style VARCHAR(20) DEFAULT "light"'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}

@@ -37,8 +37,9 @@ exports.login = async (req, res) => {
 
         res.redirect('/admin');
     } catch (err) {
-        console.error(err);
-        res.render('login', { error: 'Terjadi kesalahan sistem', layout: false });
+        console.error('❌ LOGIN ERROR:', err.message);
+        console.error('Full Stack:', err.stack);
+        res.render('login', { error: `Terjadi kesalahan sistem: ${err.message}`, layout: false });
     }
 };
 

@@ -1,392 +1,685 @@
 <style>
-/* ===== GLOBAL RESPONSIVE ===== */
-.edit-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
-.edit-back { padding: 8px 16px; border: 1.5px solid #3b82f6; border-radius: 8px; color: #3b82f6; font-size: 13px; font-weight: 700; text-decoration: none; display: flex; align-items: center; gap: 6px; background: #fff; transition: 0.2s; }
-.edit-back:hover { background: #eff6ff; transform: translateX(-3px); }
-.edit-title { font-size: clamp(18px, 4vw, 22px); font-weight: 900; color: #111827; }
+    :root {
+        --stan-primary: #5850ec;
+        --stan-bg: #f9fafb;
+        --stan-card: #ffffff;
+        --stan-text: #111827;
+        --stan-text-light: #6b7280;
+        --stan-border: #e5e7eb;
+    }
 
-.edit-grid { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
+    body { background-color: var(--stan-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
 
-/* Sections */
-.edit-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: clamp(16px, 3vw, 24px); margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-.edit-section-title { font-size: 15px; font-weight: 800; color: #111827; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 10px; }
+    .stan-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
 
-/* Form elements */
-.ef-label { font-size: 13px; font-weight: 700; color: #374151; margin-bottom: 8px; display: block; }
-.ef-input { width: 100%; padding: 12px 16px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-family: inherit; font-size: 14px; color: #111827; outline: none; background: #fff; transition: 0.15s; }
-.ef-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,0.1); }
-.ef-group { margin-bottom: 18px; }
-.ef-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.ef-checkbox { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: #374151; cursor: pointer; user-select: none; }
-.ef-checkbox input { width: 18px; height: 18px; accent-color: #3b82f6; cursor: pointer; }
+    /* Header & Tabs */
+    .stan-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; }
+    .stan-tabs { display: flex; gap: 10px; background: #fff; padding: 6px; border-radius: 100px; border: 1px solid var(--stan-border); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+    .stan-tab { 
+        padding: 10px 24px; border-radius: 100px; font-size: 14px; font-weight: 700; color: var(--stan-text-light); 
+        cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .stan-tab.active { background: var(--stan-primary); color: #fff; }
+    .stan-tab i { font-size: 16px; }
 
-/* Enhanced Editor */
-.editor-container { border: 1.5px solid #e5e7eb; border-radius: 12px; overflow: hidden; background: #fff; }
-.rte-toolbar { display: flex; align-items: center; gap: 4px; padding: 8px; border-bottom: 1.5px solid #e5e7eb; background: #f9fafb; flex-wrap: wrap; }
-.rte-toolbar select { border: 1.5px solid #e5e7eb; border-radius: 8px; padding: 5px 8px; font-size: 12px; font-family: inherit; background: #fff; color: #374151; cursor: pointer; outline: none; transition: 0.15s; }
-.rte-toolbar select:hover { border-color: #cbd5e1; }
-.rte-btn { width: 34px; height: 34px; border: none; background: none; border-radius: 8px; cursor: pointer; font-size: 14px; color: #475569; display: flex; align-items: center; justify-content: center; transition: 0.15s; }
-.rte-btn:hover { background: #f1f5f9; color: #1e293b; }
-.rte-btn.active { background: #eff6ff; color: #2563eb; font-weight: 900; }
-.rte-sep { width: 1px; height: 22px; background: #e5e7eb; margin: 0 4px; }
+    /* Layout Grid */
+    .stan-grid { display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: start; }
 
-.rte-body-wrapper { position: relative; }
-.rte-body { min-height: 240px; max-height: 500px; padding: 20px; font-size: 14px; line-height: 1.7; color: #334155; outline: none; overflow-y: auto; background: #fff; }
-.rte-code { display: none; width: 100%; min-height: 240px; border: none; padding: 20px; font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace; font-size: 13px; color: #0f172a; background: #f8fafc; outline: none; resize: vertical; }
+    /* Editor Side */
+    .stan-editor-side { min-height: 600px; }
+    .stan-card { background: var(--stan-card); border-radius: 20px; padding: 30px; border: 1px solid var(--stan-border); box-shadow: 0 10px 30px rgba(0,0,0,0.02); margin-bottom: 24px; }
+    .stan-step-num { width: 28px; height: 28px; background: #eff6ff; color: var(--stan-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; margin-right: 12px; }
+    .stan-section-title { font-size: 18px; font-weight: 800; display: flex; align-items: center; margin-bottom: 24px; }
 
-/* Price Tabs */
-.price-tabs { display: flex; gap: 4px; margin-bottom: 18px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
-.price-tab { flex: 1; padding: 10px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; border-radius: 8px; text-align: center; transition: 0.15s; }
-.price-tab:hover { color: #374151; }
-.price-tab.active { color: #2563eb; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.price-panel { display: none; padding: 4px; }
-.price-panel.active { display: block; }
+    /* Forms */
+    .stan-label { display: block; font-size: 13px; font-weight: 700; color: var(--stan-text); margin-bottom: 8px; }
+    .stan-input { 
+        width: 100%; padding: 14px 18px; border: 1.5px solid var(--stan-border); border-radius: 12px; 
+        font-size: 15px; transition: 0.2s; box-sizing: border-box; outline: none;
+    }
+    .stan-input:focus { border-color: var(--stan-primary); box-shadow: 0 0 0 4px rgba(88, 80, 236, 0.1); }
+    .stan-group { margin-bottom: 24px; }
 
-/* Promo Box */
-.promo-box { background: #f8fafc; border: 1.5px solid #eaebf0; border-radius: 14px; padding: 20px; margin-top: 18px; border-left: 4px solid #f59e0b; }
-.promo-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
-.promo-header label { font-size: 13px; font-weight: 900; color: #92400e; letter-spacing: 0.5px; cursor: pointer; }
-.promo-note { font-size: 11px; color: #64748b; margin-top: 10px; line-height: 1.5; font-style: italic; }
+    /* Preview Side (Sticky) */
+    .stan-preview-side { position: sticky; top: 100px; }
+    .phone-frame { 
+        width: 320px; height: 600px; background: #000; border-radius: 40px; padding: 12px; 
+        margin: 0 auto; box-shadow: 0 30px 60px rgba(0,0,0,0.2); position: relative; border: 6px solid #1f2937;
+    }
+    .phone-screen { 
+        width: 100%; height: 100%; background: #fff; border-radius: 30px; overflow-y: auto; 
+        display: flex; flex-direction: column; position: relative;
+    }
+    /* Preview Content Styles */
+    .p-header { height: 160px; background: #f3f4f6; position: relative; overflow: hidden; }
+    .p-header img { width: 100%; height: 100%; object-fit: cover; }
+    .p-body { padding: 20px; flex: 1; }
+    .p-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; color: #111827; }
+    .p-price { font-size: 16px; font-weight: 800; color: #10b981; margin-bottom: 12px; }
+    .p-desc { font-size: 12px; color: #6b7280; line-height: 1.5; margin-bottom: 20px; }
+    .p-button { 
+        width: 100%; padding: 12px; background: #10b981; color: #fff; border-radius: 12px; 
+        text-align: center; font-weight: 800; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+    /* Card Style Preview (for Thumbnail tab) */
+    .p-card-preview {
+        margin: 20px; padding: 15px; border-radius: 16px; border: 1px solid #f1f5f9;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;
+        background: #fff;
+    }
+    .p-card-img { width: 50px; height: 50px; border-radius: 10px; background: #f3f4f6; object-fit: cover; }
+    .p-card-info { flex: 1; }
+    .p-card-title { font-size: 13px; font-weight: 800; margin-bottom: 2px; }
+    .p-card-sub { font-size: 11px; color: #94a3b8; }
 
-/* Media Upload */
-.media-preview { width: 100%; aspect-ratio: 4/3; border-radius: 14px; background: #f8fafc; display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 14px; border: 2px dashed #e2e8f0; position: relative; transition: 0.2s; }
-.media-preview:hover { border-color: #3b82f6; background: #f1f5f9; }
-.media-preview img { width: 100%; height: 100%; object-fit: cover; }
-.media-preview-placeholder { color: #cbd5e1; font-size: 48px; }
-.media-upload-btn { display: flex; width: 100%; padding: 12px; align-items: center; justify-content: center; gap: 8px; border: 1.5px solid #3b82f6; border-radius: 12px; color: #3b82f6; font-size: 13px; font-weight: 800; cursor: pointer; background: #fff; transition: 0.2s; }
-.media-upload-btn:hover { background: #3b82f6; color: #fff; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.2); }
+    /* Tab Controls */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-/* Schedule */
-.sched-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    /* Footer Buttons */
+    .stan-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--stan-border); }
+    .btn-secondary { padding: 12px 24px; border-radius: 12px; border: 1px solid var(--stan-border); background: #fff; color: var(--stan-text); font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .btn-primary { padding: 12px 30px; border-radius: 12px; background: var(--stan-primary); color: #fff; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(88, 80, 236, 0.2); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88, 80, 236, 0.3); }
 
-/* Footer Save */
-.edit-footer { margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; display: flex; justify-content: flex-end; }
-.save-btn { padding: 14px 40px; border: none; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; font-size: 15px; font-weight: 900; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
-.save-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.3); }
+    /* Pricing Tabs in Checkout */
+    .pricing-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
+    .pt-item { flex: 1; text-align: center; padding: 8px; font-size: 12px; font-weight: 800; color: #64748b; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+    .pt-item.active { background: #fff; color: var(--stan-primary); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
 
-/* ===== MOBILE ADAPTATION ===== */
-@media (max-width: 1100px) {
-    .edit-grid { grid-template-columns: 1fr; }
-    .edit-grid > div:nth-child(2) { order: -1; } /* Thumb in mobile appears first */
-}
-@media (max-width: 640px) {
-    .ef-row, .sched-row { grid-template-columns: 1fr; }
-    .edit-grid { gap: 16px; }
-    .edit-section { padding: 16px; border-radius: 12px; }
-    .save-btn { width: 100%; justify-content: center; }
-}
+    @media (max-width: 1000px) {
+        .stan-grid { grid-template-columns: 1fr; }
+        .stan-preview-side { display: none; }
+    }
 </style>
 
 <%
 const p = product || {};
-let raw = p.thumbnail || p.cover_image || p.image || p.image_url || p.thumb || '';
-let thumb = '';
-if (raw) {
-    if (Array.isArray(raw)) {
-        if (raw.length > 0) thumb = raw[0];
-    } else if (typeof raw === 'string') {
-        if (raw.startsWith('[')) {
-            try {
-                const arr = JSON.parse(raw);
-                if (Array.isArray(arr) && arr.length > 0) thumb = arr[0];
-            } catch (e) { thumb = raw; }
-        } else { thumb = raw; }
-    } else if (typeof raw === 'object' && raw !== null) {
-        thumb = Object.values(raw)[0] || '';
-    }
+let thumbUrl = p.thumbnail || p.cover_image || p.image_url || '';
+if (thumbUrl && thumbUrl.startsWith('[')) {
+    try { thumbUrl = JSON.parse(thumbUrl)[0]; } catch(e) {}
 }
-const thumbUrl = thumb && !thumb.startsWith('http') && !thumb.startsWith('/') ? '/uploads/products/' + thumb : thumb;
-
-// Safe description handling: unescape if it looks escaped
-let displayDesc = (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('/') ? '/uploads/products/' + thumbUrl : thumbUrl;
 %>
 
-<div class="edit-header">
-    <a href="/admin/products" class="edit-back"><i class="fas fa-arrow-left"></i> Kembali</a>
-    <div class="edit-title"><%= p.id ? 'Edit Produk' : 'Tambah Produk Baru' %></div>
-</div>
-
-<form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="editorForm">
-<div class="edit-grid">
-    <!-- LEFT COLUMN -->
-    <div>
-        <!-- Judul & Deskripsi -->
-        <div class="edit-section">
-            <div class="edit-section-title"><i class="fas fa-file-alt" style="color:#2563eb"></i> Judul & Deskripsi</div>
-            <div class="ef-group">
-                <label class="ef-label">Nama Produk</label>
-                <input class="ef-input" name="name" value="<%= p.name || '' %>" placeholder="Contoh: E-book Strategi Marketing" required>
-            </div>
-            <div class="ef-group">
-                <label class="ef-label">Deskripsi Produk</label>
-                <div class="editor-container">
-                    <div class="rte-toolbar">
-                        <select onchange="format('formatBlock', this.value);this.value=''" title="Style">
-                            <option value="p">Normal</option>
-                            <option value="h1">Judul 1</option>
-                            <option value="h2">Judul 2</option>
-                            <option value="h3">Judul 3</option>
-                            <option value="blockquote">Quote</option>
-                        </select>
-                        <select onchange="format('fontSize', this.value);this.value=''" title="Ukuran Font">
-                            <option value="">Font Size</option>
-                            <option value="1">Sangat Kecil</option>
-                            <option value="2">Kecil</option>
-                            <option value="3">Normal</option>
-                            <option value="4">Besar</option>
-                            <option value="5">Sangat Besar</option>
-                            <option value="6">Raksasa</option>
-                        </select>
-                        <div class="rte-sep"></div>
-                        <button type="button" class="rte-btn" onclick="format('bold')" title="Tebal"><i class="fas fa-bold"></i></button>
-                        <button type="button" class="rte-btn" onclick="format('italic')" title="Miring"><i class="fas fa-italic"></i></button>
-                        <button type="button" class="rte-btn" onclick="format('underline')" title="Garis Bawah"><i class="fas fa-underline"></i></button>
-                        <button type="button" class="rte-btn" onclick="toggleLink()" title="Link"><i class="fas fa-link"></i></button>
-                        <div class="rte-sep"></div>
-                        <button type="button" class="rte-btn" onclick="format('insertOrderedList')" title="List Angka"><i class="fas fa-list-ol"></i></button>
-                        <button type="button" class="rte-btn" onclick="format('insertUnorderedList')" title="List Point"><i class="fas fa-list-ul"></i></button>
-                        <div class="rte-sep"></div>
-                        <button type="button" class="rte-btn" id="viewModeBtn" onclick="toggleMode()" title="Ganti Mode (Visual/HTML)"><i class="fas fa-code"></i></button>
-                        <button type="button" class="rte-btn" onclick="format('removeFormat')" title="Hapus Format"><i class="fas fa-remove-format"></i></button>
-                    </div>
-                    <div class="rte-body-wrapper">
-                        <div class="rte-body" contenteditable="true" id="descEditor"><%- displayDesc %></div>
-                        <textarea class="rte-code" id="descCode" placeholder="Masukkan kode HTML..."></textarea>
-                    </div>
-                </div>
-                <input type="hidden" name="description" id="descInput">
-            </div>
+<div class="stan-container">
+    <!-- Top Nav -->
+    <div class="stan-header">
+        <a href="/admin/products" style="text-decoration: none; color: var(--stan-text-light); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-arrow-left"></i> My Products
+        </a>
+        <div class="stan-tabs">
+            <div class="stan-tab active" onclick="switchTab('thumbnail', this)"><i class="fas fa-th-large"></i> Thumbnail</div>
+            <div class="stan-tab" onclick="switchTab('checkout', this)"><i class="fas fa-shopping-cart"></i> Checkout Page</div>
+            <div class="stan-tab" onclick="switchTab('options', this)"><i class="fas fa-palette"></i> Themes</div>
         </div>
-
-        <!-- Pengaturan Harga -->
-        <div class="edit-section">
-            <div class="edit-section-title"><i class="fas fa-tags" style="color:#10b981"></i> Pengaturan Harga</div>
-            <div class="price-tabs">
-                <div class="price-tab active" onclick="showPriceTab('fixed', this)">Harga Tetap</div>
-                <div class="price-tab" onclick="showPriceTab('flexible', this)">Bayar Seikhlasnya</div>
-                <div class="price-tab" onclick="showPriceTab('free', this)">Gratis</div>
-            </div>
-
-            <div class="price-panel active" id="p-fixed">
-                <div class="ef-row">
-                    <div class="ef-group">
-                        <label class="ef-label">Harga Promo (Rp)</label>
-                        <input class="ef-input" type="number" name="price" value="<%= p.price || '' %>" placeholder="99000">
-                    </div>
-                    <div class="ef-group">
-                        <label class="ef-label">Harga Normal (Rp)</label>
-                        <input class="ef-input" type="number" name="normal_price" value="<%= p.normal_price || '' %>" placeholder="199000">
-                    </div>
-                </div>
-            </div>
-            <div class="price-panel" id="p-flexible">
-                <div class="ef-group">
-                    <label class="ef-label">Harga Minimum Pembayaran (Rp)</label>
-                    <input class="ef-input" type="number" name="min_price" value="<%= p.min_price || '' %>" placeholder="10000">
-                </div>
-            </div>
-            <div class="price-panel" id="p-free">
-                <div style="padding:20px; text-align:center; color:#64748b; font-size:13px; background:#f9fafb; border-radius:12px;">
-                    <i class="fas fa-gift" style="font-size:32px; display:block; margin-bottom:12px; color:#10b981;"></i>
-                    Produk ini akan dapat didownload secara <strong>GRATIS</strong> oleh pembeli.
-                </div>
-            </div>
-
-            <!-- Promo Timer -->
-            <div class="promo-box">
-                <div class="promo-header">
-                    <input type="checkbox" id="promoToggle" name="promo_enabled" <%= p.promo_enabled ? 'checked' : '' %>>
-                    <label for="promoToggle">AKTIFKAN FITUR PROMO & TIMER</label>
-                </div>
-                <div id="promoFields" style="<%= p.promo_enabled ? '' : 'opacity:0.4;pointer-events:none;' %>">
-                    <label class="ef-label" style="color:#d97706">Sisa Waktu Promo (Menit)</label>
-                    <input class="ef-input" type="number" name="promo_duration" value="<%= p.promo_duration || 10 %>" style="border-color:#fbbf24; font-weight:800; font-size:16px;">
-                    <div class="promo-note">*Harga normal akan dicoret & hitung mundur akan berjalan otomatis di halaman produk.</div>
-                </div>
-            </div>
-        </div>
+        <div style="width: 100px;"></div> <!-- Spacer -->
     </div>
 
-    <!-- RIGHT COLUMN -->
-    <div>
-        <!-- Media Produk -->
-        <div class="edit-section">
-            <div class="edit-section-title"><i class="fas fa-image" style="color:#ec4899"></i> Media Produk</div>
-            <div class="media-preview" id="mediaPreview">
-                <% if (thumbUrl) { %>
-                    <img src="<%= thumbUrl %>" id="mediaImg" onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
-                    <i class="fas fa-cloud-upload-alt media-preview-placeholder" style="display:none;"></i>
-                <% } else { %>
-                    <i class="fas fa-cloud-upload-alt media-preview-placeholder"></i>
-                <% } %>
-            </div>
-            <label class="media-upload-btn" onclick="document.getElementById('mediaInput').click()">
-                <i class="fas fa-plus-circle"></i> Pilih Gambar Baru
-            </label>
-            <input type="file" name="thumbnail" id="mediaInput" accept="image/*" style="display:none" onchange="handlePreview(this)">
-            <p style="font-size:11px; color:#94a3b8; text-align:center; margin-top:10px;">Gunakan rasio 1:1 atau 4:3 untuk hasil terbaik.</p>
-        </div>
+    <form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="mainForm">
+        <div class="stan-grid">
+            <!-- LEFT: EDITOR -->
+            <div class="stan-editor-side">
+                
+                <!-- TAB 1: THUMBNAIL -->
+                <div id="tab-thumbnail" class="tab-content active">
+                    <div class="stan-card">
+                        <div class="stan-section-title"><div class="stan-step-num">1</div> Pick a style</div>
+                        <div style="display:flex; gap:12px; margin-bottom:30px;">
+                            <div class="style-card" id="style-button" onclick="setStyle('button')">
+                                <div class="style-icon"><i class="fas fa-link"></i></div>
+                                <div class="style-label">Button</div>
+                            </div>
+                            <div class="style-card active" id="style-callout" onclick="setStyle('callout')">
+                                <div class="style-icon"><i class="fas fa-bullhorn"></i></div>
+                                <div class="style-label">Callout</div>
+                            </div>
+                            <div class="style-card" id="style-preview" onclick="setStyle('preview')">
+                                <div class="style-icon"><i class="fas fa-eye"></i></div>
+                                <div class="style-label">Preview</div>
+                            </div>
+                        </div>
+                        <!-- Hidden input for style -->
+                        <input type="hidden" name="thumbnail_style" id="thumbnail_style" value="callout">
 
-        <!-- Stok & Akses -->
-        <div class="edit-section">
-            <div class="edit-section-title"><i class="fas fa-key" style="color:#f59e0b"></i> Akses & Stok</div>
-            <div class="ef-group">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <label class="ef-label" style="margin-bottom:0;">Stok / Kuota Pembelian</label>
-                    <label class="ef-checkbox" style="font-size:11px; color:#3b82f6;">
-                        <input type="checkbox" id="unlimitedStock" <%= p.stock == -1 ? 'checked' : '' %>> Stok Tidak Terbatas
-                    </label>
-                </div>
-                <input class="ef-input" type="number" name="stock" id="stockInput" value="<%= p.stock || 0 %>" placeholder="Contoh: 100 (0 = Habis)" <%= p.stock == -1 ? 'readonly style=background:#f1f5f9;color:#94a3b8;' : '' %>>
-            </div>
-            <div class="ef-group">
-                <label class="ef-label">Link Akses Produk (Setelah Bayar)</label>
-                <input class="ef-input" name="download_url" value="<%= p.download_url || p.access_url || '' %>" placeholder="https://drive.google.com/...">
-            </div>
-            <label class="ef-checkbox">
-                <input type="checkbox" name="show_forever" <%= p.show_forever ? 'checked' : '' %>> Tampilkan di rak produk selamanya
-            </label>
-            <label class="ef-checkbox" style="margin-top:12px; padding: 16px; background: #f0fdf4; border-radius: 12px; border: 1.5px solid #dcfce7; display: block;">
-                <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-                    <input type="checkbox" name="is_affiliate" <%= p.is_affiliate !== 0 ? 'checked' : '' %> style="width:18px; height:18px;"> 
-                    <span style="color:#166534; font-weight:800; font-size:14px;">BUKA PROGRAM AFFILIATE</span>
-                </div>
-                <div style="margin-left: 28px;">
-                    <p style="font-weight:400; font-size:11px; color:#166534; margin-bottom:12px; opacity:0.8;">Ijinkan orang lain menjual produk ini dan berikan komisi sesuai persentase di bawah.</p>
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <span style="font-size:14px; font-weight:600; color:#374151;">Besar Komisi:</span>
-                        <div style="position:relative; display:flex; align-items:center;">
-                            <input type="number" name="commission_percent" class="ef-input" value="<%= parseFloat(p.commission_percent || 20) %>" step="1" min="0" max="100" 
-                                style="width: 80px; padding: 10px 12px; margin:0; font-weight: 500; font-size: 14px;">
-                            <span style="margin-left: 8px; font-weight:600; color:#374151; font-size: 14px;">%</span>
+                        <div class="stan-section-title"><div class="stan-step-num">2</div> Select Image</div>
+                        <div id="image-upload-box" style="border: 2px dashed var(--stan-border); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 20px; position: relative;">
+                            <img id="editThumbPreview" src="<%= finalThumb %>" style="max-height: 80px; border-radius: 12px; margin-bottom: 10px; display: <%= finalThumb ? 'inline-block' : 'none' %>">
+                            <i class="fas fa-image" style="font-size: 30px; color: #d1d5db; display: <%= finalThumb ? 'none' : 'block' %>; margin-bottom: 8px;"></i>
+                            <div style="font-size: 11px; color: #9ca3af; margin-bottom: 10px;">Resolution: 400x400 (1:1)</div>
+                            <label class="btn-secondary" style="display: inline-block; padding: 6px 15px; font-size: 12px;">
+                                Choose Image
+                                <input type="file" name="thumbnail" style="display:none" onchange="previewImage(this)">
+                            </label>
+                        </div>
+
+                        <div class="stan-section-title"><div class="stan-step-num">3</div> Add Text</div>
+                        <div class="stan-group">
+                            <label class="stan-label">Product Title</label>
+                            <input type="text" name="name" class="stan-input" value="<%= p.name || '' %>" oninput="updatePreview('title', this.value)" placeholder="e.g. Get My eBook Now!">
+                        </div>
+                        <div class="stan-group" id="subtitle-group">
+                            <label class="stan-label">Subtitle / Hook</label>
+                            <input type="text" name="subtitle" class="stan-input" value="<%= p.subtitle || '' %>" oninput="updatePreview('subtitle', this.value)" placeholder="e.g. We will deliver this file right to your inbox">
+                        </div>
+                        <div class="stan-group">
+                            <label class="stan-label">Button Text & Color</label>
+                            <div style="display: flex; flex-direction: column; gap: 12px;">
+                                <input type="text" name="button_text" class="stan-input" value="<%= p.button_text || 'Ambil Sekarang' %>" oninput="updatePreview('btn', this.value)" placeholder="e.g. Get My Guide">
+                                
+                                <div style="display: flex; align-items: center; gap: 15px; margin-top: 5px;">
+                                    <input type="hidden" name="button_color" id="btnColorInp" value="<%= p.button_color || '#10b981' %>">
+                                    <% 
+                                        const colors = [
+                                            { name: 'Green', hex: '#10b981' },
+                                            { name: 'Red', hex: '#ef4444' },
+                                            { name: 'Orange', hex: '#f97316' },
+                                            { name: 'Blue', hex: '#3b82f6' },
+                                            { name: 'Purple', hex: '#8b5cf6' }
+                                        ];
+                                    %>
+                                    <% colors.forEach(c => { %>
+                                        <div class="color-swatch <%= (p.button_color || '#10b981') === c.hex ? 'active' : '' %>" 
+                                             style="background: <%= c.hex %>;" 
+                                             onclick="setBtnColor('<%= c.hex %>', this)"
+                                             title="<%= c.name %>">
+                                        </div>
+                                    <% }) %>
+                                </div>
+                            </div>
+                        </div>
+
+                        <style>
+                            .color-swatch {
+                                width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+                                border: 3px solid transparent; transition: 0.2s;
+                                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                            }
+                            .color-swatch:hover { transform: scale(1.1); }
+                            .color-swatch.active { border-color: #fff; outline: 2px solid #1e293b; transform: scale(1.1); }
+                        </style>
+
+                        <script>
+                            function setBtnColor(hex, el) {
+                                document.getElementById('btnColorInp').value = hex;
+                                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+                                el.classList.add('active');
+                                updatePreview('color', hex);
+                            }
+                        </script>
+
+                        <!-- NEW: Set Price in Tab 1 -->
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">4</div> Set Price</div>
+                        <div class="pricing-toggle">
+                            <div class="pt-item <%= p.price > 0 ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Fixed Price</div>
+                            <div class="pt-item <%= p.price == 0 ? 'active' : '' %>" onclick="setPriceMode('free', this)">Free</div>
+                        </div>
+                        <div id="price-fields" style="display: <%= p.price == 0 ? 'none' : 'block' %>">
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                                <div class="stan-group">
+                                    <label class="stan-label">Price (Rp)</label>
+                                    <input type="number" name="price" class="stan-input" value="<%= p.price || '' %>" oninput="updatePreview('price', this.value)">
+                                </div>
+                                <div class="stan-group">
+                                    <label class="stan-label">Normal Price (Rp) - <span style="font-weight:400;color:#94a3b8">Strike through</span></label>
+                                    <input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- NEW: Stock Inventory in Tab 1 -->
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Stock Inventory</div>
+                        <div class="stan-group">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <label class="stan-label" style="margin-bottom:0;">Stock Availability</label>
+                                <label style="font-size:12px; color:var(--stan-primary); font-weight:700; cursor:pointer;">
+                                    <input type="checkbox" id="unlCheck" <%= p.stock == -1 ? 'checked' : '' %> onchange="toggleStock(this)"> Unlimited
+                                </label>
+                            </div>
+                            <input type="number" name="stock" id="stockInp" class="stan-input" value="<%= p.stock || 0 %>" <%= p.stock == -1 ? 'readonly style=background:#f3f4f6;color:#94a3b8' : '' %>>
                         </div>
                     </div>
                 </div>
-            </label>
-            <style>
-                /* Hilangkan panah input number */
-                input::-webkit-outer-spin-button,
-                input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-            </style>
-        </div>
 
-        <!-- Jadwal -->
-        <div class="edit-section">
-            <div class="edit-section-title"><i class="fas fa-calendar-alt" style="color:#6366f1"></i> Jadwal Penjualan</div>
-            <div class="ef-group">
-                <label class="ef-label">Mulai Penjualan</label>
-                <div class="sched-row">
-                    <input class="ef-input" type="date" name="sale_start_date" value="<%= p.sale_start_date || '' %>">
-                    <input class="ef-input" type="time" name="sale_start_time" value="<%= p.sale_start_time || '00:00' %>">
+                <!-- Styles for Style Cards -->
+                <style>
+                    .style-card { flex:1; padding:10px 5px; border:1px solid var(--stan-border); border-radius:12px; text-align:center; cursor:pointer; transition:0.2s; background:#fff; max-width: 100px; }
+                    .style-card:hover { border-color: var(--stan-primary); background: #f5f7ff; }
+                    .style-card.active { border-color: var(--stan-primary); border-width: 2px; background: #eff6ff; }
+                    .style-icon { font-size: 16px; color: #94a3b8; margin-bottom: 4px; }
+                    .style-card.active .style-icon { color: var(--stan-primary); }
+                    .style-label { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+                    .style-card.active .style-label { color: var(--stan-primary); }
+                </style>
+
+                <!-- TAB 2: CHECKOUT PAGE -->
+                <div id="tab-checkout" class="tab-content">
+                    <div class="stan-card">
+                        <div class="stan-section-title"><div class="stan-step-num">1</div> Write Description</div>
+                        <div class="stan-group">
+                            <label class="stan-label">Description Body</label>
+                            <div style="border:1.5px solid var(--stan-border); border-radius:12px; overflow:hidden;">
+                                <div style="padding:10px; background:#f9fafb; border-bottom:1px solid var(--stan-border); display:flex; gap:8px; flex-wrap: wrap;">
+                                    <button type="button" onclick="execCmd('foreColor', prompt('Enter color hex (e.g. #ff0000):', '#000000'))" title="Text Color" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-font" style="border-bottom: 2px solid #000;"></i></button>
+                                    <button type="button" onclick="execCmd('bold')" title="Bold" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-bold"></i></button>
+                                    <button type="button" onclick="execCmd('strikeThrough')" title="Strikethrough" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-strikethrough"></i></button>
+                                    <button type="button" onclick="execCmd('italic')" title="Italic" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-italic"></i></button>
+                                    <button type="button" onclick="execCmd('insertUnorderedList')" title="Bullet List" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-list-ul"></i></button>
+                                    <div style="width:1px; height:20px; background:#e2e8f0; margin: 5px 4px;"></div>
+                                    <button type="button" onclick="execCmd('insertImage', prompt('Enter Image URL:'))" title="Insert Image" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-image"></i></button>
+                                    <button type="button" onclick="insertVideo()" title="Insert Video" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-play"></i></button>
+                                    <button type="button" onclick="execCmd('createLink', prompt('Enter Link URL:', 'https://'))" title="Insert Link" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-link"></i></button>
+                                </div>
+                                <div id="richEditor" contenteditable="true" style="padding:20px; min-height:150px; outline:none; font-size:14px; line-height:1.6;" oninput="updatePreview('desc', this.innerHTML)">
+                                    <%- (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>') %>
+                                </div>
+                                <input type="hidden" name="description" id="hiddenDesc">
+                            </div>
+                        </div>
+
+                        <!-- NEW: Access Link in Tab 2 -->
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Product Access</div>
+                        <div class="stan-group">
+                            <label class="stan-label">Access Link (URL)</label>
+                            <input type="url" name="download_url" class="stan-input" value="<%= p.download_url || p.access_url || '' %>" placeholder="https://drive.google.com/...">
+                            <p style="font-size:11px; color:#94a3b8; margin-top:8px;">Customers will be redirected here after successful payment.</p>
+                        </div>
+
+                        <!-- NEW: Affiliate in Tab 2 -->
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">3</div> Affiliate Settings</div>
+                        <div style="padding:20px; background:#f0fdf4; border-radius:16px; border:1px solid #dcfce7;">
+                            <label style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer;">
+                                <input type="checkbox" name="is_affiliate" <%= p.is_affiliate !== 0 ? 'checked' : '' %> style="width:18px; height:18px;">
+                                <span style="font-size:14px; font-weight:800; color:#166534;">Enable Affiliate Program</span>
+                            </label>
+                            <div style="margin-left: 28px;">
+                                <div style="display:flex; align-items:center; gap:12px;">
+                                    <span style="font-size:13px; font-weight:700; color:#374151;">Commission Rate:</span>
+                                    <input type="number" name="commission_percent" class="stan-input" value="<%= parseFloat(p.commission_percent || 20) %>" style="width:80px; padding:8px 12px;">
+                                    <span style="font-weight:800; color:#374151;">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 3: THEMES -->
+                <div id="tab-options" class="tab-content">
+                    <div class="stan-card">
+                        <div class="stan-section-title"><div class="stan-step-num">1</div> Choose Your Theme</div>
+                        <input type="hidden" name="theme_style" id="theme_style_inp" value="<%= p.theme_style || 'light' %>">
+                        
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+                            <!-- Theme Light -->
+                            <div class="theme-card <%= (p.theme_style || 'light') === 'light' ? 'active' : '' %>" onclick="setTheme('light', this)">
+                                <div class="theme-preview" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                                    <div style="width: 70%; height: 10px; background: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 5px;"></div>
+                                    <div style="width: 50%; height: 6px; background: #10b981; border-radius: 4px;"></div>
+                                </div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Light Theme</div>
+                                    <div class="theme-desc">Clean, classic and easy to read.</div>
+                                </div>
+                                <div class="theme-check"><i class="fas fa-check-circle"></i></div>
+                            </div>
+
+                            <!-- Theme Dark -->
+                            <div class="theme-card <%= p.theme_style === 'dark' ? 'active' : '' %>" onclick="setTheme('dark', this)">
+                                <div class="theme-preview" style="background: #0f172a;">
+                                    <div style="width: 70%; height: 10px; background: #1e293b; border-radius: 4px; margin-bottom: 5px;"></div>
+                                    <div style="width: 50%; height: 6px; background: #10b981; border-radius: 4px;"></div>
+                                </div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Dark Mode</div>
+                                    <div class="theme-desc">Modern, premium and easy on the eyes.</div>
+                                </div>
+                                <div class="theme-check"><i class="fas fa-check-circle"></i></div>
+                            </div>
+
+                            <!-- Theme Sky -->
+                            <div class="theme-card <%= p.theme_style === 'sky' ? 'active' : '' %>" onclick="setTheme('sky', this)">
+                                <div class="theme-preview" style="background: #eff6ff;">
+                                    <div style="width: 70%; height: 10px; background: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 5px;"></div>
+                                    <div style="width: 50%; height: 6px; background: #3b82f6; border-radius: 4px;"></div>
+                                </div>
+                                <div class="theme-info">
+                                    <div class="theme-name">Sky Blue</div>
+                                    <div class="theme-desc">Fresh, professional blue-white look.</div>
+                                </div>
+                                <div class="theme-check"><i class="fas fa-check-circle"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <style>
+                    .theme-card { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1.5px solid #e2e8f0; border-radius: 16px; cursor: pointer; transition: 0.2s; position: relative; }
+                    .theme-card:hover { border-color: var(--stan-primary); background: #f8fafc; }
+                    .theme-card.active { border-color: var(--stan-primary); background: #f0f9ff; }
+                    .theme-preview { width: 80px; height: 50px; border-radius: 8px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+                    .theme-info { flex: 1; }
+                    .theme-name { font-size: 14px; font-weight: 800; color: #1e293b; }
+                    .theme-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+                    .theme-check { font-size: 20px; color: var(--stan-primary); display: none; }
+                    .theme-card.active .theme-check { display: block; }
+                </style>
+
+                <script>
+                    function setTheme(theme, el) {
+                        document.getElementById('theme_style_inp').value = theme;
+                        document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+                        el.classList.add('active');
+                        updatePreview('theme', theme);
+                    }
+                </script>
+
+                <!-- Footer Controls -->
+                <div class="stan-footer">
+                    <button type="button" class="btn-secondary" id="prevBtn" style="visibility:hidden;" onclick="moveStep(-1)">Back</button>
+                    <div style="display:flex; gap:12px; align-items: center;">
+                        <button type="button" class="btn-secondary" style="border:none; color:#94a3b8; font-weight: 700;">Save as Draft</button>
+                        <button type="button" class="btn-secondary" id="nextBtn" onclick="moveStep(1)" style="font-weight: 800; border-color: var(--stan-primary); color: var(--stan-primary);">Next <i class="fas fa-chevron-right" style="font-size: 10px; margin-left: 5px;"></i></button>
+                        <button type="submit" class="btn-primary" id="saveBtn">Publish Product</button>
+                    </div>
                 </div>
             </div>
-            <div class="ef-group">
-                <label class="ef-label">Selesai Penjualan</label>
-                <div class="sched-row">
-                    <input class="ef-input" type="date" name="sale_end_date" value="<%= p.sale_end_date || '' %>">
-                    <input class="ef-input" type="time" name="sale_end_time" value="<%= p.sale_end_time || '23:59' %>">
+
+            <!-- RIGHT: PREVIEW -->
+            <div class="stan-preview-side">
+                <div style="text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Live Preview</div>
+                <div class="phone-frame">
+                    <div class="phone-screen" id="previewContainer">
+                        <!-- Content of preview will change based on active tab -->
+                        <div id="preview-thumbnail" style="display:block;">
+                            <div style="height:100%; display:flex; flex-direction:column; justify-content:center; background:#f9fafb; padding: 20px;">
+                                
+                                <!-- PREVIEW STYLE: BUTTON -->
+                                <div id="v-style-button" class="v-style" style="display:none;">
+                                    <div class="p-card-preview" style="padding:10px 15px; align-items:center; gap:12px;">
+                                        <img src="<%= finalThumb %>" class="p-card-img" id="pb-img" style="width:36px; height:36px; border-radius:8px;" onerror="this.src='/images/placeholder.png'">
+                                        <div id="pb-title" style="flex:1; font-size:14px; font-weight:800; color:#111827;"><%= p.name || 'Product Title' %></div>
+                                        <div id="pb-price" style="font-size:14px; font-weight:800; color:var(--stan-primary);">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                                        <i class="fas fa-chevron-right" style="color:#e2e8f0; font-size:10px; margin-left:5px;"></i>
+                                    </div>
+                                </div>
+
+                                <!-- PREVIEW STYLE: CALLOUT -->
+                                <div id="v-style-callout" class="v-style" style="display:block;">
+                                    <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:15px; padding:20px;">
+                                        <div style="display:flex; gap:12px; width:100%;">
+                                            <img src="<%= finalThumb %>" class="p-card-img" id="pc-img" onerror="this.src='/images/placeholder.png'">
+                                            <div style="flex:1;">
+                                                <div class="p-card-title" id="pc-title"><%= p.name || 'Product Title' %></div>
+                                                <div class="p-card-sub" id="pc-sub"><%= p.subtitle || 'Subtitle / Hook text goes here' %></div>
+                                                <div class="p-card-price" id="pc-price" style="color:#10b981; font-weight:800; font-size:14px; margin-top:4px;">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                                            </div>
+                                        </div>
+                                        <div class="p-button" id="pc-btn" style="background:#10b981;"><%= p.button_text || 'Ambil Sekarang' %></div>
+                                    </div>
+                                </div>
+
+                                <!-- PREVIEW STYLE: PREVIEW -->
+                                <div id="v-style-preview" class="v-style" style="display:none;">
+                                    <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:15px; padding:20px;">
+                                        <div style="display:flex; gap:12px; width:100%;">
+                                            <img src="<%= finalThumb %>" class="p-card-img" id="pp-img" onerror="this.src='/images/placeholder.png'">
+                                            <div style="flex:1;">
+                                                <div class="p-card-title" id="pp-title"><%= p.name || 'Product Title' %></div>
+                                                <div class="p-card-sub" id="pp-sub"><%= p.subtitle || 'Subtitle / Hook text goes here' %></div>
+                                                <div class="p-card-price" id="pp-price" style="color:#10b981; font-weight:800; font-size:14px; margin-top:4px;">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                                            </div>
+                                        </div>
+                                        <!-- Download Icon Row -->
+                                        <div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; color:#374151;">
+                                            <div style="width:20px; height:20px; background:#10b981; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px;">
+                                                <i class="fas fa-arrow-down"></i>
+                                            </div>
+                                            Ready To Download
+                                        </div>
+                                        <div class="p-button" id="pp-btn" style="background:#10b981;"><%= p.button_text || 'Ambil Sekarang' %></div>
+                                        <div style="width:100%; text-align:center; font-size:11px; font-weight:700; color:#10b981; cursor:pointer;">Learn More</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div id="preview-checkout" style="display:none;">
+                            <div class="p-header">
+                                <img src="<%= finalThumb %>" id="prevMainImg" onerror="this.src='/images/placeholder.png'">
+                            </div>
+                            <div class="p-body">
+                                <div class="p-title" id="prevMainTitle"><%= p.name || 'Product Title' %></div>
+                                <div class="p-price" id="prevMainPrice">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                                <div class="p-desc" id="prevMainDesc"><%- (p.description || '').replace(/&lt;/g, '<').replace(/&gt;/g, '>') || 'Add a compelling description...' %></div>
+                                <div class="p-button">Buy Now</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        
-        <div class="edit-footer">
-            <button type="submit" class="save-btn">
-                <i class="fas fa-save"></i> <%= p.id ? 'Perbarui Produk' : 'Buat Produk Baru' %>
-            </button>
-        </div>
-    </div>
+    </form>
 </div>
-</form>
 
 <script>
-// --- Editor Core ---
-const editor = document.getElementById('descEditor');
-const coder = document.getElementById('descCode');
-let isCodeView = false;
+    let currentStepIdx = 0;
+    let currentStyle = 'callout';
+    const steps = ['thumbnail', 'checkout', 'options'];
+    const tabs = document.querySelectorAll('.stan-tab');
+    const contents = document.querySelectorAll('.tab-content');
 
-function format(cmd, val) {
-    document.execCommand(cmd, false, val);
-    editor.focus();
-}
+    function setStyle(style) {
+        currentStyle = style;
+        document.getElementById('thumbnail_style').value = style;
+        
+        // Update active card UI
+        document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
+        document.getElementById('style-' + style).classList.add('active');
 
-function toggleMode() {
-    isCodeView = !isCodeView;
-    const btn = document.getElementById('viewModeBtn');
-    if (isCodeView) {
-        coder.value = editor.innerHTML;
-        editor.style.display = 'none';
-        coder.style.display = 'block';
-        btn.classList.add('active');
-        btn.innerHTML = '<i class="fas fa-eye"></i>';
-    } else {
-        editor.innerHTML = coder.value;
-        coder.style.display = 'none';
-        editor.style.display = 'block';
-        btn.classList.remove('active');
-        btn.innerHTML = '<i class="fas fa-code"></i>';
+        // Toggle visibility of fields based on style
+        const subGroup = document.getElementById('subtitle-group');
+        const uploadBox = document.getElementById('image-upload-box');
+        
+        if (style === 'button') {
+            subGroup.style.display = 'none';
+            uploadBox.style.display = 'block'; // Keep visible for icon
+        } else {
+            subGroup.style.display = 'block';
+            uploadBox.style.display = 'block';
+        }
+
+        // Update Preview View
+        document.querySelectorAll('.v-style').forEach(v => v.style.display = 'none');
+        document.getElementById('v-style-' + style).style.display = 'block';
     }
-}
 
-function toggleLink() {
-    const url = prompt('Masukkan URL:', 'https://');
-    if (url) format('createLink', url);
-}
+    function switchTab(id, el) {
+        currentStepIdx = steps.indexOf(id);
+        
+        tabs.forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
 
-// --- Price Tabs ---
-function showPriceTab(id, el) {
-    document.querySelectorAll('.price-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.price-panel').forEach(p => p.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('p-' + id).classList.add('active');
-}
+        contents.forEach(c => c.classList.remove('active'));
+        document.getElementById('tab-' + id).classList.add('active');
 
-// --- Promo Toggle ---
-document.getElementById('promoToggle').addEventListener('change', function() {
-    const fields = document.getElementById('promoFields');
-    if (this.checked) {
-        fields.style.opacity = '1';
-        fields.style.pointerEvents = 'auto';
-    } else {
-        fields.style.opacity = '0.4';
-        fields.style.pointerEvents = 'none';
+        updateControls();
+        updatePreviewMode(id);
     }
-});
 
-// --- Unlimited Stock Toggle ---
-document.getElementById('unlimitedStock').addEventListener('change', function() {
-    const input = document.getElementById('stockInput');
-    if (this.checked) {
-        input.value = -1;
-        input.readOnly = true;
-        input.style.background = '#f1f5f9';
-        input.style.color = '#94a3b8';
-    } else {
-        input.value = 0;
-        input.readOnly = false;
-        input.style.background = '#fff';
-        input.style.color = '#111827';
-        input.focus();
+    function moveStep(dir) {
+        currentStepIdx += dir;
+        if (currentStepIdx < 0) currentStepIdx = 0;
+        if (currentStepIdx > 2) currentStepIdx = 2;
+        
+        switchTab(steps[currentStepIdx], tabs[currentStepIdx]);
     }
-});
 
-// --- Photo Preview ---
-function handlePreview(input) {
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('mediaPreview').innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
-        };
-        reader.readAsDataURL(input.files[0]);
+    function updateControls() {
+        document.getElementById('prevBtn').style.visibility = (currentStepIdx === 0) ? 'hidden' : 'visible';
+        document.getElementById('nextBtn').style.display = (currentStepIdx === 2) ? 'none' : 'block';
+        document.getElementById('saveBtn').style.display = 'block';
     }
-}
 
-// --- Final Submit ---
-document.getElementById('editorForm').addEventListener('submit', function(e) {
-    // If we are in code view, sync to editor first
-    if (isCodeView) {
-        editor.innerHTML = coder.value;
+    function updatePreviewMode(id) {
+        const thumbPrev = document.getElementById('preview-thumbnail');
+        const checkoutPrev = document.getElementById('preview-checkout');
+        const nextBtn = document.getElementById('nextBtn');
+
+        if (id === 'thumbnail') {
+            thumbPrev.style.display = 'block';
+            checkoutPrev.style.display = 'none';
+        } else {
+            thumbPrev.style.display = 'none';
+            checkoutPrev.style.display = 'block';
+        }
+
+        if (currentStepIdx === 2) {
+            nextBtn.style.display = 'none';
+        } else {
+            nextBtn.style.display = 'block';
+        }
     }
-    document.getElementById('descInput').value = editor.innerHTML;
-});
+
+    function updatePreview(type, val) {
+        if (type === 'title') {
+            document.getElementById('pb-title').innerText = val || 'Product Title';
+            document.getElementById('pc-title').innerText = val || 'Product Title';
+            document.getElementById('pp-title').innerText = val || 'Product Title';
+            document.getElementById('prevMainTitle').innerText = val || 'Product Title';
+        }
+        if (type === 'subtitle') {
+            document.getElementById('pc-sub').innerText = val || 'Subtitle / Hook text goes here';
+            document.getElementById('pp-sub').innerText = val || 'Subtitle / Hook text goes here';
+        }
+        if (type === 'btn') {
+            document.getElementById('pc-btn').innerText = val || 'Ambil Sekarang';
+            document.getElementById('pp-btn').innerText = val || 'Ambil Sekarang';
+        }
+        if (type === 'color') {
+            document.getElementById('pc-btn').style.background = val;
+            document.getElementById('pp-btn').style.background = val;
+        }
+        if (type === 'theme') {
+            const container = document.getElementById('previewContainer');
+            const cards = document.querySelectorAll('.p-card-preview');
+            const titles = document.querySelectorAll('.p-card-title, #pb-title');
+            
+            if (val === 'dark') {
+                container.style.background = '#0f172a';
+                cards.forEach(c => { c.style.background = '#1e293b'; c.style.borderColor = '#334155'; });
+                titles.forEach(t => t.style.color = '#f8fafc');
+            } else if (val === 'sky') {
+                container.style.background = '#eff6ff';
+                cards.forEach(c => { c.style.background = '#ffffff'; c.style.borderColor = '#dbeafe'; });
+                titles.forEach(t => t.style.color = '#1e3a8a');
+            } else {
+                container.style.background = '#f9fafb';
+                cards.forEach(c => { c.style.background = '#ffffff'; c.style.borderColor = '#e2e8f0'; });
+                titles.forEach(t => t.style.color = '#111827');
+            }
+        }
+        if (type === 'price') {
+            const formatted = 'Rp ' + (parseFloat(val) || 0).toLocaleString('id-ID');
+            document.getElementById('pb-price').innerText = formatted;
+            document.getElementById('pc-price').innerText = formatted;
+            document.getElementById('pp-price').innerText = formatted;
+            document.getElementById('prevMainPrice').innerText = formatted;
+        }
+        if (type === 'desc') {
+            document.getElementById('prevMainDesc').innerHTML = val || 'Your product description...';
+        }
+    }
+
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('editThumbPreview').src = e.target.result;
+                document.getElementById('editThumbPreview').style.display = 'inline-block';
+                document.getElementById('pb-img').src = e.target.result;
+                document.getElementById('pc-img').src = e.target.result;
+                document.getElementById('pp-img').src = e.target.result;
+                document.getElementById('prevMainImg').src = e.target.result;
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function execCmd(cmd, val = null) { 
+        if (val === null) {
+            document.execCommand(cmd, false, null); 
+        } else if (val) {
+            document.execCommand(cmd, false, val);
+        }
+    }
+
+    function insertVideo() {
+        const url = prompt('Enter YouTube/Vimeo Video URL:');
+        if (!url) return;
+        
+        let embedUrl = url;
+        if (url.includes('youtube.com/watch?v=')) {
+            embedUrl = url.replace('watch?v=', 'embed/');
+        } else if (url.includes('youtu.be/')) {
+            embedUrl = 'https://www.youtube.com/embed/' + url.split('/').pop();
+        }
+        
+        const html = `<div class="video-container"><iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe></div><p></p>`;
+        document.execCommand('insertHTML', false, html);
+    }
+
+    function setPriceMode(mode, el) {
+        document.querySelectorAll('.pt-item').forEach(i => i.classList.remove('active'));
+        el.classList.add('active');
+        const priceField = document.querySelector('input[name="price"]');
+        if (mode === 'free') {
+            priceField.value = 0;
+            document.getElementById('price-fields').style.display = 'none';
+            updatePreview('price', 0);
+        } else {
+            document.getElementById('price-fields').style.display = 'block';
+            priceField.focus();
+        }
+    }
+
+    function toggleStock(chk) {
+        const inp = document.getElementById('stockInp');
+        if (chk.checked) {
+            inp.value = -1;
+            inp.readOnly = true;
+            inp.style.background = '#f3f4f6';
+            inp.style.color = '#94a3b8';
+        } else {
+            inp.value = 0;
+            inp.readOnly = false;
+            inp.style.background = '#fff';
+            inp.style.color = '#111827';
+            inp.focus();
+        }
+    }
+
+    document.getElementById('mainForm').onsubmit = function() {
+        document.getElementById('hiddenDesc').value = document.getElementById('richEditor').innerHTML;
+    };
+
+    // INITIALIZE STATE
+    window.onload = function() {
+        const savedStyle = '<%= p.thumbnail_style || "callout" %>';
+        setStyle(savedStyle);
+        
+        // Populate preview with initial data
+        updatePreview('title', '<%= (p.name || "").replace(/'/g, "\\'") %>');
+        updatePreview('subtitle', '<%= (p.subtitle || "").replace(/'/g, "\\'") %>');
+        updatePreview('btn', '<%= (p.button_text || "Ambil Sekarang").replace(/'/g, "\\'") %>');
+        updatePreview('color', '<%= p.button_color || "#10b981" %>');
+        updatePreview('price', '<%= p.price || 0 %>');
+        updatePreview('theme', '<%= p.theme_style || "light" %>');
+    };
 </script>
 

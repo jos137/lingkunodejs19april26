@@ -81,15 +81,39 @@
 
         .block-product {
             display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; 
-            border: 1px solid #10b98155;
+            border: 1.5px solid #f1f5f9;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); text-decoration: none; color: inherit; transition: 0.2s;
+            width: 100%; box-sizing: border-box;
         }
         .block-product:hover { transform: scale(1.01); border-color: #10b981; }
         .product-thumb { width: 55px; height: 55px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px; overflow: hidden; border: 1px solid #f1f5f9; flex-shrink: 0; }
         .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .product-info { flex: 1; min-width: 0; }
         .product-name { font-size: 14px; font-weight: 800; margin-bottom: 2px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .product-price { font-size: 13px; color: var(--primary); font-weight: 700; }
+        .product-price { font-size: 13px; color: #10b981; font-weight: 800; }
+
+        /* PREVIEW STYLE SPECIFIC */
+        .block-product-preview { flex-direction: column; align-items: center; gap: 16px; padding: 20px; }
+        .product-header { display: flex; gap: 16px; width: 100%; align-items: center; text-align: left; }
+        .product-subtitle { font-size: 11px; color: #64748b; font-weight: 500; line-height: 1.4; margin-top: 4px; }
+        .product-btn-full { 
+            width: 90%; padding: 14px; background: #10b981; color: white; border-radius: 14px; 
+            text-align: center; font-weight: 800; font-size: 14px; margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+        }
+        .product-ready { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 700; color: #374151; margin-bottom: -4px; }
+        .ready-icon { width: 18px; height: 18px; background: #10b981; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+        .learn-more { width: 100%; text-align: center; font-size: 12px; font-weight: 700; color: #10b981; margin-top: -4px; }
+
+        /* THEMES */
+        .theme-dark { background: #0f172a !important; color: #f8fafc !important; }
+        .theme-dark .block-product { background: #1e293b !important; border-color: #334155 !important; }
+        .theme-dark .product-name { color: #f8fafc !important; }
+        .theme-dark .product-ready { color: #cbd5e1 !important; }
+        
+        .theme-sky { background: #eff6ff !important; color: #1e3a8a !important; }
+        .theme-sky .block-product { background: #ffffff !important; border-color: #dbeafe !important; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.05) !important; }
+        .theme-sky .product-name { color: #1e3a8a !important; }
 
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; width: 100%; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; }
@@ -178,19 +202,60 @@
                         const isAff = block.type === 'affiliate';
                     %>
                     <% if (prod) { %>
-                        <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product" style="<%= isAff ? 'border-color: #f59e0b;' : '' %>">
-                            <div class="product-thumb" style="<%= isAff ? 'background: #fff7ed; color: #f59e0b; border-color: #ffedd5;' : '' %>">
-                                <img src="<%= img(prod.processed_thumb, 'products') %>" alt="Product" onerror="this.onerror=null; this.src='/images/placeholder.png'">
-                            </div>
-                            <div class="product-info">
-                                <div class="product-name"><%= prod.name %></div>
-                                <div class="product-price" style="<%= isAff ? 'color: #f59e0b;' : '' %>">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
-                            </div>
-                            <% if (isAff) { %>
-                                <div style="background: #f59e0b; color: white; font-size: 8px; font-weight: 800; padding: 4px 8px; border-radius: 20px; text-transform: uppercase;">Promote</div>
-                            <% } %>
-                            <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 12px;"></i>
-                        </a>
+                        <div class="<%= prod.theme_style || '' %>">
+                        <% if (prod.thumbnail_style === 'button') { %>
+                            <!-- STYLE: BUTTON -->
+                            <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product" style="padding: 10px 15px;">
+                                <div class="product-thumb" style="width: 36px; height: 36px; border-radius: 8px;">
+                                    <img src="<%= img(prod.processed_thumb, 'products') %>" alt="P" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                                </div>
+                                <div class="product-name" style="flex: 1;"><%= prod.name %></div>
+                                <div class="product-price" style="color: #6366f1;">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                                <i class="fas fa-chevron-right" style="color: #cbd5e1; font-size: 10px; margin-left: 5px;"></i>
+                            </a>
+
+                        <% } else if (prod.thumbnail_style === 'preview') { %>
+                            <!-- STYLE: PREVIEW -->
+                            <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product block-product-preview">
+                                <div class="product-header">
+                                    <div class="product-thumb">
+                                        <img src="<%= img(prod.processed_thumb, 'products') %>" alt="P" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                                    </div>
+                                    <div class="product-info">
+                                        <div class="product-name" style="white-space: normal;"><%= prod.name %></div>
+                                        <% if (prod.subtitle) { %>
+                                            <div class="product-subtitle"><%= prod.subtitle %></div>
+                                        <% } %>
+                                        <div class="product-price">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                                    </div>
+                                </div>
+                                <div class="product-ready">
+                                    <div class="ready-icon" style="background: <%= prod.button_color || '#10b981' %>;"><i class="fas fa-arrow-down"></i></div>
+                                    Ready To Download
+                                </div>
+                                <div class="product-btn-full" style="background: <%= prod.button_color || '#10b981' %>; box-shadow: 0 4px 15px <%= (prod.button_color || '#10b981') %>44;"><%= prod.button_text || 'Beli Sekarang' %></div>
+                                <div class="learn-more" style="color: <%= prod.button_color || '#10b981' %>;">Learn More</div>
+                            </a>
+
+                        <% } else { %>
+                            <!-- STYLE: CALLOUT (Default) -->
+                            <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product block-product-preview">
+                                <div class="product-header">
+                                    <div class="product-thumb">
+                                        <img src="<%= img(prod.processed_thumb, 'products') %>" alt="P" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                                    </div>
+                                    <div class="product-info">
+                                        <div class="product-name" style="white-space: normal;"><%= prod.name %></div>
+                                        <% if (prod.subtitle) { %>
+                                            <div class="product-subtitle"><%= prod.subtitle %></div>
+                                        <% } %>
+                                        <div class="product-price" style="color: <%= prod.button_color || '#10b981' %>;">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                                    </div>
+                                </div>
+                                <div class="product-btn-full" style="background: <%= prod.button_color || '#10b981' %>; box-shadow: 0 4px 15px <%= (prod.button_color || '#10b981') %>44;"><%= prod.button_text || 'Beli Sekarang' %></div>
+                            </a>
+                        <% } %>
+                        </div>
                     <% } %>
                 <% } %>
             <% }) %>

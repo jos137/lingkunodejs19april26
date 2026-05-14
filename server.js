@@ -12,26 +12,21 @@ const { rateLimit } = require('express-rate-limit'); console.log('>>> DEBUG: RAT
 
 const app = express(); console.log('>>> DEBUG: APP INITIALIZED');
 const port = process.env.PORT || 3000;
+
+// EMERGENCY PING (Must be before ANY middleware)
+app.get('/ping', (req, res) => {
+    res.send(`
+        <div style="font-family:sans-serif; text-align:center; padding:50px;">
+            <h1 style="color:#10b981;">🚀 LINGKU SERVER IS ALIVE!</h1>
+            <p>Berhasil diakses tanpa middleware.</p>
+        </div>
+    `);
+});
+
 console.log('--- LINGKU SERVER INITIALIZATION ---');
 const db = require('./config/db');
 
-// Test Database Connection & Run Auto-Heal
-(async () => {
-    try {
-        console.log('⏳ Testing Database Connection...');
-        const [rows] = await db.execute('SELECT 1 + 1 AS result');
-        console.log('✔ Database Connected (Test Query Success).');
-        
-        // RUN PERMANENT AUTO-HEAL ONCE AT STARTUP
-        const { runAutoHeal } = require('./utils/autoHeal');
-        await runAutoHeal();
-        
-    } catch (err) {
-        console.error('❌ DATABASE CONNECTION FAILED!');
-        console.error('Error:', err.message);
-        console.error('Please check your .env file and DB server status.');
-    }
-})();
+// Database initialized in config/db.js
 
 // Security Hardening
 app.use(helmet({
@@ -59,10 +54,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 console.log('🚀 Connecting to Session Store...');
 const sessionStore = new MySQLStore({
     clearExpired: true,
-    checkExpirationInterval: 900000, // 15 minutes
-    expiration: 86400000, // 1 day
-    createDatabaseTable: true // Ensure table exists
-}, db);
+    checkExpirationInterval: 900000,
+    expiration: 86400000,
+    createDatabaseTable: false // Matikan ini biar gak macet pas startup
+}, db.pool);
 console.log('✔ Session Store Configured.');
 
 app.set('trust proxy', 1);
@@ -272,6 +267,7 @@ console.log('✔ Routes Registered.');
 app.get('*', (req, res) => {
     res.status(404).send('Page not found');
 });
+
 
 // Start Server with Error Handling
 const server = app.listen(port, () => {
