@@ -1,14 +1,18 @@
 const db = require('../config/db');
-
-async function checkSchema() {
+async function check() {
     try {
-        const [rows] = await db.execute('DESCRIBE products');
-        console.log(JSON.stringify(rows, null, 2));
+        const [orders] = await db.execute('DESCRIBE orders');
+        console.log('--- ORDERS TABLE ---');
+        console.table(orders);
+        
+        const [products] = await db.execute('DESCRIBE products');
+        console.log('--- PRODUCTS TABLE ---');
+        console.table(products);
+        
         process.exit(0);
-    } catch (err) {
-        console.error(err);
+    } catch (e) {
+        console.error(e);
         process.exit(1);
     }
 }
-
-checkSchema();
+check();

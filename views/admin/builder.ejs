@@ -142,40 +142,88 @@
 .color-circle i { color: #fff; font-size: 10px; display: none; }
 .color-circle.active i { display: block; }
 
-/* Add block grid */
-.add-block-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px;
-}
-.btn-add-block {
-    padding: 14px; border: 1.5px solid #e5e7eb; border-radius: 12px;
-    background: #fff; color: #475569; font-size: 12px; font-weight: 700;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    transition: 0.2s;
-}
-.btn-add-block:hover { border-color: #3b82f6; color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-.btn-add-block i { font-size: 18px; }
+        /* ADD BLOCK UI REDESIGN */
+        .add-block-container { margin-top: 30px; text-align: center; position: relative; }
+        
+        .btn-main-add {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white; border: none; font-size: 24px; cursor: pointer;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto; z-index: 10; position: relative;
+        }
+        .btn-main-add:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 12px 30px rgba(37, 99, 235, 0.5); }
+        .btn-main-add.active { background: #111827; transform: scale(0.9) rotate(45deg); }
 
-/* MOBILE PREVIEW */
-.preview-phone {
-    background: #111827; border-radius: 36px; padding: 12px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.25);
-    position: sticky; top: 20px;
-}
-.preview-screen {
-    background: #fff; border-radius: 24px; overflow: hidden;
-    min-height: 580px; max-height: 75vh; overflow-y: auto;
-}
-.preview-notch {
-    height: 24px; background: #111827; border-radius: 0 0 18px 18px;
-    width: 100px; margin: 0 auto;
-}
-.preview-content { padding: 16px; }
+        .add-block-menu {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+            background: #fff; border: 1.5px solid #e5e7eb; border-radius: 16px;
+            padding: 12px; margin-top: 20px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+            position: absolute; bottom: 65px; left: 50%; transform: translateX(-50%) scale(0.9);
+            opacity: 0; visibility: hidden; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 280px; z-index: 5;
+        }
+        .add-block-menu.show { opacity: 1; visibility: visible; transform: translateX(-50%) scale(1); }
 
-@media (max-width: 1100px) {
-    .builder-wrap { grid-template-columns: 1fr; }
-    .preview-phone { display: none; }
-}
+        .menu-item {
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+            padding: 10px 4px; border-radius: 10px; border: 1px solid #f8fafc;
+            cursor: pointer; transition: 0.2s; background: #fff;
+        }
+        .menu-item:hover { background: #f0f9ff; border-color: #3b82f6; transform: translateY(-2px); }
+        .menu-item i { font-size: 16px; color: #3b82f6; }
+        .menu-item span { font-size: 9px; font-weight: 850; color: #475569; text-transform: uppercase; letter-spacing: 0.3px; }
+        
+        .menu-item.affiliate i { color: #f59e0b; }
+        .menu-item.affiliate:hover { border-color: #f59e0b; background: #fffbeb; }
+
+        @media (max-width: 1100px) {
+            .builder-wrap { grid-template-columns: 1fr; }
+            .preview-phone { display: none; }
+        }
+        @media (max-width: 500px) {
+            .add-block-menu { width: 90%; grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Re-adding missing preview styles */
+        .preview-phone {
+            background: #111827; border-radius: 36px; padding: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            position: sticky; top: 20px;
+        }
+        .preview-screen {
+            background: #fff; border-radius: 24px; overflow: hidden;
+            min-height: 580px; max-height: 75vh; overflow-y: auto;
+        }
+        .preview-notch {
+            height: 24px; background: #111827; border-radius: 0 0 18px 18px;
+            width: 100px; margin: 0 auto;
+        }
+        .preview-content { padding: 16px; }
 </style>
+
+<script>
+function toggleAddMenu() {
+    const menu = document.getElementById('addBlockMenu');
+    const btn = document.getElementById('mainAddBtn');
+    menu.classList.toggle('show');
+    btn.classList.toggle('active');
+}
+
+// Close menu when clicking outside
+document.addEventListener('click', (e) => {
+    const container = document.querySelector('.add-block-container');
+    const menu = document.getElementById('addBlockMenu');
+    const btn = document.getElementById('mainAddBtn');
+    if (container && !container.contains(e.target)) {
+        menu.classList.remove('show');
+        btn.classList.remove('active');
+    }
+});
+</script>
 
 <!-- Save Status Indicator -->
 <div class="save-status" id="saveStatus">
@@ -330,7 +378,7 @@
                         <% } else if (block.type === 'affiliate') { %>
                             <label class="b-label">Pilih Produk Affiliate (Marketplace)</label>
                             <select class="b-input b-select b-content" onchange="triggerAutoSave()">
-                                <option value="">-- Pilih Produk dari Marketplace --</option>
+                                <option value="">-- Pilih Produk dari Marketplace --</option> 
                                 <% (marketplaceProducts || []).forEach(function(prod) { %>
                                     <option value="<%= prod.id %>" <%= block.content == prod.id ? 'selected' : '' %>>
                                         <%= prod.name %> - Komisi <%= prod.commission_percent %>% (dari <%= prod.seller_name %>)
@@ -346,17 +394,22 @@
             <% }); %>
         </div>
 
-        <!-- Add Block Grid -->
-        <div class="add-block-grid">
-            <button class="btn-add-block" onclick="addBlock('image')"><i class="fas fa-image"></i> + Image</button>
-            <button class="btn-add-block" onclick="addBlock('product')"><i class="fas fa-shopping-bag"></i> + Product</button>
-            <button class="btn-add-block" onclick="addBlock('text')"><i class="fas fa-font"></i> + Text</button>
-            <button class="btn-add-block" onclick="addBlock('video')"><i class="fas fa-play-circle"></i> + Video</button>
-            <button class="btn-add-block" onclick="addBlock('button')"><i class="fas fa-link"></i> + Button</button>
-            <button class="btn-add-block" onclick="addBlock('divider')"><i class="fas fa-minus"></i> + Divider</button>
-            <% if (locals.user && locals.user.role === 'admin' || locals.features && locals.features.enable_affiliate) { %>
-                <button class="btn-add-block" onclick="addBlock('affiliate')" style="border-color:#f59e0b; color:#f59e0b;"><i class="fas fa-handshake"></i> + Affiliate</button>
-            <% } %>
+        <!-- ADD BLOCK UI REDESIGN -->
+        <div class="add-block-container">
+            <div class="add-block-menu" id="addBlockMenu">
+                <div class="menu-item" onclick="addBlock('image'); toggleAddMenu();"><i class="fas fa-image"></i><span>Image</span></div>
+                <div class="menu-item" onclick="addBlock('product'); toggleAddMenu();"><i class="fas fa-shopping-bag"></i><span>Product</span></div>
+                <div class="menu-item" onclick="addBlock('text'); toggleAddMenu();"><i class="fas fa-font"></i><span>Text</span></div>
+                <div class="menu-item" onclick="addBlock('video'); toggleAddMenu();"><i class="fas fa-play-circle"></i><span>Video</span></div>
+                <div class="menu-item" onclick="addBlock('button'); toggleAddMenu();"><i class="fas fa-link"></i><span>Button</span></div>
+                <div class="menu-item" onclick="addBlock('divider'); toggleAddMenu();"><i class="fas fa-minus"></i><span>Divider</span></div>
+                <% if (locals.user && locals.user.role === 'admin' || locals.features && locals.features.enable_affiliate) { %>
+                    <div class="menu-item affiliate" onclick="addBlock('affiliate'); toggleAddMenu();"><i class="fas fa-handshake"></i><span>Affiliate</span></div>
+                <% } %>
+            </div>
+            <button class="btn-main-add" id="mainAddBtn" onclick="toggleAddMenu()">
+                <i class="fas fa-plus"></i>
+            </button>
         </div>
     </div>
 

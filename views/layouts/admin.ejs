@@ -382,6 +382,29 @@
         }
         .sidebar.theme-light_glass .sidebar-bottom { border-top: 1px solid #e2e8f0; }
 
+        .sidebar.theme-stan {
+            background: #f8f9ff;
+            border-right: 1px solid #e2e8f0;
+            color: #1e1b4b;
+        }
+        .sidebar.theme-stan .sidebar-section-label { color: #94a3b8; }
+        .sidebar.theme-stan .sidebar-link { 
+            color: #475569; 
+            margin: 4px 12px; 
+            border-radius: 14px; 
+            padding: 12px 20px;
+        }
+        .sidebar.theme-stan .sidebar-link:hover { background: #eef2ff; color: #1e1b4b; }
+        .sidebar.theme-stan .sidebar-link.active {
+            background: #6366f1;
+            color: #fff;
+            border-right: none;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+        .sidebar.theme-stan .sidebar-link i { font-size: 16px; }
+        .sidebar.theme-stan .sidebar-bottom { border-top: 1px solid #e2e8f0; }
+        .sidebar.theme-stan .sidebar-link.logout { color: #ef4444; }
+
     </style>
 </head>
 <body>
@@ -389,7 +412,14 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- SIDEBAR -->
-    <aside class="sidebar <%= (user && user.sidebar_theme && user.sidebar_theme !== 'default') ? 'theme-' + user.sidebar_theme : '' %>" id="sidebar">
+    <% 
+        let currentTheme = user.sidebar_theme || 'default';
+        // Auto-apply Stan theme for non-admins if they are on default
+        if (user.role !== 'admin' && currentTheme === 'default') {
+            currentTheme = 'stan';
+        }
+    %>
+    <aside class="sidebar <%= currentTheme !== 'default' ? 'theme-' + currentTheme : '' %>" id="sidebar">
         <div class="sidebar-logo">
             <img src="/images/logo.png" alt="Logo" style="height: 35px;">
         </div>
@@ -476,7 +506,7 @@
                 </a>
             <% } %>
 
-            <% if (locals.isLocal) { %>
+            <% if (locals.isLocal && user && user.role === 'admin') { %>
                 <button onclick="triggerDeploy(this)" class="sidebar-link" style="width:100%; border:none; background: #059669; color: white; cursor:pointer;">
                     <i class="fas fa-code-branch"></i><span>Push to Git</span>
                 </button>

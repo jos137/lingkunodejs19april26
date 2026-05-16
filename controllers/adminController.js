@@ -846,13 +846,33 @@ exports.getUserBuyers = async (req, res) => {
         const totalItems = countRow[0].total;
         const totalPages = Math.ceil(totalItems / limit);
 
-        // Fetch paginated orders
+        // Fetch paginated orders (People who bought from this user)
         const [orders] = await db.execute(`
             SELECT o.*, p.name as product_name
             ${query}
             ORDER BY o.created_at DESC
             LIMIT ? OFFSET ?
         `, [...params, limit, offset]);
+
+        // NEW: Fetch user's own spending (What this user bought)
+        const [spentRow] = await db.execute(
+            "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE customer_email = ? AND status = 'completed'",
+            [targetUser.email]
+        );
+        const totalSpent = spentRow[0].total;
+
+        // NEW: Fetch user's total product sales (Income)
+        const [salesRow] = await db.execute(
+            "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND status = 'completed'",
+            [id]
+        );
+        const totalSales = salesRow[0].total;
+
+        // NEW: Fetch user's products
+        const [userProducts] = await db.execute(
+            "SELECT * FROM products WHERE user_id = ? ORDER BY created_at DESC",
+            [id]
+        );
 
         const pageTitle = targetUser.name || targetUser.username || targetUser.email || 'User';
 
@@ -861,6 +881,9 @@ exports.getUserBuyers = async (req, res) => {
             layout: './layouts/admin',
             targetUser,
             orders,
+            totalSpent,
+            totalSales,
+            userProducts,
             currentPage: page,
             totalPages,
             currentStatus: status,
