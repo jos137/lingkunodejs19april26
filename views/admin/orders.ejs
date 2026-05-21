@@ -149,7 +149,20 @@
     <!-- LEFT: ORDER LIST -->
     <div>
         <div class="orders-header">
-            <input type="text" class="orders-search" id="searchInput" placeholder="Cari pembeli..." oninput="filterOrders()">
+            <form action="/admin/orders" method="GET" style="flex: 1; display: flex; gap: 8px; margin: 0; padding: 0;">
+                <select name="searchType" style="border: 1.5px solid #e5e7eb; border-radius: 12px; font-weight: 700; padding: 0 14px; outline: none; background: #fff; font-size: 13px; color: #374151; font-family: inherit; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.02); transition: 0.2s;">
+                    <option value="all" <%= locals.searchType === 'all' ? 'selected' : '' %>>Semua</option>
+                    <option value="name" <%= locals.searchType === 'name' ? 'selected' : '' %>>Nama</option>
+                    <option value="email" <%= locals.searchType === 'email' ? 'selected' : '' %>>Email</option>
+                    <option value="phone" <%= locals.searchType === 'phone' ? 'selected' : '' %>>No. WA</option>
+                </select>
+                <div style="position: relative; flex: 1; display: flex; align-items: center;">
+                    <input type="text" name="search" class="orders-search" id="searchInput" placeholder="Cari pembeli... (Tekan Enter / Klik Tombol Cari)" value="<%= locals.searchQuery || '' %>" oninput="filterOrders()" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.form.submit(); }" style="width: 100%; padding-right: 40px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <button type="button" onclick="this.form.submit()" style="position: absolute; right: 12px; background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#9ca3af'">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </form>
             <div class="filter-wrap">
                 <button class="filter-btn" onclick="toggleFilter()">
                     <i class="fas fa-filter"></i> Filter
@@ -211,7 +224,7 @@
 
         <% if (totalPages > 1) { %>
             <div class="pagination-container">
-                <a href="?page=<%= currentPage - 1 %>" class="pg-btn <%= currentPage === 1 ? 'disabled' : '' %>">
+                <a href="?page=<%= currentPage - 1 %><%= locals.searchQuery ? '&search=' + encodeURIComponent(searchQuery) + '&searchType=' + locals.searchType : '' %>" class="pg-btn <%= currentPage === 1 ? 'disabled' : '' %>">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <div class="pg-num-wrap">
@@ -221,18 +234,18 @@
                         if (end - start < 2) start = Math.max(1, end - 2);
                     %>
                     <% if (start > 1) { %>
-                        <a href="?page=1" class="pg-num">1</a>
+                        <a href="?page=1<%= locals.searchQuery ? '&search=' + encodeURIComponent(searchQuery) + '&searchType=' + locals.searchType : '' %>" class="pg-num">1</a>
                         <% if (start > 2) { %><span class="pg-dots">...</span><% } %>
                     <% } %>
                     <% for(let i = start; i <= end; i++) { %>
-                        <a href="?page=<%= i %>" class="pg-num <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                        <a href="?page=<%= i %><%= locals.searchQuery ? '&search=' + encodeURIComponent(searchQuery) + '&searchType=' + locals.searchType : '' %>" class="pg-num <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
                     <% } %>
                     <% if (end < totalPages) { %>
                         <% if (end < totalPages - 1) { %><span class="pg-dots">...</span><% } %>
-                        <a href="?page=<%= totalPages %>" class="pg-num"><%= totalPages %></a>
+                        <a href="?page=<%= totalPages %><%= locals.searchQuery ? '&search=' + encodeURIComponent(searchQuery) + '&searchType=' + locals.searchType : '' %>" class="pg-num"><%= totalPages %></a>
                     <% } %>
                 </div>
-                <a href="?page=<%= currentPage + 1 %>" class="pg-btn <%= currentPage === totalPages ? 'disabled' : '' %>">
+                <a href="?page=<%= currentPage + 1 %><%= locals.searchQuery ? '&search=' + encodeURIComponent(searchQuery) + '&searchType=' + locals.searchType : '' %>" class="pg-btn <%= currentPage === totalPages ? 'disabled' : '' %>">
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
@@ -426,10 +439,49 @@ function startCountdowns() {
         const timers = document.querySelectorAll('.countdown-timer');
         timers.forEach(timer => {
             let timeLeft = parseInt(timer.getAttribute('data-timeleft'));
-            const orderIdx = timer.getAttribute('data-idx');
+            const orderIdx = parseInt(timer.getAttribute('data-idx'));
             
             if (timeLeft <= 0) {
                 timer.innerHTML = "00:00";
+                
+                // Dynamic state transition to EXPIRED in client UI
+                if (!isNaN(orderIdx) && ordersData[orderIdx] && ordersData[orderIdx].status === 'pending') {
+                    ordersData[orderIdx].status = 'expired';
+                    
+                    // Find card DOM element
+                    const card = timer.closest('.order-card') || document.querySelector(`.order-card[onclick*="selectOrder(this, ${orderIdx})"]`);
+                    if (card) {
+                        card.dataset.status = 'expired';
+                        
+                        // Update status badge on card
+                        const statusBadge = card.querySelector('.order-status');
+                        if (statusBadge) {
+                            statusBadge.className = 'order-status expired';
+                            statusBadge.innerHTML = 'EXPIRED';
+                        }
+                        
+                        // Hide the countdown badge on the card
+                        const cardTimer = card.querySelector('.countdown-badge');
+                        if (cardTimer) {
+                            cardTimer.style.display = 'none';
+                        }
+                        
+                        // If this card is active, also update the detail panel
+                        if (card.classList.contains('active')) {
+                            const detailStatus = document.querySelector('.detail-status-badge');
+                            if (detailStatus) {
+                                detailStatus.style.background = '#dc262615';
+                                detailStatus.style.color = '#dc2626';
+                                detailStatus.style.borderColor = '#dc262633';
+                                detailStatus.innerHTML = 'EXPIRED';
+                            }
+                            const detailTimerWrap = document.querySelector('.countdown-timer')?.closest('div');
+                            if (detailTimerWrap) {
+                                detailTimerWrap.style.display = 'none';
+                            }
+                        }
+                    }
+                }
             } else {
                 const m = Math.floor(timeLeft / 60);
                 const s = timeLeft % 60;
@@ -438,7 +490,7 @@ function startCountdowns() {
                 timer.setAttribute('data-timeleft', nextTime);
                 
                 // Keep the global data synchronized so detail panel stays accurate
-                if (orderIdx !== null && ordersData[orderIdx]) {
+                if (!isNaN(orderIdx) && ordersData[orderIdx]) {
                     ordersData[orderIdx].time_left = nextTime;
                 }
             }

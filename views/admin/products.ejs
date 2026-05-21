@@ -92,11 +92,225 @@
 .ed-btn.save:hover { background: #059669; }
 .ed-btn.cancel { background: #f3f4f6; color: #374151; }
 
-@media (max-width: 1024px) { .prod-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 768px) { .prod-grid { grid-template-columns: repeat(2, 1fr); } }
+/* ===== LAYOUT SWITCHER STYLES ===== */
+.layout-switcher .layout-btn.active {
+    background: #fff;
+    color: #10b981;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.layout-switcher .layout-btn:hover:not(.active) {
+    color: #111827;
+}
+
+/* ===== LAYOUT GRID MODIFICATIONS (Tampilan Grid Premium) ===== */
+.prod-grid.layout-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+}
+.prod-grid.layout-grid .prod-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+}
+.prod-grid.layout-grid .prod-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border-color: #3b82f633;
+}
+
+/* ===== LAYOUT LIST STYLES (Tampilan Baris Stripe-Style) ===== */
+.prod-grid.layout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.prod-grid.layout-list .prod-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+}
+.prod-grid.layout-list .prod-card:hover {
+    box-shadow: 0 6px 12px rgba(0,0,0,0.03);
+    border-color: #10b98133;
+    transform: translateX(4px);
+}
+.prod-grid.layout-list .prod-thumb {
+    width: 54px;
+    height: 54px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.prod-grid.layout-list .prod-body {
+    padding: 0;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 24px;
+    justify-content: space-between;
+}
+.prod-grid.layout-list .prod-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0;
+    max-width: 280px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: block;
+}
+.prod-grid.layout-list .prod-price {
+    font-size: 15px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 0;
+    min-width: 110px;
+}
+.prod-grid.layout-list .prod-meta {
+    margin-top: 0;
+    display: flex;
+    gap: 16px;
+}
+.prod-grid.layout-list .prod-actions {
+    border-top: none;
+    padding: 0;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+/* ===== LAYOUT GLASS STYLE (Tampilan Glassmorphism Mewah) ===== */
+.prod-grid.layout-glass {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+.prod-grid.layout-glass .prod-card {
+    position: relative;
+    height: 270px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #0f172a;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.prod-grid.layout-glass .prod-card:hover {
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #3b82f688;
+}
+.prod-grid.layout-glass .prod-thumb {
+    height: 100%;
+    width: 100%;
+}
+.prod-grid.layout-glass .prod-body {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: 14px;
+    padding: 12px;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+    z-index: 2;
+    transition: 0.25s ease;
+}
+.prod-grid.layout-glass .prod-card:hover .prod-body {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+.prod-grid.layout-glass .prod-name {
+    font-size: 12px;
+    color: #0f172a;
+    font-weight: 800;
+}
+.prod-grid.layout-glass .prod-price {
+    font-size: 14px;
+    color: #111827;
+}
+.prod-grid.layout-glass .prod-meta {
+    font-size: 10px;
+}
+.prod-grid.layout-glass .prod-actions {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+    padding: 6px 10px;
+    border-top: none;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 10px;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.prod-grid.layout-glass .prod-card:hover .prod-actions {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+@media (max-width: 1024px) { 
+    .prod-grid.layout-grid { grid-template-columns: repeat(3, 1fr); } 
+    .prod-grid.layout-glass { grid-template-columns: repeat(3, 1fr); } 
+}
+@media (max-width: 768px) { 
+    .prod-grid.layout-grid { grid-template-columns: repeat(2, 1fr); } 
+    .prod-grid.layout-glass { grid-template-columns: repeat(2, 1fr); } 
+    
+    /* Responsive list layout */
+    .prod-grid.layout-list .prod-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 16px;
+    }
+    .prod-grid.layout-list .prod-thumb {
+        width: 60px;
+        height: 60px;
+    }
+    .prod-grid.layout-list .prod-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+        padding: 0;
+    }
+    .prod-grid.layout-list .prod-name {
+        max-width: 100%;
+        white-space: normal;
+    }
+    .prod-grid.layout-list .prod-actions {
+        width: 100%;
+        justify-content: space-between;
+        border-top: 1px solid #f3f4f6;
+        padding-top: 10px;
+    }
+}
 @media (max-width: 480px) { 
-    .prod-grid { grid-template-columns: 1fr; } 
+    .prod-grid.layout-grid { grid-template-columns: 1fr; } 
+    .prod-grid.layout-glass { grid-template-columns: 1fr; } 
     .prod-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+    .prod-header > div { width: 100%; justify-content: space-between; }
     .prod-add-btn { width: 100%; justify-content: center; }
     .cat-grid { grid-template-columns: 1fr; }
 }
@@ -104,12 +318,35 @@
 
 <div class="prod-header">
     <h2>Daftar Produk</h2>
-    <button class="prod-add-btn" onclick="document.getElementById('catModal').classList.add('show')">
-        <i class="fas fa-plus"></i> Produk Baru
-    </button>
+    <div style="display: flex; align-items: center; gap: 12px;">
+        <!-- Layout Switcher Toggle -->
+        <div class="layout-switcher" style="display: flex; background: #f1f5f9; border-radius: 10px; padding: 3px; gap: 2px; border: 1px solid #e2e8f0;">
+            <button type="button" class="layout-btn" onclick="changeLayout('grid')" id="btn-layout-grid" title="Grid View" style="border: none; background: transparent; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: 0.2s;">
+                <i class="fas fa-th-large" style="font-size: 13px;"></i>
+            </button>
+            <button type="button" class="layout-btn" onclick="changeLayout('list')" id="btn-layout-list" title="List View" style="border: none; background: transparent; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: 0.2s;">
+                <i class="fas fa-list" style="font-size: 13px;"></i>
+            </button>
+            <button type="button" class="layout-btn" onclick="changeLayout('glass')" id="btn-layout-glass" title="Glass View" style="border: none; background: transparent; width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: 0.2s;">
+                <i class="fas fa-magic" style="font-size: 13px;"></i>
+            </button>
+        </div>
+        <button class="prod-add-btn" onclick="document.getElementById('catModal').classList.add('show')">
+            <i class="fas fa-plus"></i> Produk Baru
+        </button>
+    </div>
 </div>
 
-<div class="prod-grid">
+<div class="prod-grid layout-grid" id="productsContainer">
+    <script>
+        // High-Performance layout restoration with zero layout flashes/CLS
+        (function() {
+            try {
+                const savedLayout = localStorage.getItem('lingku-product-layout') || 'grid';
+                document.getElementById('productsContainer').className = 'prod-grid layout-' + savedLayout;
+            } catch(e) {}
+        })();
+    </script>
     <% if (products.length > 0) { %>
         <% products.forEach(function(p) {
             const type = (p.type || p.product_type || 'digital').toLowerCase();
@@ -179,4 +416,35 @@
         </div>
     </div>
 </div>
+
+<script>
+    function changeLayout(layoutName) {
+        const container = document.getElementById('productsContainer');
+        if (!container) return;
+        
+        // Remove existing layout classes
+        container.classList.remove('layout-grid', 'layout-list', 'layout-glass');
+        
+        // Add new layout class
+        container.classList.add('layout-' + layoutName);
+        
+        // Update active class on switcher buttons
+        document.querySelectorAll('.layout-switcher .layout-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        
+        const activeBtn = document.getElementById('btn-layout-' + layoutName);
+        if (activeBtn) activeBtn.classList.add('active');
+        
+        // Save user preference
+        localStorage.setItem('lingku-product-layout', layoutName);
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize switcher button states
+        const savedLayout = localStorage.getItem('lingku-product-layout') || 'grid';
+        const activeBtn = document.getElementById('btn-layout-' + savedLayout);
+        if (activeBtn) activeBtn.classList.add('active');
+    });
+</script>
 

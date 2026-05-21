@@ -322,6 +322,10 @@ exports.getOrders = async (req, res) => {
         const page = parseInt(req.query.page) || 1;
         const limit = 20;
         const offset = (page - 1) * limit;
+        const searchQuery = req.query.search || '';
+        const searchType = req.query.searchType || 'all';
+
+        console.log('DEBUG: getOrders search query:', { searchQuery, searchType, userId });
 
         // Auto-expire pending orders for THIS MERCHANT
         let expiryMins = 15;
@@ -335,7 +339,7 @@ exports.getOrders = async (req, res) => {
                 FROM orders 
                 WHERE status = 'pending' 
                 AND user_id = ? 
-                AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
+                AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
             `, [userId, expiryMins]);
 
             if (expiredOrders.length > 0) {
@@ -345,7 +349,7 @@ exports.getOrders = async (req, res) => {
                     SET status = 'expired' 
                     WHERE status = 'pending' 
                     AND user_id = ? 
-                    AND created_at < DATE_SUB(UTC_TIMESTAMP(), INTERVAL ? MINUTE)
+                    AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
                 `, [userId, expiryMins]);
 
                 // Restore stock
@@ -361,13 +365,38 @@ exports.getOrders = async (req, res) => {
         } catch(e) { console.error('Auto-expire err:', e.message); }
 
         // Get total count for pagination
-        const [countRow] = await db.execute('SELECT COUNT(*) as total FROM orders WHERE user_id = ?', [userId]);
+        let countSql = 'SELECT COUNT(*) as total FROM orders o WHERE o.user_id = ?';
+        let countParams = [userId];
+        
+        let searchCond = '';
+        let searchParams = [];
+        if (searchQuery) {
+            if (searchType === 'name') {
+                searchCond = ' AND o.customer_name LIKE ?';
+                searchParams.push(`%${searchQuery}%`);
+            } else if (searchType === 'email') {
+                searchCond = ' AND o.customer_email LIKE ?';
+                searchParams.push(`%${searchQuery}%`);
+            } else if (searchType === 'phone') {
+                searchCond = ' AND o.customer_whatsapp LIKE ?';
+                searchParams.push(`%${searchQuery}%`);
+            } else {
+                searchCond = ' AND (o.customer_name LIKE ? OR o.customer_email LIKE ? OR o.customer_whatsapp LIKE ? OR o.reference_id LIKE ?)';
+                searchParams.push(`%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`, `%${searchQuery}%`);
+            }
+        }
+
+        if (searchCond) {
+            countSql += searchCond;
+            countParams.push(...searchParams);
+        }
+
+        const [countRow] = await db.execute(countSql, countParams);
         const totalItems = countRow[0].total;
-        const totalPages = Math.ceil(totalItems / limit);
+        const totalPages = Math.ceil(totalItems / limit) || 1;
 
         // Safe query for Hostinger & Local DB
-        const [orders] = await db.execute(
-            `SELECT o.*, 
+        let orderSql = `SELECT o.*, 
                     COALESCE(o.status, 'pending') as status,
                     COALESCE(p.name, 'Produk Tidak Terdeteksi') as product_name, 
                     p.price as product_price, 
@@ -377,11 +406,18 @@ exports.getOrders = async (req, res) => {
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
              LEFT JOIN products p ON o.product_id = p.id
-             WHERE o.user_id = ?
-             ORDER BY o.id DESC
-             LIMIT ? OFFSET ?`,
-            [userId, limit, offset]
-        );
+             WHERE o.user_id = ?`;
+        let orderParams = [userId];
+        
+        if (searchCond) {
+            orderSql += searchCond;
+            orderParams.push(...searchParams);
+        }
+        
+        orderSql += ' ORDER BY o.id DESC LIMIT ? OFFSET ?';
+        orderParams.push(limit, offset);
+
+        const [orders] = await db.execute(orderSql, orderParams);
 
         // Clean up data (handle multiple image columns and JSON prefixing)
         const cleanedOrders = orders.map(o => {
@@ -442,7 +478,9 @@ exports.getOrders = async (req, res) => {
             currentPage: page,
             totalPages: totalPages,
             merchantUsername: req.session.user ? req.session.user.username : "",
-            expiryMins: expiryMins
+            expiryMins: expiryMins,
+            searchQuery: searchQuery,
+            searchType: searchType
         });
     } catch (err) {
         console.error('Orders Error:', err.message);
