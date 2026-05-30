@@ -65,10 +65,18 @@
     <div class="user-info-text">
         <h1><%= displayName %></h1>
         <p style="color: #60a5fa; font-size: 13px; font-weight: 400; letter-spacing: 0.2px;"><%= targetUser.email %> • Member sejak <%= new Date(targetUser.created_at).toLocaleDateString('id-ID', {month:'long', year:'numeric'}) %></p>
-        <div style="margin-top: 10px;">
+        <div style="margin-top: 10px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <span class="plan-badge <%= targetUser.plan === 'pro' ? 'plan-pro' : 'plan-free' %>">
                 <i class="fas <%= targetUser.plan === 'pro' ? 'fa-crown' : 'fa-user' %>"></i> <%= (targetUser.plan || 'FREE').toUpperCase() %>
             </span>
+            <% const userSlug = targetUser.slug || targetUser.username || ''; %>
+            <% if (userSlug) { %>
+                <a href="/<%= userSlug %>" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; color: #059669; font-size: 12px; font-weight: 700; text-decoration: none; padding: 5px 14px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; transition: all 0.2s;">
+                    🔗 lingku.xyz/<%= userSlug %>
+                </a>
+            <% } else { %>
+                <span style="display:inline-block; font-size:12px; color:#94a3b8;">Landing page belum diatur</span>
+            <% } %>
         </div>
     </div>
 
