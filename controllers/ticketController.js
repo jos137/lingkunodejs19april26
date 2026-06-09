@@ -15,6 +15,7 @@ exports.displayTicket = async (req, res) => {
                 WHERE o.ticket_code = ?
             `, [code]);
         } catch(e1) {
+            console.error('Ticket query v1:', e1.message);
             try {
                 [orders] = await db.execute(`
                     SELECT o.*, p.name as product_name, u.name as seller_name
@@ -24,8 +25,16 @@ exports.displayTicket = async (req, res) => {
                     WHERE o.ticket_code = ?
                 `, [code]);
             } catch(e2) {
-                console.error('Ticket query inner fallback error:', e2.message);
-                orders = [];
+                console.error('Ticket query v2:', e2.message);
+                try {
+                    [orders] = await db.execute(
+                        'SELECT * FROM orders WHERE ticket_code = ?',
+                        [code]
+                    );
+                } catch(e3) {
+                    console.error('Ticket query v3:', e3.message);
+                    orders = [];
+                }
             }
         }
 
@@ -102,9 +111,21 @@ exports.validateTicket = async (req, res) => {
 
 exports.scannerPage = async (req, res) => {
     try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+        const [tickets] = await db.execute(`
+            SELECT o.id, o.ticket_code, o.customer_name, o.customer_email, o.customer_whatsapp,
+                   o.total_price, o.scanned_at, o.created_at, p.name as product_name
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE o.ticket_code IS NOT NULL AND o.user_id = ?
+            ORDER BY o.created_at DESC
+            LIMIT 100
+        `, [userId]);
+        
         res.render('admin/ticket-scanner', {
             title: 'Scan Tiket',
             layout: './layouts/admin',
+            tickets,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
