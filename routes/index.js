@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const indexController = require('../controllers/builderController');
+const ticketController = require('../controllers/ticketController');
 
 // Landing Page
 router.get('/', (req, res) => {
@@ -41,6 +42,10 @@ router.get('/api/order/status/:refId', indexController.checkOrderStatus);
 // Tracking & Email Events
 router.get('/track/email/:orderId.png', indexController.trackEmailOpen);
 router.get('/access/go/:orderId', indexController.handleAccessLink);
+
+// Ticket Routes
+router.get('/tiket/:code', ticketController.displayTicket);
+router.post('/api/tiket/validate/:code', ticketController.validateTicket);
 
 // Dynamic User Landing Pages (MUST BE LAST)
 router.get('/:username', indexController.renderUserPage);

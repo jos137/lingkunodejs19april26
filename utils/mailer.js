@@ -280,6 +280,70 @@ exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
     }
 };
 
+exports.sendTicketEmail = async (orderId, customerEmail, customerName, productName, ticketCode, baseUrl) => {
+    try {
+        const host = baseUrl || 'https://lingku.xyz';
+        const transporter = await getTransporter();
+        const ticketUrl = `${host}/tiket/${ticketCode}`;
+        const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(ticketUrl)}`;
+        const trackingPixel = `${host}/track/email/${orderId}.png`;
+        
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                    <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 8px;">🎟️</div>
+                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Tiket Kamu Sudah Siap!</h2>
+                    </div>
+                    <div style="padding: 40px 30px; text-align: center;">
+                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${customerName}</strong>, terima kasih telah membeli <strong>${productName}</strong>. Berikut tiket kamu:</p>
+                        
+                        <div style="margin: 24px auto; max-width: 280px; background: #f8fafc; border: 3px dashed #e2e8f0; border-radius: 20px; padding: 30px 20px;">
+                            <img src="${qrImageUrl}" alt="QR Code" style="width: 220px; height: 220px; display: block; margin: 0 auto 20px; border-radius: 12px; background: #ffffff; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+                            <div style="font-size: 11px; font-weight: 800; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 6px;">Kode Tiket</div>
+                            <div style="font-size: 20px; font-weight: 900; color: #1e293b; letter-spacing: 1px; font-family: monospace;">${ticketCode}</div>
+                        </div>
+
+                        <div style="text-align: left; background: #f5f3ff; padding: 20px; border-radius: 16px; margin-top: 24px;">
+                            <p style="margin: 0 0 12px; font-size: 13px; font-weight: 800; color: #7c3aed;">📌 Cara Pakai Tiket:</p>
+                            <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.8;">
+                                <li>Simpan & tunjukkan QR code ini saat hadir di acara</li>
+                                <li>Petugas kami akan scan QR untuk validasi</li>
+                                <li>Tiket hanya berlaku untuk <strong>1 kali scan</strong></li>
+                            </ol>
+                        </div>
+                        
+                        <div style="margin-top: 24px;">
+                            <a href="${ticketUrl}" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px;">LIHAT TIKET ONLINE</a>
+                        </div>
+                    </div>
+                    <div style="padding: 24px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 13px;">Lingku.xyz — Kelola Link Anda dengan Mudah</p>
+                    </div>
+                </div>
+                <img src="${trackingPixel}" width="1" height="1" style="display:none;" alt="" />
+            </div>
+        `;
+        
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku Tiket" <${fromEmail}>`,
+            to: customerEmail,
+            subject: `🎟️ Tiket Kamu: ${productName}`,
+            html: html
+        });
+
+        console.log(`Ticket email terkirim ke ${customerEmail} (ticket: ${ticketCode})`);
+        await db.execute("INSERT INTO email_logs (order_id, event_name, created_at) VALUES (?, 'Delivered', NOW())", [orderId]);
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email tiket:", err);
+        return false;
+    }
+};
+
 exports.sendReplyNotificationEmail = async (email, fullname, subject, replyText, baseUrl) => {
     try {
         const host = baseUrl || 'https://lingku.xyz';

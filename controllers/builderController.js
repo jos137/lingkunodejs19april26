@@ -1018,7 +1018,7 @@ exports.ipaymuCallback = async (req, res) => {
             }
 
             const [orders] = await db.execute(`
-                SELECT o.*, p.name as product_name, p.access_link 
+                SELECT o.*, p.name as product_name, p.access_link, p.product_type, p.download_url
                 FROM orders o 
                 JOIN products p ON o.product_id = p.id 
                 WHERE o.reference_id = ?
@@ -1060,10 +1060,42 @@ exports.ipaymuCallback = async (req, res) => {
                         } catch (e) {}
                     }
 
-                    // 3. Send Access Email Automatically
-                    if (order.customer_email && order.access_link) {
+                    // 3. Generate Ticket for Ticket-type Products
+                    const isTicketProduct = order.product_type === 'ticket' || order.product_type === 'tiket';
+                    console.log(`[CALLBACK] Order ${sid} product_type=${order.product_type}, isTicket=${isTicketProduct}, email=${order.customer_email || 'none'}`);
+                    
+                    if (isTicketProduct && order.customer_email) {
+                        try {
+                            const { v4: uuidv4 } = require('uuid');
+                            const ticketCode = uuidv4().replace(/-/g, '').substring(0, 16).toUpperCase();
+                            
+                            await db.execute(
+                                'UPDATE orders SET ticket_code = ? WHERE id = ?',
+                                [ticketCode, order.id]
+                            );
+                            
+                            console.log(`[TICKET] ticket_code ${ticketCode} saved to order ${order.id}`);
+                            
+                            const baseUrl = `https://${req.get('host')}`;
+                            const { sendTicketEmail } = require('../utils/mailer');
+                            const emailResult = await sendTicketEmail(
+                                order.id,
+                                order.customer_email,
+                                order.customer_name,
+                                order.product_name,
+                                ticketCode,
+                                baseUrl
+                            );
+                            console.log(`[TICKET] Email sent to ${order.customer_email}: ${emailResult ? 'SUCCESS' : 'FAILED'}`);
+                        } catch (e) {
+                            console.error('Ticket generation error:', e.message, e.stack);
+                        }
+                    }
+
+                    // 4. Send Access Email Automatically (for non-ticket products)
+                    if (!isTicketProduct && order.customer_email && order.access_link) {
                         const baseUrl = `https://${req.get('host')}`;
-                        const { sendAccessEmail } = require('../utils/mailer'); // Fixed path: mailer.js
+                        const { sendAccessEmail } = require('../utils/mailer');
                         sendAccessEmail(
                             order.id, 
                             order.customer_email, 
@@ -1074,7 +1106,7 @@ exports.ipaymuCallback = async (req, res) => {
                         ).catch(e => console.error('Error sending access email on callback:', e));
                     }
 
-                    // 4. Send Admin/Merchant Notification
+                    // 5. Send Admin/Merchant Notification
                     try {
                         const formattedPrice = parseFloat(order.total_price || 0).toLocaleString('id-ID');
                         await db.execute(

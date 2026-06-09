@@ -3,7 +3,8 @@ const db = require('../config/db');
 exports.getDashboardData = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
-        const filterDate = req.query.date || null; // Ambil parameter tanggal dari URL
+        const filterDate = req.query.date || null;
+        const filterMonth = req.query.month || null;
 
         // Base Query Condition
         let dateCondition = "WHERE user_id = ?";
@@ -12,6 +13,9 @@ exports.getDashboardData = async (req, res) => {
         if (filterDate) {
             dateCondition += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
             queryParams.push(filterDate);
+        } else if (filterMonth) {
+            dateCondition += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) BETWEEN ? AND LAST_DAY(?)";
+            queryParams.push(filterMonth + '-01', filterMonth + '-01');
         }
 
         // Total revenue (completed orders)
@@ -76,6 +80,9 @@ exports.getDashboardData = async (req, res) => {
             if (filterDate) {
                 chartQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
                 chartParams.push(filterDate);
+            } else if (filterMonth) {
+                chartQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) BETWEEN ? AND LAST_DAY(?)";
+                chartParams.push(filterMonth + '-01', filterMonth + '-01');
             } else {
                 chartQuery += " AND CONVERT_TZ(created_at, '+00:00', '+07:00') >= DATE_SUB(DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')), INTERVAL 30 DAY)";
             }
@@ -85,6 +92,8 @@ exports.getDashboardData = async (req, res) => {
             const [rows] = await db.execute(chartQuery, chartParams);
             chartData = rows;
         } catch(e) { console.log('Chart query error:', e.message); }
+
+        const chartTotal = chartData.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0);
 
         res.render('admin/dashboard', {
             title: 'Dashboard',
@@ -120,7 +129,9 @@ exports.getDashboardData = async (req, res) => {
                 slug: slug
             },
             chartData,
+            chartTotal,
             filterDate,
+            filterMonth,
             user: req.session.user || { name: userName, role: 'admin', roleDisplay: 'Administrator' }
         });
     } catch (err) {

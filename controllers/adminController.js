@@ -2,7 +2,7 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail } = require('../utils/mailer');
 
 // ===================== DASHBOARD =====================
 exports.getDashboard = async (req, res) => {
@@ -116,62 +116,84 @@ exports.getProductCreate = async (req, res) => {
 
 exports.updateProduct = async (req, res) => {
     try {
-        const { 
-            name, description, price, stock, download_url, normal_price,
-            promo_enabled, promo_duration, min_price, 
-            sale_start_date, sale_start_time, sale_end_date, sale_end_time,
-            show_forever, thumbnail_style, subtitle, button_text, button_color, theme_style
-        } = req.body;
+        const id = req.params.id;
         
-        let thumbUpdate = '';
-        let params = [
-            name, description, price || 0, stock || 0, download_url || '', 
-            normal_price || null, promo_enabled === 'on' ? 1 : 0, promo_duration || 0, 
-            min_price || null, sale_start_date || null, sale_start_time || null, 
-            sale_end_date || null, sale_end_time || null, show_forever === 'on' ? 1 : 0,
-            thumbnail_style || 'callout', subtitle || '', button_text || 'Ambil Sekarang',
-            button_color || '#10b981', theme_style || 'light'
-        ];
-        
-        if (req.file) {
-            thumbUpdate = ', thumbnail = ?';
+        // Ensure event columns exist before update
+        try {
+            await db.execute('SELECT event_date FROM products LIMIT 1');
+        } catch(e) {
+            await db.execute('ALTER TABLE products ADD event_date DATE');
+            await db.execute('ALTER TABLE products ADD event_time TIME');
+            await db.execute('ALTER TABLE products ADD event_location VARCHAR(255)');
         }
-        const query = `UPDATE products SET 
-            name = ?, description = ?, price = ?, stock = ?, download_url = ?, 
-            normal_price = ?, promo_enabled = ?, promo_duration = ?, 
-            min_price = ?, sale_start_date = ?, sale_start_time = ?, 
-            sale_end_date = ?, sale_end_time = ?, show_forever = ?,
-            thumbnail_style = ?, subtitle = ?, button_text = ?, button_color = ?, theme_style = ?,
-            is_affiliate = ?, commission_percent = ?, product_type = ?
-            ${thumbUpdate} WHERE id = ?`;
-            
-        params.push(req.body.is_affiliate === 'on' ? 1 : 0);
-        params.push(req.body.commission_percent || 20);
-        params.push(req.body.type || 'digital');
-        if (req.file) params.push('/uploads/products/' + req.file.filename);
-        params.push(req.params.id);
+        
+        const updates = {
+            name: req.body.name || '',
+            description: req.body.description || '',
+            price: parseFloat(req.body.price) || 0,
+            stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 0),
+            download_url: req.body.download_url || '',
+            normal_price: req.body.normal_price || null,
+            promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
+            promo_duration: parseInt(req.body.promo_duration) || 0,
+            min_price: req.body.min_price || null,
+            sale_start_date: req.body.sale_start_date || null,
+            sale_start_time: req.body.sale_start_time || null,
+            sale_end_date: req.body.sale_end_date || null,
+            sale_end_time: req.body.sale_end_time || null,
+            show_forever: req.body.show_forever === 'on' ? 1 : 0,
+            is_affiliate: req.body.is_affiliate === 'on' ? 1 : 0,
+            commission_percent: parseFloat(req.body.commission_percent) || 20,
+            product_type: req.body.type || 'digital',
+            thumbnail_style: req.body.thumbnail_style || 'callout',
+            subtitle: req.body.subtitle || '',
+            button_text: req.body.button_text || 'Ambil Sekarang',
+            button_color: req.body.button_color || '#10b981',
+            theme_style: req.body.theme_style || 'light',
+            event_date: req.body.event_date || null,
+            event_time: req.body.event_time || null,
+            event_location: req.body.event_location || null
+        };
+
+        if (req.file) {
+            updates.thumbnail = '/uploads/products/' + req.file.filename;
+        }
+
+        const setClauses = Object.keys(updates).map(c => '`' + c + '` = ?').join(', ');
+        const query = `UPDATE products SET ${setClauses} WHERE id = ?`;
+        const params = [...Object.values(updates), id];
 
         try {
             await db.execute(query, params);
+            console.log('[UPDATE] SUCCESS');
         } catch (dbErr) {
+            console.error('[UPDATE] ERROR:', dbErr.code, dbErr.sqlMessage || dbErr.message);
             if (dbErr.message.includes('Unknown column')) {
                 const addCols = [
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INT DEFAULT 0',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS download_url TEXT',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS normal_price DECIMAL(15,2)',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_enabled TINYINT(1) DEFAULT 0',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_duration INT DEFAULT 0',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS min_price DECIMAL(15,2)',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_start_date DATE',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_start_time TIME',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_date DATE',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS sale_end_time TIME',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS show_forever TINYINT(1) DEFAULT 0',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS is_affiliate TINYINT(1) DEFAULT 1',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS commission_percent DECIMAL(5,2) DEFAULT 20.00'
+                    'ALTER TABLE products ADD stock INT DEFAULT 0',
+                    'ALTER TABLE products ADD download_url TEXT',
+                    'ALTER TABLE products ADD normal_price DECIMAL(15,2)',
+                    'ALTER TABLE products ADD promo_enabled TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD promo_duration INT DEFAULT 0',
+                    'ALTER TABLE products ADD min_price DECIMAL(15,2)',
+                    'ALTER TABLE products ADD sale_start_date DATE',
+                    'ALTER TABLE products ADD sale_start_time TIME',
+                    'ALTER TABLE products ADD sale_end_date DATE',
+                    'ALTER TABLE products ADD sale_end_time TIME',
+                    'ALTER TABLE products ADD show_forever TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD is_affiliate TINYINT(1) DEFAULT 1',
+                    'ALTER TABLE products ADD commission_percent DECIMAL(5,2) DEFAULT 20.00',
+                    'ALTER TABLE products ADD thumbnail_style VARCHAR(50) DEFAULT "callout"',
+                    'ALTER TABLE products ADD subtitle VARCHAR(255) DEFAULT ""',
+                    'ALTER TABLE products ADD button_text VARCHAR(100) DEFAULT "Ambil Sekarang"',
+                    'ALTER TABLE products ADD button_color VARCHAR(20) DEFAULT "#10b981"',
+                    'ALTER TABLE products ADD theme_style VARCHAR(20) DEFAULT "light"',
+                    'ALTER TABLE products ADD event_date DATE',
+                    'ALTER TABLE products ADD event_time TIME',
+                    'ALTER TABLE products ADD event_location VARCHAR(255)'
                 ];
                 for (let sql of addCols) {
-                    try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
+                    try { await db.execute(sql); } catch(e) {}
                 }
                 await db.execute(query, params);
             } else throw dbErr;
@@ -187,34 +209,41 @@ exports.updateProduct = async (req, res) => {
 exports.createProductPost = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
-        const { 
-            name, description, price, stock, type, download_url, normal_price,
-            promo_enabled, promo_duration, min_price, 
-            sale_start_date, sale_start_time, sale_end_date, sale_end_time,
-            show_forever, thumbnail_style, subtitle, button_text, button_color, theme_style
-        } = req.body;
+        const data = {
+            user_id: userId,
+            name: req.body.name || '',
+            description: req.body.description || '',
+            price: parseFloat(req.body.price) || 0,
+            stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 999),
+            product_type: req.body.type || 'digital',
+            download_url: req.body.download_url || '',
+            normal_price: req.body.normal_price || null,
+            promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
+            promo_duration: parseInt(req.body.promo_duration) || 0,
+            min_price: req.body.min_price || null,
+            sale_start_date: req.body.sale_start_date || null,
+            sale_start_time: req.body.sale_start_time || null,
+            sale_end_date: req.body.sale_end_date || null,
+            sale_end_time: req.body.sale_end_time || null,
+            show_forever: req.body.show_forever === 'on' ? 1 : 0,
+            is_affiliate: req.body.is_affiliate === 'on' ? 1 : 0,
+            commission_percent: parseFloat(req.body.commission_percent) || 20,
+            thumbnail: req.file ? '/uploads/products/' + req.file.filename : '',
+            thumbnail_style: req.body.thumbnail_style || 'callout',
+            subtitle: req.body.subtitle || '',
+            button_text: req.body.button_text || 'Ambil Sekarang',
+            button_color: req.body.button_color || '#10b981',
+            theme_style: req.body.theme_style || 'light',
+            event_date: req.body.event_date || null,
+            event_time: req.body.event_time || null,
+            event_location: req.body.event_location || null
+        };
 
-        let thumbnail = '';
-        if (req.file) thumbnail = '/uploads/products/' + req.file.filename;
+        let cols = Object.keys(data).join(', ');
+        let placeholders = Object.keys(data).map(() => '?').join(', ');
+        let params = Object.values(data);
         
-        const query = `INSERT INTO products (
-            user_id, name, description, price, stock, product_type, download_url, 
-            normal_price, promo_enabled, promo_duration, min_price, 
-            sale_start_date, sale_start_time, sale_end_date, sale_end_time, 
-            show_forever, is_affiliate, commission_percent, thumbnail,
-            thumbnail_style, subtitle, button_text, button_color, theme_style
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-
-        const params = [
-            userId, name, description || '', price || 0, stock || 999, type || 'digital', 
-            download_url || '', normal_price || null, promo_enabled === 'on' ? 1 : 0, 
-            promo_duration || 0, min_price || null, sale_start_date || null, 
-            sale_start_time || null, sale_end_date || null, sale_end_time || null, 
-            show_forever === 'on' ? 1 : 0, req.body.is_affiliate === 'on' ? 1 : 0, 
-            req.body.commission_percent || 20, thumbnail,
-            thumbnail_style || 'callout', subtitle || '', button_text || 'Ambil Sekarang',
-            button_color || '#10b981', theme_style || 'light'
-        ];
+        const query = `INSERT INTO products (${cols}) VALUES (${placeholders})`;
 
         try {
             await db.execute(query, params);
@@ -238,7 +267,10 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS subtitle VARCHAR(255) DEFAULT ""',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS button_text VARCHAR(100) DEFAULT "Ambil Sekarang"',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS button_color VARCHAR(20) DEFAULT "#10b981"',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS theme_style VARCHAR(20) DEFAULT "light"'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS theme_style VARCHAR(20) DEFAULT "light"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_date DATE',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_time TIME',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_location VARCHAR(255)'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
@@ -537,7 +569,7 @@ exports.sendAccessAction = async (req, res) => {
         }
         
         const [rows] = await db.execute(`
-            SELECT o.*, p.name as product_name, p.access_link 
+            SELECT o.*, p.name as product_name, p.access_link, p.product_type
             FROM orders o 
             LEFT JOIN products p ON o.product_id = p.id 
             WHERE o.id = ? AND o.user_id = ?
@@ -547,12 +579,29 @@ exports.sendAccessAction = async (req, res) => {
         
         const o = rows[0];
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const success = await sendAccessEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, o.access_link, baseUrl);
+        const isTicket = o.product_type === 'ticket' || o.product_type === 'tiket';
         
-        if (success) {
-            res.json({ success: true, message: 'Email akses produk berhasil dikirim' });
+        let success;
+        if (isTicket) {
+            let ticketCode = o.ticket_code;
+            if (!ticketCode) {
+                const { v4: uuidv4 } = require('uuid');
+                ticketCode = uuidv4().replace(/-/g, '').substring(0, 16).toUpperCase();
+                await db.execute('UPDATE orders SET ticket_code = ? WHERE id = ?', [ticketCode, o.id]);
+            }
+            success = await sendTicketEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, ticketCode, baseUrl);
+            if (success) {
+                res.json({ success: true, message: 'Email tiket berhasil dikirim' });
+            } else {
+                res.status(500).json({ success: false, message: 'Gagal mengirim email tiket, periksa SMTP' });
+            }
         } else {
-            res.status(500).json({ success: false, message: 'Gagal mengirim email, periksa SMTP' });
+            success = await sendAccessEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, o.access_link, baseUrl);
+            if (success) {
+                res.json({ success: true, message: 'Email akses produk berhasil dikirim' });
+            } else {
+                res.status(500).json({ success: false, message: 'Gagal mengirim email, periksa SMTP' });
+            }
         }
     } catch (err) {
         console.error('Access Email Error:', err.message);
@@ -579,6 +628,17 @@ exports.getStatistics = async (req, res) => {
         `, [userId]);
 
         const o = overall[0];
+
+        // This Month Stats
+        const [thisMonth] = await db.execute(`
+            SELECT COUNT(*) as total, COALESCE(SUM(o.total_price), 0) as revenue
+            FROM orders o
+            JOIN products p ON o.product_id = p.id
+            WHERE p.user_id = ? AND o.status = 'completed'
+              AND DATE_FORMAT(CONVERT_TZ(o.created_at, '+00:00', '+07:00'), '%Y-%m') = DATE_FORMAT(CONVERT_TZ(NOW(), '+00:00', '+07:00'), '%Y-%m')
+        `, [userId]);
+
+        const tm = thisMonth[0];
 
         // Filtered Stats for Chart (Specific Date)
         const [filtered] = await db.execute(`
@@ -610,7 +670,8 @@ exports.getStatistics = async (req, res) => {
             total_revenue: o.total_rev,
             total_orders: o.total_cnt,
             completed_orders: o.comp_cnt,
-            pending_orders: o.pend_cnt,
+            thisMonthOrders: tm.total || 0,
+            thisMonthRevenue: tm.revenue || 0,
             chartData: {
                 completed: f.comp || 0,
                 pending: f.pend || 0,
@@ -622,7 +683,7 @@ exports.getStatistics = async (req, res) => {
         });
     } catch (err) {
         console.error('Stats Error:', err.message);
-        res.render('admin/statistics', { title: 'Statistik', layout: './layouts/admin', total_revenue: 0, total_orders: 0, completed_orders: 0, pending_orders: 0, chartData: {completed:0, pending:0, date:''}, bestSellers: [], user: req.session.user || res.locals.user });
+        res.render('admin/statistics', { title: 'Statistik', layout: './layouts/admin', total_revenue: 0, total_orders: 0, completed_orders: 0, thisMonthOrders: 0, thisMonthRevenue: 0, chartData: {completed:0, pending:0, date:''}, bestSellers: [], user: req.session.user || res.locals.user });
     }
 };
 

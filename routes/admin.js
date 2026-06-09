@@ -6,6 +6,7 @@ const path = require('path');
 // Controllers
 const adminController = require('../controllers/adminController');
 const dashboardController = require('../controllers/dashboardController');
+const ticketController = require('../controllers/ticketController');
 
 // Builder controller (safe import)
 let builderController;
@@ -48,6 +49,9 @@ router.use(isAuth);
 // ===== DASHBOARD =====
 router.get('/', dashboardController.getDashboardData);
 router.post('/update-slug', dashboardController.updateSlug);
+
+// ===== TICKET SCANNER =====
+router.get('/tiket/scanner', ticketController.scannerPage);
 
 // ===== BUILDER =====
 if (builderController) {

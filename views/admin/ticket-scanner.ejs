@@ -1,0 +1,141 @@
+<style>
+    .scanner-container { max-width: 600px; margin: 0 auto; }
+    #reader { width: 100%; border-radius: 16px; overflow: hidden; border: 2px solid #e2e8f0; }
+    .scan-result { margin-top: 20px; padding: 20px; border-radius: 16px; text-align: center; display: none; }
+    .scan-result.success { background: #f0fdf4; border: 1.5px solid #10b981; display: block; }
+    .scan-result.error { background: #fef2f2; border: 1.5px solid #ef4444; display: block; }
+    .scan-result .icon { font-size: 36px; margin-bottom: 8px; }
+    .scan-result h3 { font-size: 16px; margin-bottom: 4px; }
+    .scan-result p { font-size: 13px; color: #64748b; }
+    .result-detail { font-size: 20px; font-weight: 900; color: #1e293b; margin: 8px 0; font-family: monospace; }
+    .mode-toggle { display: flex; gap: 8px; margin-bottom: 16px; background: #f1f5f9; padding: 4px; border-radius: 10px; }
+    .mode-btn { flex: 1; padding: 8px 16px; border-radius: 8px; border: none; font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; background: transparent; color: #64748b; }
+    .mode-btn.active { background: #fff; color: #1e293b; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .manual-input { display: flex; gap: 8px; margin-bottom: 16px; }
+    .manual-input input { flex: 1; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-weight: 700; outline: none; }
+    .manual-input input:focus { border-color: #10b981; }
+    .validate-btn { padding: 12px 24px; background: #10b981; color: #fff; border: none; border-radius: 10px; font-weight: 800; cursor: pointer; font-size: 14px; }
+    .validate-btn:hover { background: #059669; }
+    .validate-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+</style>
+
+<div class="scanner-container">
+    <h1 style="font-size:22px; font-weight:900; margin-bottom:20px; color:#1e293b;"><i class="fas fa-qrcode" style="color:#10b981;"></i> Scan Tiket</h1>
+    
+    <div class="mode-toggle">
+        <button class="mode-btn active" id="btnCamera" onclick="switchMode('camera')"><i class="fas fa-camera"></i> Kamera</button>
+        <button class="mode-btn" id="btnManual" onclick="switchMode('manual')"><i class="fas fa-keyboard"></i> Input Manual</button>
+    </div>
+    
+    <div id="cameraMode">
+        <div id="reader"></div>
+    </div>
+    
+    <div id="manualMode" style="display:none;">
+        <div class="manual-input">
+            <input type="text" id="codeInput" placeholder="Masukkan kode tiket..." onkeydown="if(event.key==='Enter')validateManual()">
+            <button class="validate-btn" onclick="validateManual()">Validasi</button>
+        </div>
+    </div>
+    
+    <div id="scanResult" class="scan-result">
+        <div class="icon" id="resultIcon"></div>
+        <h3 id="resultTitle"></h3>
+        <p id="resultMsg"></p>
+        <div class="result-detail" id="resultDetail"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    let scanner = null;
+    
+    function switchMode(mode) {
+        document.getElementById('btnCamera').classList.toggle('active', mode === 'camera');
+        document.getElementById('btnManual').classList.toggle('active', mode === 'manual');
+        document.getElementById('cameraMode').style.display = mode === 'camera' ? '' : 'none';
+        document.getElementById('manualMode').style.display = mode === 'manual' ? '' : 'none';
+        
+        if (mode === 'camera') {
+            startScanner();
+        } else {
+            stopScanner();
+        }
+    }
+    
+    function startScanner() {
+        if (scanner) return;
+        scanner = new Html5Qrcode("reader");
+        scanner.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            (decodedText) => {
+                handleScan(decodedText);
+            },
+            (error) => {}
+        ).catch(e => console.log('Camera error:', e));
+    }
+    
+    function stopScanner() {
+        if (scanner) {
+            scanner.stop().catch(() => {});
+            scanner = null;
+        }
+    }
+    
+    function handleScan(url) {
+        stopScanner();
+        const code = extractCode(url);
+        validateCode(code);
+    }
+    
+    function extractCode(url) {
+        try {
+            const u = new URL(url);
+            return u.pathname.replace('/tiket/', '');
+        } catch(e) {
+            return url;
+        }
+    }
+    
+    function validateManual() {
+        const code = document.getElementById('codeInput').value.trim();
+        if (!code) return;
+        validateCode(code);
+    }
+    
+    function validateCode(code) {
+        const result = document.getElementById('scanResult');
+        const btn = document.querySelector('.validate-btn');
+        
+        result.className = 'scan-result';
+        btn && (btn.disabled = true);
+        
+        fetch('/api/tiket/validate/' + code, { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                btn && (btn.disabled = false);
+                if (data.success) {
+                    result.className = 'scan-result success';
+                    document.getElementById('resultIcon').innerHTML = '✅';
+                    document.getElementById('resultTitle').innerText = 'Tiket Valid!';
+                    document.getElementById('resultMsg').innerText = 'Selamat datang, ' + data.customer_name;
+                    document.getElementById('resultDetail').innerText = data.ticket_code;
+                } else {
+                    result.className = 'scan-result error';
+                    document.getElementById('resultIcon').innerHTML = '❌';
+                    document.getElementById('resultTitle').innerText = 'Gagal';
+                    document.getElementById('resultMsg').innerText = data.message;
+                    document.getElementById('resultDetail').innerText = '';
+                }
+            })
+            .catch(err => {
+                btn && (btn.disabled = false);
+                result.className = 'scan-result error';
+                document.getElementById('resultIcon').innerHTML = '⚠️';
+                document.getElementById('resultTitle').innerText = 'Error';
+                document.getElementById('resultMsg').innerText = 'Gagal validasi';
+                document.getElementById('resultDetail').innerText = '';
+            });
+    }
+</script>

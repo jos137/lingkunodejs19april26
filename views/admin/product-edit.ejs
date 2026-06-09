@@ -122,6 +122,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     </div>
 
     <form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="mainForm">
+
         <div class="stan-grid">
             <!-- LEFT: EDITOR -->
             <div class="stan-editor-side">
@@ -129,7 +130,17 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                 <!-- TAB 1: THUMBNAIL -->
                 <div id="tab-thumbnail" class="tab-content active">
                     <div class="stan-card">
-                        <div class="stan-section-title"><div class="stan-step-num">1</div> Pick a style</div>
+                        <div class="stan-section-title"><div class="stan-step-num">1</div> Tipe Produk</div>
+                        <div class="stan-group">
+                            <select name="type" id="typeSelector" class="stan-input" style="cursor:pointer;" onchange="onTypeChange()">
+                                <option value="digital" <%= (p.type || p.product_type) === 'digital' ? 'selected' : '' %>>Digital / File</option>
+                                <option value="tiket" <%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? 'selected' : '' %>>Tiket Online</option>
+                                <option value="webinar" <%= (p.type || p.product_type) === 'webinar' ? 'selected' : '' %>>Webinar</option>
+                                <option value="mentoring" <%= (p.type || p.product_type) === 'mentoring' ? 'selected' : '' %>>Mentoring</option>
+                            </select>
+                        </div>
+                        
+                        <div class="stan-section-title"><div class="stan-step-num">2</div> Pick a style</div>
                         <div style="display:flex; gap:12px; margin-bottom:30px;">
                             <div class="style-card" id="style-button" onclick="setStyle('button')">
                                 <div class="style-icon"><i class="fas fa-link"></i></div>
@@ -147,7 +158,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         <!-- Hidden input for style -->
                         <input type="hidden" name="thumbnail_style" id="thumbnail_style" value="callout">
 
-                        <div class="stan-section-title"><div class="stan-step-num">2</div> Select Image</div>
+                            <div class="stan-section-title"><div class="stan-step-num">3</div> Select Image</div>
                         <div id="image-upload-box" style="border: 2px dashed var(--stan-border); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 20px; position: relative;">
                             <img id="editThumbPreview" src="<%= finalThumb %>" style="max-height: 80px; border-radius: 12px; margin-bottom: 10px; display: <%= finalThumb ? 'inline-block' : 'none' %>">
                             <i class="fas fa-image" style="font-size: 30px; color: #d1d5db; display: <%= finalThumb ? 'none' : 'block' %>; margin-bottom: 8px;"></i>
@@ -158,7 +169,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </label>
                         </div>
 
-                        <div class="stan-section-title"><div class="stan-step-num">3</div> Add Text</div>
+                        <div class="stan-section-title"><div class="stan-step-num">4</div> Add Text</div>
                         <div class="stan-group">
                             <label class="stan-label">Product Title</label>
                             <input type="text" name="name" class="stan-input" value="<%= p.name || '' %>" oninput="updatePreview('title', this.value)" placeholder="e.g. Get My eBook Now!">
@@ -214,7 +225,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         </script>
 
                         <!-- NEW: Set Price in Tab 1 -->
-                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">4</div> Set Price</div>
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Set Price</div>
                         <div class="pricing-toggle">
                             <div class="pt-item <%= p.price > 0 ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Fixed Price</div>
                             <div class="pt-item <%= p.price == 0 ? 'active' : '' %>" onclick="setPriceMode('free', this)">Free</div>
@@ -233,7 +244,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         </div>
 
                         <!-- NEW: Stock Inventory in Tab 1 -->
-                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Stock Inventory</div>
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">6</div> Stock Inventory</div>
                         <div class="stan-group">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                                 <label class="stan-label" style="margin-bottom:0;">Stock Availability</label>
@@ -282,12 +293,33 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </div>
                         </div>
 
-                        <!-- NEW: Access Link in Tab 2 -->
+                        <!-- Ticket Event Info (for ticket type) -->
+                        <div id="ticketEventFields" style="<%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? '' : 'display:none' %>">
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Info Acara</div>
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                            <div class="stan-group">
+                                <label class="stan-label">Tanggal Acara</label>
+                                <input type="date" name="event_date" class="stan-input" value="<%= p.event_date || '' %>">
+                            </div>
+                            <div class="stan-group">
+                                <label class="stan-label">Jam Acara</label>
+                                <input type="time" name="event_time" class="stan-input" value="<%= p.event_time || '' %>">
+                            </div>
+                        </div>
+                        <div class="stan-group">
+                            <label class="stan-label">Lokasi / Venue</label>
+                            <input type="text" name="event_location" class="stan-input" value="<%= p.event_location || '' %>" placeholder="e.g. Gedung Serbaguna, Jakarta">
+                        </div>
+                        </div>
+                        
+                        <!-- Product Access (for non-ticket) -->
+                        <div id="productAccessFields" style="<%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? 'display:none' : '' %>">
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Product Access</div>
                         <div class="stan-group">
                             <label class="stan-label">Access Link (URL)</label>
                             <input type="url" name="download_url" class="stan-input" value="<%= p.download_url || p.access_url || '' %>" placeholder="https://drive.google.com/...">
                             <p style="font-size:11px; color:#94a3b8; margin-top:8px;">Customers will be redirected here after successful payment.</p>
+                        </div>
                         </div>
 
                         <!-- NEW: Affiliate in Tab 2 -->
@@ -473,6 +505,13 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     const steps = ['thumbnail', 'checkout', 'options'];
     const tabs = document.querySelectorAll('.stan-tab');
     const contents = document.querySelectorAll('.tab-content');
+
+    function onTypeChange() {
+        var val = document.getElementById('typeSelector').value;
+        var isTicket = val === 'tiket' || val === 'ticket';
+        document.getElementById('ticketEventFields').style.display = isTicket ? '' : 'none';
+        document.getElementById('productAccessFields').style.display = isTicket ? 'none' : '';
+    }
 
     function setStyle(style) {
         currentStyle = style;
