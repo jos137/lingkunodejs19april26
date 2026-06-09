@@ -1066,8 +1066,7 @@ exports.ipaymuCallback = async (req, res) => {
                     
                     if (isTicketProduct && order.customer_email) {
                         try {
-                            const { v4: uuidv4 } = require('uuid');
-                            const ticketCode = uuidv4().replace(/-/g, '').substring(0, 16).toUpperCase();
+                            const ticketCode = require('crypto').randomBytes(8).toString('hex').toUpperCase();
                             
                             await db.execute(
                                 'UPDATE orders SET ticket_code = ? WHERE id = ?',

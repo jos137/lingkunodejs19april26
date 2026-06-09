@@ -585,8 +585,7 @@ exports.sendAccessAction = async (req, res) => {
         if (isTicket) {
             let ticketCode = o.ticket_code;
             if (!ticketCode) {
-                const { v4: uuidv4 } = require('uuid');
-                ticketCode = uuidv4().replace(/-/g, '').substring(0, 16).toUpperCase();
+                ticketCode = require('crypto').randomBytes(8).toString('hex').toUpperCase();
                 await db.execute('UPDATE orders SET ticket_code = ? WHERE id = ?', [ticketCode, o.id]);
             }
             success = await sendTicketEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, ticketCode, baseUrl);
