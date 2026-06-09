@@ -1017,12 +1017,23 @@ exports.ipaymuCallback = async (req, res) => {
                 try { await db.execute("ALTER TABLE orders ADD COLUMN trx_id VARCHAR(100) AFTER reference_id"); } catch(err2) {}
             }
 
-            const [orders] = await db.execute(`
-                SELECT o.*, p.name as product_name, p.access_link, p.product_type, p.download_url
-                FROM orders o 
-                JOIN products p ON o.product_id = p.id 
-                WHERE o.reference_id = ?
-            `, [sid]);
+            let orders;
+            try {
+                [orders] = await db.execute(`
+                    SELECT o.*, p.name as product_name, p.access_link, p.product_type, p.download_url,
+                           p.event_date, p.event_time, p.event_location
+                    FROM orders o 
+                    JOIN products p ON o.product_id = p.id 
+                    WHERE o.reference_id = ?
+                `, [sid]);
+            } catch(e) {
+                [orders] = await db.execute(`
+                    SELECT o.*, p.name as product_name, p.access_link, p.product_type, p.download_url
+                    FROM orders o 
+                    JOIN products p ON o.product_id = p.id 
+                    WHERE o.reference_id = ?
+                `, [sid]);
+            }
             
             if (orders.length > 0) {
                 const order = orders[0];
@@ -1083,6 +1094,9 @@ exports.ipaymuCallback = async (req, res) => {
                                 order.customer_name,
                                 order.product_name,
                                 ticketCode,
+                                order.event_date || null,
+                                order.event_time || null,
+                                order.event_location || null,
                                 baseUrl
                             );
                             console.log(`[TICKET] Email sent to ${order.customer_email}: ${emailResult ? 'SUCCESS' : 'FAILED'}`);

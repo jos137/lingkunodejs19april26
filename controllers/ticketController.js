@@ -3,16 +3,33 @@ const db = require('../config/db');
 exports.displayTicket = async (req, res) => {
     try {
         const { code } = req.params;
-        const [orders] = await db.execute(`
-            SELECT o.*, p.name as product_name, p.download_url, u.name as seller_name,
-                   p.event_date, p.event_time, p.event_location
-            FROM orders o
-            JOIN products p ON o.product_id = p.id
-            JOIN users u ON o.user_id = u.id
-            WHERE o.ticket_code = ?
-        `, [code]);
+        
+        let orders = [];
+        try {
+            [orders] = await db.execute(`
+                SELECT o.*, p.name as product_name, u.name as seller_name,
+                       p.event_date, p.event_time, p.event_location
+                FROM orders o
+                LEFT JOIN products p ON o.product_id = p.id
+                LEFT JOIN users u ON o.user_id = u.id
+                WHERE o.ticket_code = ?
+            `, [code]);
+        } catch(e1) {
+            try {
+                [orders] = await db.execute(`
+                    SELECT o.*, p.name as product_name, u.name as seller_name
+                    FROM orders o
+                    LEFT JOIN products p ON o.product_id = p.id
+                    LEFT JOIN users u ON o.user_id = u.id
+                    WHERE o.ticket_code = ?
+                `, [code]);
+            } catch(e2) {
+                console.error('Ticket query inner fallback error:', e2.message);
+                orders = [];
+            }
+        }
 
-        if (orders.length === 0) {
+        if (!orders || orders.length === 0) {
             return res.send(renderTicketHTML(null, code));
         }
 

@@ -280,7 +280,7 @@ exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
     }
 };
 
-exports.sendTicketEmail = async (orderId, customerEmail, customerName, productName, ticketCode, baseUrl) => {
+exports.sendTicketEmail = async (orderId, customerEmail, customerName, productName, ticketCode, eventDate, eventTime, eventLocation, baseUrl) => {
     try {
         const host = baseUrl || 'https://lingku.xyz';
         const transporter = await getTransporter();
@@ -288,15 +288,32 @@ exports.sendTicketEmail = async (orderId, customerEmail, customerName, productNa
         const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(ticketUrl)}`;
         const trackingPixel = `${host}/track/email/${orderId}.png`;
         
+        let eventInfoHtml = '';
+        if (eventDate || eventTime || eventLocation) {
+            eventInfoHtml = `
+                <div style="text-align: left; background: #f0fdf4; padding: 20px; border-radius: 16px; margin-bottom: 20px; border: 1.5px solid #dcfce7;">
+                    <p style="margin: 0 0 12px; font-size: 12px; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 0.5px;">📅 Detail Acara</p>`;
+            if (eventDate) {
+                const d = new Date(eventDate);
+                if (!isNaN(d)) eventInfoHtml += `<p style="margin: 4px 0; font-size: 14px; font-weight: 700; color: #1e293b;">📆 ${d.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>`;
+            }
+            if (eventTime) eventInfoHtml += `<p style="margin: 4px 0; font-size: 14px; font-weight: 700; color: #1e293b;">⏰ ${eventTime}</p>`;
+            if (eventLocation) eventInfoHtml += `<p style="margin: 4px 0; font-size: 14px; font-weight: 700; color: #1e293b;">📍 ${eventLocation}</p>`;
+            eventInfoHtml += `</div>`;
+        }
+
         const html = `
             <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
                 <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
-                    <div style="background: linear-gradient(135deg, #7c3aed, #6d28d9); padding: 40px 30px; text-align: center;">
+                    <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 40px 30px; text-align: center;">
                         <div style="font-size: 40px; margin-bottom: 8px;">🎟️</div>
-                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">Tiket Kamu Sudah Siap!</h2>
+                        <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800; letter-spacing: -0.5px;">${productName}</h2>
+                        <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">Tiket kamu sudah siap!</p>
                     </div>
                     <div style="padding: 40px 30px; text-align: center;">
-                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${customerName}</strong>, terima kasih telah membeli <strong>${productName}</strong>. Berikut tiket kamu:</p>
+                        <p style="margin: 0 0 24px; color: #475569; line-height: 1.6; font-size: 15px;">Halo <strong>${customerName}</strong>, terima kasih telah membeli tiket. Berikut detailnya:</p>
+                        
+                        ${eventInfoHtml}
                         
                         <div style="margin: 24px auto; max-width: 280px; background: #f8fafc; border: 3px dashed #e2e8f0; border-radius: 20px; padding: 30px 20px;">
                             <img src="${qrImageUrl}" alt="QR Code" style="width: 220px; height: 220px; display: block; margin: 0 auto 20px; border-radius: 12px; background: #ffffff; padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
@@ -304,8 +321,8 @@ exports.sendTicketEmail = async (orderId, customerEmail, customerName, productNa
                             <div style="font-size: 20px; font-weight: 900; color: #1e293b; letter-spacing: 1px; font-family: monospace;">${ticketCode}</div>
                         </div>
 
-                        <div style="text-align: left; background: #f5f3ff; padding: 20px; border-radius: 16px; margin-top: 24px;">
-                            <p style="margin: 0 0 12px; font-size: 13px; font-weight: 800; color: #7c3aed;">📌 Cara Pakai Tiket:</p>
+                        <div style="text-align: left; background: #f0fdf4; padding: 20px; border-radius: 16px; margin-top: 24px;">
+                            <p style="margin: 0 0 12px; font-size: 13px; font-weight: 800; color: #059669;">📌 Cara Pakai Tiket:</p>
                             <ol style="margin: 0; padding-left: 20px; font-size: 13px; color: #475569; line-height: 1.8;">
                                 <li>Simpan & tunjukkan QR code ini saat hadir di acara</li>
                                 <li>Petugas kami akan scan QR untuk validasi</li>
@@ -314,7 +331,7 @@ exports.sendTicketEmail = async (orderId, customerEmail, customerName, productNa
                         </div>
                         
                         <div style="margin-top: 24px;">
-                            <a href="${ticketUrl}" style="display: inline-block; background-color: #7c3aed; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px;">LIHAT TIKET ONLINE</a>
+                            <a href="${ticketUrl}" style="display: inline-block; background-color: #10b981; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 14px;">LIHAT TIKET ONLINE</a>
                         </div>
                     </div>
                     <div style="padding: 24px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">

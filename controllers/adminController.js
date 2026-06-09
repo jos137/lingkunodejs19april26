@@ -568,12 +568,22 @@ exports.sendAccessAction = async (req, res) => {
             }
         }
         
-        const [rows] = await db.execute(`
+        let [rows] = await db.execute(`
             SELECT o.*, p.name as product_name, p.access_link, p.product_type
             FROM orders o 
             LEFT JOIN products p ON o.product_id = p.id 
             WHERE o.id = ? AND o.user_id = ?
         `, [orderId, userId]);
+        
+        let eventDate = null, eventTime = null, eventLocation = null;
+        try {
+            const [ev] = await db.execute('SELECT event_date, event_time, event_location FROM products WHERE id = ?', [rows[0]?.product_id]);
+            if (ev[0]) {
+                eventDate = ev[0].event_date;
+                eventTime = ev[0].event_time;
+                eventLocation = ev[0].event_location;
+            }
+        } catch(e) {}
 
         if (rows.length === 0) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan' });
         
@@ -588,7 +598,7 @@ exports.sendAccessAction = async (req, res) => {
                 ticketCode = require('crypto').randomBytes(8).toString('hex').toUpperCase();
                 await db.execute('UPDATE orders SET ticket_code = ? WHERE id = ?', [ticketCode, o.id]);
             }
-            success = await sendTicketEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, ticketCode, baseUrl);
+            success = await sendTicketEmail(o.id, o.customer_email || o.buyer_email, o.customer_name || o.buyer_name, o.product_name, ticketCode, eventDate, eventTime, eventLocation, baseUrl);
             if (success) {
                 res.json({ success: true, message: 'Email tiket berhasil dikirim' });
             } else {
