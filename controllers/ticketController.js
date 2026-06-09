@@ -55,8 +55,8 @@ exports.displayTicket = async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Display ticket error:', err.message);
-        res.status(500).send('Gagal memuat tiket');
+        console.error('Display ticket error:', err.message, err.stack);
+        res.status(500).send('Gagal memuat tiket: ' + err.message);
     }
 };
 
