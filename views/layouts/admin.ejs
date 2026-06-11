@@ -438,11 +438,11 @@
             <a href="/admin/orders" class="sidebar-link <%= title === 'Pesanan' ? 'active' : '' %>">
                 <i class="fas fa-shopping-bag"></i><span>Pesanan</span>
             </a>
-            <a href="/admin/tiket/scanner" class="sidebar-link <%= title === 'Scan Tiket' ? 'active' : '' %>">
-                <i class="fas fa-qrcode"></i><span>Scan Tiket</span>
-            </a>
             <a href="/admin/statistics" class="sidebar-link <%= title === 'Statistik' ? 'active' : '' %>">
                 <i class="fas fa-chart-bar"></i><span>Statistik</span>
+            </a>
+            <a href="/admin/tiket/scanner" class="sidebar-link <%= title === 'Scan Tiket' ? 'active' : '' %>">
+                <i class="fas fa-qrcode"></i><span>Scan Tiket</span>
             </a>
             <a href="/admin/withdrawal" class="sidebar-link <%= title === 'Tarik Dana' ? 'active' : '' %>">
                 <i class="fas fa-money-bill-wave"></i><span>Tarik Dana</span>
@@ -487,9 +487,6 @@
                     <% if (locals.pendingWDCount && pendingWDCount > 0) { %>
                         <span class="notif-badge"><%= pendingWDCount %></span>
                     <% } %>
-                </a>
-                <a href="/admin/reports" class="sidebar-link <%= title === 'Laporan User' ? 'active' : '' %>">
-                    <i class="fas fa-bug"></i><span>Laporan User</span>
                 </a>
                 <a href="/admin/features" class="sidebar-link <%= title === 'Kontrol Fitur' ? 'active' : '' %>">
                     <i class="fas fa-sliders-h"></i><span>Kontrol Fitur</span>

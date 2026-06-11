@@ -112,20 +112,31 @@ exports.validateTicket = async (req, res) => {
 exports.scannerPage = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
-        const [tickets] = await db.execute(`
+        const filterDate = req.query.date || null;
+        
+        let query = `
             SELECT o.id, o.ticket_code, o.customer_name, o.customer_email, o.customer_whatsapp,
                    o.total_price, o.scanned_at, o.created_at, p.name as product_name
             FROM orders o
             JOIN products p ON o.product_id = p.id
             WHERE o.ticket_code IS NOT NULL AND o.user_id = ?
-            ORDER BY o.created_at DESC
-            LIMIT 100
-        `, [userId]);
+        `;
+        const params = [userId];
+        
+        if (filterDate) {
+            query += " AND DATE(CONVERT_TZ(o.created_at, '+00:00', '+07:00')) = ?";
+            params.push(filterDate);
+        }
+        
+        query += " ORDER BY o.created_at DESC LIMIT 100";
+        
+        const [tickets] = await db.execute(query, params);
         
         res.render('admin/ticket-scanner', {
             title: 'Scan Tiket',
             layout: './layouts/admin',
             tickets,
+            filterDate,
             user: req.session.user || res.locals.user
         });
     } catch (err) {

@@ -27,9 +27,19 @@
 </div>
 
 <div class="scanner-box">
-    <div class="mode-toggle">
-        <button class="mode-btn active" id="btnCamera" onclick="switchMode('camera')"><i class="fas fa-camera"></i> Kamera</button>
-        <button class="mode-btn" id="btnManual" onclick="switchMode('manual')"><i class="fas fa-keyboard"></i> Input Manual</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+        <div class="mode-toggle" style="margin-bottom: 0;">
+            <button class="mode-btn active" id="btnCamera" onclick="switchMode('camera')"><i class="fas fa-camera"></i> Kamera</button>
+            <button class="mode-btn" id="btnManual" onclick="switchMode('manual')"><i class="fas fa-keyboard"></i> Input Manual</button>
+        </div>
+        
+        <!-- Filter Tanggal -->
+        <form method="GET" action="/admin/tiket/scanner" style="display: flex; gap: 8px; align-items: center;">
+            <input type="date" name="date" value="<%= typeof filterDate !== 'undefined' && filterDate ? filterDate : '' %>" onchange="this.form.submit()" style="padding: 6px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-weight: 700; color: #1e293b; outline: none; background: #fff;">
+            <% if (typeof filterDate !== 'undefined' && filterDate) { %>
+                <a href="/admin/tiket/scanner" style="font-size: 11px; font-weight: 800; color: #ef4444; text-decoration: none; display: flex; align-items: center; gap: 4px;"><i class="fas fa-times"></i> Reset</a>
+            <% } %>
+        </form>
     </div>
     
     <div id="cameraMode">
