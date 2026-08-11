@@ -9,6 +9,10 @@ yarn-error.log*
 logs/
 *.log
 tmp/
+6mei26_u427900331_josling.sql
+products.sql
+*_dump.sql
+*.dump.sql
 public/uploads/products/*
 !public/uploads/products/.gitkeep
 public/uploads/profiles/*

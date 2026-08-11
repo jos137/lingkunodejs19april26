@@ -1,16 +1,24 @@
 const mysql = require('mysql2');
+require('dotenv').config();
 
-console.log('  [DB] Starting Deep Debugger Connection...');
+const requiredEnv = ['DB_HOST', 'DB_USER', 'DB_NAME'];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+
+if (missingEnv.length > 0) {
+    throw new Error(`Missing database environment variables: ${missingEnv.join(', ')}`);
+}
+
+console.log('  [DB] Starting Connection Pool...');
 const pool = mysql.createPool({
-    host: process.env.DB_HOST || '153.92.15.37',
-    user: process.env.DB_USER || 'u427900331_lingku',
-    password: process.env.DB_PASS || 'JospX~5WxA2k#i2',
-    database: process.env.DB_NAME || 'u427900331_josling',
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS || '',
+    database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
     connectTimeout: 10000,
     debug: false,
-    family: 4 // PAKSA PAKAI IPv4
+    family: 4
 });
 
 // Tambahan log manual untuk setiap kejadian

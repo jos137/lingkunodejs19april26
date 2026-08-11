@@ -605,22 +605,22 @@ lingkuxyz/
 ### Environment Variables (.env)
 ```
 PORT=3001
-DB_HOST=153.92.15.37
-DB_USER=u427900331_lingku
-DB_PASS=***
-DB_NAME=u427900331_josling
+DB_HOST=your-db-host
+DB_USER=your-db-user
+DB_PASS=your-db-password
+DB_NAME=your-db-name
 
 IPAYMU_MODE=sandbox
-IPAYMU_VA_LIVE=1179001316083605
-IPAYMU_APIKEY_LIVE=***
+IPAYMU_VA_LIVE=your-live-va
+IPAYMU_APIKEY_LIVE=your-live-api-key
 IPAYMU_URL_LIVE=https://my.ipaymu.com
-IPAYMU_VA_SANDBOX=0000001316083605
-IPAYMU_APIKEY_SANDBOX=***
+IPAYMU_VA_SANDBOX=your-sandbox-va
+IPAYMU_APIKEY_SANDBOX=your-sandbox-api-key
 IPAYMU_URL_SANDBOX=https://sandbox.ipaymu.com
 
-FONNTE_TOKEN=***
-SESSION_SECRET=lingkusessions
-JWT_SECRET=supersecretlingku
+FONNTE_TOKEN=your-fonnte-token
+SESSION_SECRET=replace-with-a-long-random-string
+JWT_SECRET=replace-with-a-long-random-string
 ```
 
 ### Dependencies Utama

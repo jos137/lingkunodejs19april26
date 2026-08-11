@@ -3,15 +3,21 @@ require('dotenv').config();
 
 async function testConnection() {
     console.log('--- DB CONNECTION TEST ---');
-    console.log('Host:', process.env.DB_HOST || '153.92.15.37');
-    console.log('User:', process.env.DB_USER || 'u427900331_lingku');
+    console.log('Host:', process.env.DB_HOST || '(not set)');
+    console.log('User:', process.env.DB_USER || '(not set)');
+
+    const requiredEnv = ['DB_HOST', 'DB_USER', 'DB_NAME'];
+    const missingEnv = requiredEnv.filter((key) => !process.env[key]);
+    if (missingEnv.length > 0) {
+        throw new Error(`Missing database environment variables: ${missingEnv.join(', ')}`);
+    }
     
     try {
         const connection = await mysql.createConnection({
-            host: '153.92.15.37',
-            user: process.env.DB_USER || 'u427900331_lingku',
-            password: process.env.DB_PASS || 'LingkuBaru2026@',
-            database: process.env.DB_NAME || 'u427900331_josling',
+            host: process.env.DB_HOST,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASS || '',
+            database: process.env.DB_NAME,
             connectTimeout: 10000,
             family: 4 // FORCE IPv4
         });

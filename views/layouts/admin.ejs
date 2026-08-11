@@ -412,7 +412,16 @@
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- SIDEBAR -->
-    <% 
+    <%
+        let planLabel = 'FREE';
+        let roleLower = (user && user.role) ? user.role.toLowerCase() : 'user';
+        let planLower = (user && user.plan) ? user.plan.toLowerCase() : 'free';
+        if (roleLower === 'admin') planLabel = 'ADMIN';
+        else if (roleLower === 'pro' || planLower === 'pro') planLabel = 'PRO';
+        let mainColor = '#94a3b8';
+        if (planLabel === 'ADMIN') mainColor = '#eab308';
+        else if (planLabel === 'PRO') mainColor = '#10b981';
+        
         let currentTheme = user.sidebar_theme || 'default';
         // Auto-apply Stan theme for non-admins if they are on default
         if (user.role !== 'admin' && currentTheme === 'default') {
@@ -420,8 +429,14 @@
         }
     %>
     <aside class="sidebar <%= currentTheme !== 'default' ? 'theme-' + currentTheme : '' %>" id="sidebar">
-        <div class="sidebar-logo">
-            <img src="/images/logo.png" alt="Logo" style="height: 35px;">
+        <div class="sidebar-logo" style="justify-content: space-between; align-items: center;">
+            <img src="/images/logo.png" alt="Logo" style="height: 30px;">
+            <div style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef9c3, #fef08a); border: 1px solid #fde047; border-radius: 20px; padding: 3px 10px 3px 8px;">
+                <div style="width: 18px; height: 18px; background: #eab308; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-shield-alt" style="color: #fff; font-size: 8px;"></i>
+                </div>
+                <span style="font-size: 9px; font-weight: 800; color: #854d0e; letter-spacing: 0.5px;"><%= planLabel %></span>
+            </div>
         </div>
         
         <nav class="sidebar-nav">
@@ -540,85 +555,6 @@
                 <h1><%= title || 'Dashboard' %></h1>
             </div>
             <div class="header-actions">
-                <% 
-                    let planLabel = 'FREE';
-                    let roleLower = (user && user.role) ? user.role.toLowerCase() : 'user';
-                    let planLower = (user && user.plan) ? user.plan.toLowerCase() : 'free';
-
-                    if (roleLower === 'admin') planLabel = 'ADMIN';
-                    else if (roleLower === 'pro' || planLower === 'pro') planLabel = 'PRO';
-                    
-                    let mainColor = '#94a3b8'; // Default Silver
-                    if (planLabel === 'ADMIN') mainColor = '#eab308'; // Gold
-                    else if (planLabel === 'PRO') mainColor = '#10b981'; // Green
-                %>
-                <!-- TWO-LINE STATUS BADGE -->
-                <div class="subscription-badge" id="subBadge" data-expiry="<%= user && user.expired_at ? user.expired_at : '' %>">
-                    <div class="sub-top" style="background: <%= mainColor %>;">
-                        <i class="fas fa-crown" style="font-size: 8px; margin-right: 4px;"></i>
-                        <%= planLabel %>
-                    </div>
-                    <div class="sub-bottom" id="subTimer">
-                        <%= (planLabel === 'ADMIN') ? 'LIFETIME ACCESS' : (user && user.expired_at ? 'CALCULATING...' : 'NO ACTIVE PLAN') %>
-                    </div>
-                </div>
-
-                <style>
-                    .subscription-badge {
-                        display: flex; flex-direction: row; width: 170px; height: 32px;
-                        border-radius: 10px; overflow: hidden; 
-                        box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1.5px solid #f1f5f9;
-                        flex-shrink: 0; transition: 0.3s;
-                    }
-                    .sub-top {
-                        width: 55px; height: 100%; display: flex; align-items: center; justify-content: center;
-                        color: #fff; font-size: 9px; font-weight: 900; letter-spacing: 0.5px;
-                        text-transform: uppercase; flex-shrink: 0;
-                    }
-                    .sub-bottom {
-                        flex: 1; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center;
-                        color: #475569; font-size: 9px; font-weight: 800; padding: 0 8px;
-                        white-space: nowrap;
-                    }
-                    @media (max-width: 1024px) {
-                        .subscription-badge { width: auto; border: none; box-shadow: none; }
-                        .sub-top { width: auto; padding: 0 10px; border-radius: 8px; height: 28px; margin-top: 2px; }
-                        .sub-bottom { display: none; }
-                    }
-                </style>
-
-                <script>
-                    function updateSubscriptionTimer() {
-                        const badge = document.getElementById('subBadge');
-                        const timer = document.getElementById('subTimer');
-                        if (!badge || !timer) return;
-                        const expiryStr = badge.getAttribute('data-expiry');
-                        
-                        if (!expiryStr || expiryStr === '' || timer.innerText.includes('LIFETIME')) return;
-
-                        const expiryDate = new Date(expiryStr);
-                        const now = new Date();
-                        const diff = expiryDate - now;
-
-                        if (diff <= 0) {
-                            timer.innerText = 'EXPIRED';
-                            timer.style.color = '#ef4444';
-                            return;
-                        }
-
-                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-                        if (days > 0) {
-                            timer.innerText = `${days}D ${hours}H REMAINING`;
-                        } else {
-                            timer.innerText = `${hours}H ${mins}M REMAINING`;
-                        }
-                    }
-                    setInterval(updateSubscriptionTimer, 60000);
-                    updateSubscriptionTimer();
-                </script>
 
                 <div class="profile-container">
                     <button class="action-btn" id="notifBtn">

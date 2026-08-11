@@ -13,6 +13,10 @@ const { rateLimit } = require('express-rate-limit'); console.log('>>> DEBUG: RAT
 const app = express(); console.log('>>> DEBUG: APP INITIALIZED');
 const port = process.env.PORT || 3000;
 
+if (!process.env.SESSION_SECRET) {
+    throw new Error('Missing SESSION_SECRET environment variable.');
+}
+
 // EMERGENCY PING (Must be before ANY middleware)
 app.get('/ping', (req, res) => {
     res.send(`
@@ -64,7 +68,7 @@ app.set('trust proxy', 1);
 
 app.use(session({
     key: 'lingku_session',
-    secret: process.env.SESSION_SECRET || 'lingkusessions',
+    secret: process.env.SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,

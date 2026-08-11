@@ -1,7 +1,12 @@
 const net = require('net');
+require('dotenv').config();
 
-const host = '153.92.15.37';
+const host = process.env.DB_HOST;
 const port = 3306;
+
+if (!host) {
+    throw new Error('Missing DB_HOST environment variable.');
+}
 
 console.log(`🔎 Mengetes koneksi ke ${host}:${port}...`);
 

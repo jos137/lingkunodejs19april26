@@ -79,10 +79,4 @@ INSERT IGNORE INTO system_settings (setting_key, setting_value) VALUES
 ('withdrawal_fee', '2500'),
 ('pro_price', '150000'),
 ('ipaymu_mode', 'sandbox'),
-('checkout_timer_minutes', '15'),
-('fonnte_token', '55zskAPD1GNH7RcumeKG');
-
--- Insert initial Admin user (password is 'password123' hashed)
--- Note: You should regenerate this with bcrypt upon actual registration in code.
-INSERT IGNORE INTO users (name, email, phone, password, role, slug)
-VALUES ('Admin Jos', 'admin@lingku.xyz', '081234567890', '$2b$10$wTf2E/.rS5H96Qo6Z8.yZe02fV4B9xW5A8gOz5o9C1L2E5Z6GzMly', 'admin', 'bangjos');
+('checkout_timer_minutes', '15');
