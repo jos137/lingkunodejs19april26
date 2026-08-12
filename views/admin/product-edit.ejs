@@ -65,7 +65,7 @@
         width: 100%; padding: 12px; background: #10b981; color: #fff; border-radius: 12px; 
         text-align: center; font-weight: 800; font-size: 14px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
-    /* Card Style Preview (for Thumbnail tab) */
+    /* Card Style Preview */
     .p-card-preview {
         margin: 20px; padding: 15px; border-radius: 16px; border: 1px solid #f1f5f9;
         box-shadow: 0 10px 20px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;
@@ -87,10 +87,40 @@
     .btn-primary { padding: 12px 30px; border-radius: 12px; background: var(--stan-primary); color: #fff; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(88, 80, 236, 0.2); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88, 80, 236, 0.3); }
 
-    /* Pricing Tabs in Checkout */
+    /* Pricing Tabs */
     .pricing-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
     .pt-item { flex: 1; text-align: center; padding: 8px; font-size: 12px; font-weight: 800; color: #64748b; cursor: pointer; border-radius: 8px; transition: 0.2s; }
     .pt-item.active { background: #fff; color: var(--stan-primary); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+
+    /* Style Cards */
+    .style-card { flex:1; padding:10px 5px; border:1px solid var(--stan-border); border-radius:12px; text-align:center; cursor:pointer; transition:0.2s; background:#fff; max-width: 100px; }
+    .style-card:hover { border-color: var(--stan-primary); background: #f5f7ff; }
+    .style-card.active { border-color: var(--stan-primary); border-width: 2px; background: #eff6ff; }
+    .style-icon { font-size: 16px; color: #94a3b8; margin-bottom: 4px; }
+    .style-card.active .style-icon { color: var(--stan-primary); }
+    .style-label { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .style-label { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
+    .style-card.active .style-label { color: var(--stan-primary); }
+
+    /* Color Swatches */
+    .color-swatch {
+        width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
+        border: 3px solid transparent; transition: 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch.active { border-color: #fff; outline: 2px solid #1e293b; transform: scale(1.1); }
+
+    /* Theme Cards */
+    .theme-card { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1.5px solid #e2e8f0; border-radius: 16px; cursor: pointer; transition: 0.2s; position: relative; }
+    .theme-card:hover { border-color: var(--stan-primary); background: #f8fafc; }
+    .theme-card.active { border-color: var(--stan-primary); background: #f0f9ff; }
+    .theme-preview { width: 80px; height: 50px; border-radius: 8px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .theme-info { flex: 1; }
+    .theme-name { font-size: 14px; font-weight: 800; color: #1e293b; }
+    .theme-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .theme-check { font-size: 20px; color: var(--stan-primary); display: none; }
+    .theme-card.active .theme-check { display: block; }
 
     @media (max-width: 1000px) {
         .stan-grid { grid-template-columns: 1fr; }
@@ -108,7 +138,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 %>
 
 <div class="stan-container">
-    <!-- Top Nav -->
     <div class="stan-header">
         <a href="/admin/products" style="text-decoration: none; color: var(--stan-text-light); font-weight: 700; display: flex; align-items: center; gap: 8px;">
             <i class="fas fa-arrow-left"></i> My Products
@@ -118,16 +147,14 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
             <div class="stan-tab" onclick="switchTab('checkout', this)"><i class="fas fa-shopping-cart"></i> Checkout Page</div>
             <div class="stan-tab" onclick="switchTab('options', this)"><i class="fas fa-palette"></i> Themes</div>
         </div>
-        <div style="width: 100px;"></div> <!-- Spacer -->
+        <div style="width: 100px;"></div>
     </div>
 
     <form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="mainForm">
 
         <div class="stan-grid">
-            <!-- LEFT: EDITOR -->
             <div class="stan-editor-side">
                 
-                <!-- TAB 1: THUMBNAIL -->
                 <div id="tab-thumbnail" class="tab-content active">
                     <div class="stan-card">
                         <div class="stan-section-title"><div class="stan-step-num">1</div> Tipe Produk</div>
@@ -154,11 +181,14 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div class="style-icon"><i class="fas fa-eye"></i></div>
                                 <div class="style-label">Preview</div>
                             </div>
+                            <div class="style-card" id="style-thumbnail" onclick="setStyle('thumbnail')">
+                                <div class="style-icon"><i class="fas fa-th-large"></i></div>
+                                <div class="style-label">Thumbnail</div>
+                            </div>
                         </div>
-                        <!-- Hidden input for style -->
                         <input type="hidden" name="thumbnail_style" id="thumbnail_style" value="callout">
 
-                            <div class="stan-section-title"><div class="stan-step-num">3</div> Select Image</div>
+                        <div class="stan-section-title"><div class="stan-step-num">3</div> Select Image</div>
                         <div id="image-upload-box" style="border: 2px dashed var(--stan-border); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 20px; position: relative;">
                             <img id="editThumbPreview" src="<%= finalThumb %>" style="max-height: 80px; border-radius: 12px; margin-bottom: 10px; display: <%= finalThumb ? 'inline-block' : 'none' %>">
                             <i class="fas fa-image" style="font-size: 30px; color: #d1d5db; display: <%= finalThumb ? 'none' : 'block' %>; margin-bottom: 8px;"></i>
@@ -208,26 +238,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </div>
                         </div>
 
-                        <style>
-                            .color-swatch {
-                                width: 32px; height: 32px; border-radius: 50%; cursor: pointer;
-                                border: 3px solid transparent; transition: 0.2s;
-                                box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                            }
-                            .color-swatch:hover { transform: scale(1.1); }
-                            .color-swatch.active { border-color: #fff; outline: 2px solid #1e293b; transform: scale(1.1); }
-                        </style>
-
-                        <script>
-                            function setBtnColor(hex, el) {
-                                document.getElementById('btnColorInp').value = hex;
-                                document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
-                                el.classList.add('active');
-                                updatePreview('color', hex);
-                            }
-                        </script>
-
-                        <!-- NEW: Set Price in Tab 1 -->
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Set Price</div>
                         <div class="pricing-toggle">
                             <div class="pt-item <%= p.price > 0 ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Fixed Price</div>
@@ -246,7 +256,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </div>
                         </div>
 
-                        <!-- NEW: Stock Inventory in Tab 1 -->
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">6</div> Stock Inventory</div>
                         <div class="stan-group">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -260,18 +269,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                     </div>
                 </div>
 
-                <!-- Styles for Style Cards -->
-                <style>
-                    .style-card { flex:1; padding:10px 5px; border:1px solid var(--stan-border); border-radius:12px; text-align:center; cursor:pointer; transition:0.2s; background:#fff; max-width: 100px; }
-                    .style-card:hover { border-color: var(--stan-primary); background: #f5f7ff; }
-                    .style-card.active { border-color: var(--stan-primary); border-width: 2px; background: #eff6ff; }
-                    .style-icon { font-size: 16px; color: #94a3b8; margin-bottom: 4px; }
-                    .style-card.active .style-icon { color: var(--stan-primary); }
-                    .style-label { font-size: 10px; font-weight: 800; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; }
-                    .style-card.active .style-label { color: var(--stan-primary); }
-                </style>
-
-                <!-- TAB 2: CHECKOUT PAGE -->
                 <div id="tab-checkout" class="tab-content">
                     <div class="stan-card">
                         <div class="stan-section-title"><div class="stan-step-num">1</div> Write Description</div>
@@ -296,7 +293,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </div>
                         </div>
 
-                        <!-- Ticket Event Info (for ticket type) -->
                         <div id="ticketEventFields" style="<%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? '' : 'display:none' %>">
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Info Acara</div>
                         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
@@ -315,7 +311,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         </div>
                         </div>
                         
-                        <!-- Product Access (for non-ticket) -->
                         <div id="productAccessFields" style="<%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? 'display:none' : '' %>">
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Product Access</div>
                         <div class="stan-group">
@@ -325,7 +320,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         </div>
                         </div>
 
-                        <!-- NEW: Affiliate in Tab 2 -->
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">3</div> Affiliate Settings</div>
                         <div style="padding:20px; background:#f0fdf4; border-radius:16px; border:1px solid #dcfce7;">
                             <label style="display:flex; align-items:center; gap:10px; margin-bottom:12px; cursor:pointer;">
@@ -343,14 +337,12 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                     </div>
                 </div>
 
-                <!-- TAB 3: THEMES -->
                 <div id="tab-options" class="tab-content">
                     <div class="stan-card">
                         <div class="stan-section-title"><div class="stan-step-num">1</div> Choose Your Theme</div>
                         <input type="hidden" name="theme_style" id="theme_style_inp" value="<%= p.theme_style || 'light' %>">
                         
                         <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
-                            <!-- Theme Light -->
                             <div class="theme-card <%= (p.theme_style || 'light') === 'light' ? 'active' : '' %>" onclick="setTheme('light', this)">
                                 <div class="theme-preview" style="background: #f8fafc; border: 1px solid #e2e8f0;">
                                     <div style="width: 70%; height: 10px; background: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 5px;"></div>
@@ -363,7 +355,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div class="theme-check"><i class="fas fa-check-circle"></i></div>
                             </div>
 
-                            <!-- Theme Dark -->
                             <div class="theme-card <%= p.theme_style === 'dark' ? 'active' : '' %>" onclick="setTheme('dark', this)">
                                 <div class="theme-preview" style="background: #0f172a;">
                                     <div style="width: 70%; height: 10px; background: #1e293b; border-radius: 4px; margin-bottom: 5px;"></div>
@@ -376,7 +367,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div class="theme-check"><i class="fas fa-check-circle"></i></div>
                             </div>
 
-                            <!-- Theme Sky -->
                             <div class="theme-card <%= p.theme_style === 'sky' ? 'active' : '' %>" onclick="setTheme('sky', this)">
                                 <div class="theme-preview" style="background: #eff6ff;">
                                     <div style="width: 70%; height: 10px; background: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 5px;"></div>
@@ -392,28 +382,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                     </div>
                 </div>
 
-                <style>
-                    .theme-card { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1.5px solid #e2e8f0; border-radius: 16px; cursor: pointer; transition: 0.2s; position: relative; }
-                    .theme-card:hover { border-color: var(--stan-primary); background: #f8fafc; }
-                    .theme-card.active { border-color: var(--stan-primary); background: #f0f9ff; }
-                    .theme-preview { width: 80px; height: 50px; border-radius: 8px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-                    .theme-info { flex: 1; }
-                    .theme-name { font-size: 14px; font-weight: 800; color: #1e293b; }
-                    .theme-desc { font-size: 11px; color: #64748b; margin-top: 2px; }
-                    .theme-check { font-size: 20px; color: var(--stan-primary); display: none; }
-                    .theme-card.active .theme-check { display: block; }
-                </style>
-
-                <script>
-                    function setTheme(theme, el) {
-                        document.getElementById('theme_style_inp').value = theme;
-                        document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-                        el.classList.add('active');
-                        updatePreview('theme', theme);
-                    }
-                </script>
-
-                <!-- Footer Controls -->
                 <div class="stan-footer">
                     <button type="button" class="btn-secondary" id="prevBtn" style="visibility:hidden;" onclick="moveStep(-1)">Back</button>
                     <div style="display:flex; gap:12px; align-items: center;">
@@ -424,12 +392,10 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                 </div>
             </div>
 
-            <!-- RIGHT: PREVIEW -->
             <div class="stan-preview-side">
                 <div style="text-align:center; font-size:12px; font-weight:800; color:#94a3b8; margin-bottom:15px; text-transform:uppercase; letter-spacing:1px;">Live Preview</div>
                 <div class="phone-frame">
                     <div class="phone-screen" id="previewContainer">
-                        <!-- Content of preview will change based on active tab -->
                         <div id="preview-thumbnail" style="display:block;">
                             <div style="height:100%; display:flex; flex-direction:column; justify-content:center; background:#f9fafb; padding: 20px;">
                                 
@@ -469,7 +435,6 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                                 <div class="p-card-price" id="pp-price" style="color:#10b981; font-weight:800; font-size:14px; margin-top:4px;">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
                                             </div>
                                         </div>
-                                        <!-- Download Icon Row -->
                                         <div style="display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; color:#374151;">
                                             <div style="width:20px; height:20px; background:#10b981; color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px;">
                                                 <i class="fas fa-arrow-down"></i>
@@ -478,6 +443,17 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                         </div>
                                         <div class="p-button" id="pp-btn" style="background:#10b981;"><%= p.button_text || 'Ambil Sekarang' %></div>
                                         <div style="width:100%; text-align:center; font-size:11px; font-weight:700; color:#10b981; cursor:pointer;">Learn More</div>
+                                    </div>
+                                </div>
+
+                                <!-- PREVIEW STYLE: THUMBNAIL -->
+                                <div id="v-style-thumbnail" class="v-style" style="display:none;">
+                                    <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:12px; padding:16px;">
+                                        <img src="<%= finalThumb %>" class="p-card-img" id="pt-img" style="width:100%; height:auto; border-radius:12px; max-height:160px;" onerror="this.src='/images/placeholder.png'">
+                                        <div style="width:100%;">
+                                            <div class="p-card-title" id="pt-title" style="font-size:15px;"><%= p.name || 'Product Title' %></div>
+                                            <div class="p-card-price" id="pt-price" style="color:#10b981; font-weight:800; font-size:14px; margin-top:4px;">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -520,23 +496,18 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
         currentStyle = style;
         document.getElementById('thumbnail_style').value = style;
         
-        // Update active card UI
         document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
-        document.getElementById('style-' + style).classList.add('active');
+        var card = document.getElementById('style-' + style);
+        if (card) card.classList.add('active');
 
-        // Toggle visibility of fields based on style
-        const subGroup = document.getElementById('subtitle-group');
-        const uploadBox = document.getElementById('image-upload-box');
-        
-        if (style === 'button') {
+        var subGroup = document.getElementById('subtitle-group');
+
+        if (style === 'button' || style === 'thumbnail') {
             subGroup.style.display = 'none';
-            uploadBox.style.display = 'block'; // Keep visible for icon
         } else {
             subGroup.style.display = 'block';
-            uploadBox.style.display = 'block';
         }
 
-        // Update Preview View
         document.querySelectorAll('.v-style').forEach(v => v.style.display = 'none');
         document.getElementById('v-style-' + style).style.display = 'block';
     }
@@ -569,9 +540,9 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     }
 
     function updatePreviewMode(id) {
-        const thumbPrev = document.getElementById('preview-thumbnail');
-        const checkoutPrev = document.getElementById('preview-checkout');
-        const nextBtn = document.getElementById('nextBtn');
+        var thumbPrev = document.getElementById('preview-thumbnail');
+        var checkoutPrev = document.getElementById('preview-checkout');
+        var nextBtn = document.getElementById('nextBtn');
 
         if (id === 'thumbnail') {
             thumbPrev.style.display = 'block';
@@ -590,71 +561,74 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 
     function updatePreview(type, val) {
         if (type === 'title') {
-            document.getElementById('pb-title').innerText = val || 'Product Title';
-            document.getElementById('pc-title').innerText = val || 'Product Title';
-            document.getElementById('pp-title').innerText = val || 'Product Title';
-            document.getElementById('prevMainTitle').innerText = val || 'Product Title';
+            if (document.getElementById('pb-title')) document.getElementById('pb-title').innerText = val || 'Product Title';
+            if (document.getElementById('pc-title')) document.getElementById('pc-title').innerText = val || 'Product Title';
+            if (document.getElementById('pp-title')) document.getElementById('pp-title').innerText = val || 'Product Title';
+            if (document.getElementById('pt-title')) document.getElementById('pt-title').innerText = val || 'Product Title';
+            if (document.getElementById('prevMainTitle')) document.getElementById('prevMainTitle').innerText = val || 'Product Title';
         }
         if (type === 'subtitle') {
-            document.getElementById('pc-sub').innerText = val || 'Subtitle / Hook text goes here';
-            document.getElementById('pp-sub').innerText = val || 'Subtitle / Hook text goes here';
+            if (document.getElementById('pc-sub')) document.getElementById('pc-sub').innerText = val || 'Subtitle / Hook text goes here';
+            if (document.getElementById('pp-sub')) document.getElementById('pp-sub').innerText = val || 'Subtitle / Hook text goes here';
         }
         if (type === 'btn') {
-            document.getElementById('pc-btn').innerText = val || 'Ambil Sekarang';
-            document.getElementById('pp-btn').innerText = val || 'Ambil Sekarang';
+            if (document.getElementById('pc-btn')) document.getElementById('pc-btn').innerText = val || 'Ambil Sekarang';
+            if (document.getElementById('pp-btn')) document.getElementById('pp-btn').innerText = val || 'Ambil Sekarang';
         }
         if (type === 'color') {
-            document.getElementById('pc-btn').style.background = val;
-            document.getElementById('pp-btn').style.background = val;
+            if (document.getElementById('pc-btn')) document.getElementById('pc-btn').style.background = val;
+            if (document.getElementById('pp-btn')) document.getElementById('pp-btn').style.background = val;
         }
         if (type === 'theme') {
-            const container = document.getElementById('previewContainer');
-            const cards = document.querySelectorAll('.p-card-preview');
-            const titles = document.querySelectorAll('.p-card-title, #pb-title');
+            var container = document.getElementById('previewContainer');
+            var cards = document.querySelectorAll('.p-card-preview');
+            var titles = document.querySelectorAll('.p-card-title, [id$="-title"]');
             
             if (val === 'dark') {
                 container.style.background = '#0f172a';
-                cards.forEach(c => { c.style.background = '#1e293b'; c.style.borderColor = '#334155'; });
-                titles.forEach(t => t.style.color = '#f8fafc');
+                cards.forEach(function(c) { c.style.background = '#1e293b'; c.style.borderColor = '#334155'; });
+                titles.forEach(function(t) { t.style.color = '#f8fafc'; });
             } else if (val === 'sky') {
                 container.style.background = '#eff6ff';
-                cards.forEach(c => { c.style.background = '#ffffff'; c.style.borderColor = '#dbeafe'; });
-                titles.forEach(t => t.style.color = '#1e3a8a');
+                cards.forEach(function(c) { c.style.background = '#ffffff'; c.style.borderColor = '#dbeafe'; });
+                titles.forEach(function(t) { t.style.color = '#1e3a8a'; });
             } else {
                 container.style.background = '#f9fafb';
-                cards.forEach(c => { c.style.background = '#ffffff'; c.style.borderColor = '#e2e8f0'; });
-                titles.forEach(t => t.style.color = '#111827');
+                cards.forEach(function(c) { c.style.background = '#ffffff'; c.style.borderColor = '#e2e8f0'; });
+                titles.forEach(function(t) { t.style.color = '#111827'; });
             }
         }
         if (type === 'price') {
-            const formatted = 'Rp ' + (parseFloat(val) || 0).toLocaleString('id-ID');
-            document.getElementById('pb-price').innerText = formatted;
-            document.getElementById('pc-price').innerText = formatted;
-            document.getElementById('pp-price').innerText = formatted;
-            document.getElementById('prevMainPrice').innerText = formatted;
+            var formatted = 'Rp ' + (parseFloat(val) || 0).toLocaleString('id-ID');
+            if (document.getElementById('pb-price')) document.getElementById('pb-price').innerText = formatted;
+            if (document.getElementById('pc-price')) document.getElementById('pc-price').innerText = formatted;
+            if (document.getElementById('pp-price')) document.getElementById('pp-price').innerText = formatted;
+            if (document.getElementById('pt-price')) document.getElementById('pt-price').innerText = formatted;
+            if (document.getElementById('prevMainPrice')) document.getElementById('prevMainPrice').innerText = formatted;
         }
         if (type === 'desc') {
-            document.getElementById('prevMainDesc').innerHTML = val || 'Your product description...';
+            if (document.getElementById('prevMainDesc')) document.getElementById('prevMainDesc').innerHTML = val || 'Your product description...';
         }
     }
 
     function previewImage(input) {
         if (input.files && input.files[0]) {
-            const reader = new FileReader();
+            var reader = new FileReader();
             reader.onload = function(e) {
                 document.getElementById('editThumbPreview').src = e.target.result;
                 document.getElementById('editThumbPreview').style.display = 'inline-block';
-                document.getElementById('pb-img').src = e.target.result;
-                document.getElementById('pc-img').src = e.target.result;
-                document.getElementById('pp-img').src = e.target.result;
-                document.getElementById('prevMainImg').src = e.target.result;
+                var imgIds = ['pb-img', 'pc-img', 'pp-img', 'pt-img', 'prevMainImg'];
+                imgIds.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) el.src = e.target.result;
+                });
             }
             reader.readAsDataURL(input.files[0]);
         }
     }
 
-    function execCmd(cmd, val = null) { 
-        if (val === null) {
+    function execCmd(cmd, val) { 
+        if (val === null || val === undefined) {
             document.execCommand(cmd, false, null); 
         } else if (val) {
             document.execCommand(cmd, false, val);
@@ -662,24 +636,24 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     }
 
     function insertVideo() {
-        const url = prompt('Enter YouTube/Vimeo Video URL:');
+        var url = prompt('Enter YouTube/Vimeo Video URL:');
         if (!url) return;
         
-        let embedUrl = url;
+        var embedUrl = url;
         if (url.includes('youtube.com/watch?v=')) {
             embedUrl = url.replace('watch?v=', 'embed/');
         } else if (url.includes('youtu.be/')) {
             embedUrl = 'https://www.youtube.com/embed/' + url.split('/').pop();
         }
         
-        const html = `<div class="video-container"><iframe src="${embedUrl}" frameborder="0" allowfullscreen></iframe></div><p></p>`;
+        var html = '<div class="video-container"><iframe src="' + embedUrl + '" frameborder="0" allowfullscreen></iframe></div><p></p>';
         document.execCommand('insertHTML', false, html);
     }
 
     function setPriceMode(mode, el) {
-        document.querySelectorAll('.pt-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.pt-item').forEach(function(i) { i.classList.remove('active'); });
         el.classList.add('active');
-        const priceField = document.querySelector('input[name="price"]');
+        var priceField = document.querySelector('input[name="price"]');
         if (mode === 'free') {
             priceField.value = 0;
             document.getElementById('price-fields').style.display = 'none';
@@ -691,7 +665,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     }
 
     function toggleStock(chk) {
-        const inp = document.getElementById('stockInp');
+        var inp = document.getElementById('stockInp');
         if (chk.checked) {
             inp.value = -1;
             inp.readOnly = true;
@@ -706,22 +680,34 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
         }
     }
 
+    function setBtnColor(hex, el) {
+        document.getElementById('btnColorInp').value = hex;
+        document.querySelectorAll('.color-swatch').forEach(function(s) { s.classList.remove('active'); });
+        el.classList.add('active');
+        updatePreview('color', hex);
+    }
+
+    function setTheme(theme, el) {
+        document.getElementById('theme_style_inp').value = theme;
+        document.querySelectorAll('.theme-card').forEach(function(c) { c.classList.remove('active'); });
+        el.classList.add('active');
+        updatePreview('theme', theme);
+    }
+
     document.getElementById('mainForm').onsubmit = function() {
         document.getElementById('hiddenDesc').value = document.getElementById('richEditor').innerHTML;
     };
 
-    // INITIALIZE STATE
     window.onload = function() {
-        const savedStyle = '<%= p.thumbnail_style || "callout" %>';
+        var savedStyle = '<%= p.thumbnail_style || "callout" %>';
         setStyle(savedStyle);
         
-        // Populate preview with initial data
         updatePreview('title', '<%= (p.name || "").replace(/'/g, "\\'") %>');
         updatePreview('subtitle', '<%= (p.subtitle || "").replace(/'/g, "\\'") %>');
         updatePreview('btn', '<%= (p.button_text || "Ambil Sekarang").replace(/'/g, "\\'") %>');
         updatePreview('color', '<%= p.button_color || "#10b981" %>');
         updatePreview('price', '<%= p.price || 0 %>');
         updatePreview('theme', '<%= p.theme_style || "light" %>');
+        updatePreview('desc', document.getElementById('richEditor').innerHTML);
     };
 </script>
-

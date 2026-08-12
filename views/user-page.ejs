@@ -237,6 +237,17 @@
                                 <div class="learn-more" style="color: <%= prod.button_color || '#10b981' %>;">Learn More</div>
                             </a>
 
+                        <% } else if (prod.thumbnail_style === 'thumbnail') { %>
+                            <!-- STYLE: THUMBNAIL -->
+                            <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product" style="flex-direction: column; padding: 0; overflow: hidden; border-radius: 16px;">
+                                <div class="product-thumb" style="width: 100%; height: 200px; border-radius: 12px 12px 0 0;">
+                                    <img src="<%= img(prod.processed_thumb, 'products') %>" alt="<%= prod.name %>" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.onerror=null; this.src='/images/placeholder.png'">
+                                </div>
+                                <div style="padding: 16px; width: 100%; box-sizing: border-box;">
+                                    <div class="product-name" style="white-space: normal; font-size: 14px; font-weight: 800;"><%= prod.name %></div>
+                                    <div class="product-price" style="margin-top: 4px;">Rp <%= parseFloat(prod.price || 0).toLocaleString('id-ID') %></div>
+                                </div>
+                            </a>
                         <% } else { %>
                             <!-- STYLE: CALLOUT (Default) -->
                             <a href="/p/<%= prod.id %><%= isAff ? '?aff=' + user.slug : '' %>" class="block-product block-product-preview">

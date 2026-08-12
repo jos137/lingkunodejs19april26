@@ -17,8 +17,7 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     connectTimeout: 10000,
-    debug: false,
-    family: 4
+    debug: false
 });
 
 // Tambahan log manual untuk setiap kejadian
