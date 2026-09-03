@@ -1500,8 +1500,43 @@ exports.updateStoreSettings = async (req, res) => {
     }
 };
 
-exports.updateIpaymuSettings = async (req, res) => {
+exports.updateBankSettings = async (req, res) => {
     try {
+        const { bank_name, account_number, account_name } = req.body;
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.redirect('/admin/settings');
+
+        if (!bank_name || !account_number || !account_name) {
+            return res.redirect('/admin/settings?tab=pembayarann&error=' + encodeURIComponent('Lengkapi bank, nomor rekening, dan nama pemilik.'));
+        }
+
+        const query = 'UPDATE users SET bank_name = ?, account_number = ?, account_name = ? WHERE id = ?';
+        const params = [bank_name.trim(), account_number.trim(), account_name.trim(), userId];
+
+        try {
+            await db.execute(query, params);
+        } catch (e) {
+            if (e.message.includes('Unknown column')) {
+                try { await db.execute('ALTER TABLE users ADD COLUMN bank_name VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                try { await db.execute('ALTER TABLE users ADD COLUMN account_number VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                try { await db.execute('ALTER TABLE users ADD COLUMN account_name VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                await db.execute(query, params);
+            } else throw e;
+        }
+
+        if (req.session.user) {
+            req.session.user.bank_name = bank_name.trim();
+            req.session.user.account_number = account_number.trim();
+            req.session.user.account_name = account_name.trim();
+        }
+        res.redirect('/admin/settings?tab=pembayarann&success=' + encodeURIComponent('Berhasil menyimpan data rekening!'));
+    } catch (err) {
+        console.error('Update Bank Error:', err.message);
+        res.redirect('/admin/settings?tab=pembayarann&error=' + encodeURIComponent('Gagal menyimpan data rekening.'));
+    }
+};
+
+exports.updateIpaymuSettings = async (req, res) => {    try {
         const { ipaymu_sandbox, ipaymu_expiry } = req.body;
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         if (!userId) return res.redirect('/admin/settings');

@@ -181,28 +181,40 @@
         <div class="settings-panel s-section" id="sec-pembayarann">
             <div class="settings-title">Rekening Pembayaran</div>
             <div class="settings-desc">Informasi rekening untuk menerima hasil penjualan (Payout).</div>
+            <% if (locals.success && locals.tab === 'pembayarann') { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-check-circle"></i> <%= success %>
+                </div>
+            <% } %>
+            <form action="/admin/settings/update-bank" method="POST">
             <div class="s-group">
                 <label class="s-label">Nama Bank</label>
-                <select class="s-input s-select">
-                    <option value="BCA">BCA</option>
-                    <option value="BNI">BNI</option>
-                    <option value="Mandiri">Mandiri</option>
-                    <option value="BRI">BRI</option>
-                    <option value="Other">Lainnya...</option>
+                <select class="s-input s-select" name="bank_name" required>
+                    <% const _banks = ['BCA','BNI','Mandiri','BRI','CIMB Niaga','Danamon','BSI','DANA','OVO','GoPay','ShopeePay']; %>
+                    <% const _cur = (locals.user && (user.bank_name || '')) || ''; %>
+                    <option value="" disabled <%= !_cur ? 'selected' : '' %>>-- Pilih Bank / E-Wallet --</option>
+                    <% _banks.forEach(function(b){ %>
+                        <option value="<%= b %>" <%= _cur === b ? 'selected' : '' %>><%= b %></option>
+                    <% }); %>
+                    <option value="Other" <%= (_cur && !_banks.includes(_cur)) ? 'selected' : '' %>>Lainnya...</option>
                 </select>
+                <% if (_cur && !_banks.includes(_cur) && _cur !== 'Other') { %>
+                    <div style="font-size:11px; color:#64748b; margin-top:6px;">Tersimpan: <strong><%= _cur %></strong> — pilih "Lainnya..." + hubungi admin jika ingin ganti, atau pilih bank di atas untuk update.</div>
+                <% } %>
             </div>
             <div class="s-row">
                 <div class="s-group">
                     <label class="s-label">Nomor Rekening</label>
-                    <input class="s-input" type="text" placeholder="e.g. 1234567890">
+                    <input class="s-input" type="text" name="account_number" value="<%= (locals.user && (user.account_number || '')) || '' %>" placeholder="e.g. 1234567890" required>
                 </div>
                 <div class="s-group">
                     <label class="s-label">Nama Pemilik Rekening</label>
-                    <input class="s-input" type="text" placeholder="Sesuai buku tabungan">
+                    <input class="s-input" type="text" name="account_name" value="<%= (locals.user && (user.account_name || '')) || '' %>" placeholder="Sesuai buku tabungan" required>
                 </div>
             </div>
             <hr class="s-divider">
-            <button class="s-save" onclick="alert('Berhasil menyimpan data rekening!')">Simpan Rekening</button>
+            <button type="submit" class="s-save">Simpan Rekening</button>
+            </form>
         </div>
 
         <!-- NOTIFIKASI -->
