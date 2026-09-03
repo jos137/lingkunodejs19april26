@@ -1219,10 +1219,10 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key = 'price_pro'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key = 'price_pro' OR setting_key = 'enable_captcha'");
         const smtp = {};
         const affiliate = {};
-        let fee_free = '3', fee_pro = '1', price_pro = '99000';
+        let fee_free = '3', fee_pro = '1', price_pro = '99000', enable_captcha = '1';
 
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
@@ -1230,6 +1230,7 @@ exports.getSettings = async (req, res) => {
             if (r.setting_key === 'fee_free') fee_free = r.setting_value;
             if (r.setting_key === 'fee_pro') fee_pro = r.setting_value;
             if (r.setting_key === 'price_pro') price_pro = r.setting_value;
+            if (r.setting_key === 'enable_captcha') enable_captcha = r.setting_value;
         });
 
         res.render('admin/settings', { 
@@ -1241,6 +1242,7 @@ exports.getSettings = async (req, res) => {
             fee_free,
             fee_pro,
             price_pro,
+            enable_captcha,
             success: req.query.success,
             tab: req.query.tab || 'profil'
         });
@@ -1533,6 +1535,24 @@ exports.updateBankSettings = async (req, res) => {
     } catch (err) {
         console.error('Update Bank Error:', err.message);
         res.redirect('/admin/settings?tab=pembayarann&error=' + encodeURIComponent('Gagal menyimpan data rekening.'));
+    }
+};
+
+exports.updateSecuritySettings = async (req, res) => {
+    try {
+        // Lapis 2: pastikan Owner saja (lapis 1: middleware isAdmin di route)
+        if (!req.session.user || req.session.user.role !== 'admin') {
+            return res.status(403).send('Akses ditolak: khusus Owner.');
+        }
+        const enabled = req.body.enable_captcha === 'on' ? '1' : '0';
+        await db.execute(
+            "INSERT INTO settings (setting_key, setting_value) VALUES ('enable_captcha', ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+            [enabled, enabled]
+        );
+        res.redirect('/admin/settings?tab=keamanan&success=' + encodeURIComponent(enabled === '1' ? 'CAPTCHA diaktifkan' : 'CAPTCHA dinonaktifkan untuk mode develop'));
+    } catch (err) {
+        console.error('Security settings update error:', err.message);
+        res.redirect('/admin/settings?tab=keamanan&error=true');
     }
 };
 

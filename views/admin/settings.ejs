@@ -231,7 +231,27 @@
         <!-- KEAMANAN -->
         <div class="settings-panel s-section" id="sec-keamanan">
             <div class="settings-title">Keamanan Akun</div>
-            <div class="settings-desc">Ganti password Anda secara berkala untuk menjaga keamanan akun.</div>
+            <div class="settings-desc">Kontrol proteksi login dan penggantian password.</div>
+            <% if (locals.success && locals.tab === 'keamanan') { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-check-circle"></i> <%= success %>
+                </div>
+            <% } %>
+            <form action="/admin/settings/update-security" method="POST">
+                <% if (user.role === 'admin') { %>
+                <div class="s-check">
+                    <input type="checkbox" name="enable_captcha" id="enable_captcha" <%= (locals.enable_captcha || '1') !== '0' ? 'checked' : '' %>>
+                    <label class="s-check-label" for="enable_captcha">Aktifkan CAPTCHA saat Login & Register</label>
+                </div>
+                <div style="font-size:11px; color:#94a3b8; margin-bottom:20px;">* Matikan saat develop lokal agar login cepat. <strong>Aktifkan kembali sebelum/saat produksi.</strong> <span style="color:#dc2626; font-weight:700;">Khusus Owner.</span></div>
+                <button type="submit" class="s-save">Simpan Keamanan</button>
+                <% } else { %>
+                <div style="padding:14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; color:#94a3b8; font-size:13px; font-weight:600; margin-bottom:20px;">
+                    <i class="fas fa-lock"></i> Pengaturan keamanan hanya dapat diubah oleh Owner/Admin.
+                </div>
+                <% } %>
+            </form>
+            <hr class="s-divider">
             <div class="s-group"><label class="s-label">Password Lama</label><input class="s-input" type="password" placeholder="••••••••"></div>
             <div class="s-row">
                 <div class="s-group"><label class="s-label">Password Baru</label><input class="s-input" type="password" placeholder="Min 8 karakter"></div>

@@ -4,6 +4,23 @@ const crypto = require('crypto');
 const mailer = require('../utils/mailer');
 const svgCaptcha = require('svg-captcha');
 
+// Saklar CAPTCHA (Pengaturan admin -> Keamanan). Default ON agar aman di produksi.
+async function isCaptchaEnabled() {
+    try {
+        const [rows] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'enable_captcha'");
+        if (rows.length === 0) return true;
+        return rows[0].setting_value !== '0';
+    } catch (e) { return true; }
+}
+
+exports.showLogin = async (req, res) => {
+    res.render('login', { title: 'Login - Lingku.xyz', layout: false, error: null, captchaEnabled: await isCaptchaEnabled() });
+};
+
+exports.showRegister = async (req, res) => {
+    res.render('register', { title: 'Register - Lingku.xyz', layout: false, error: null, captchaEnabled: await isCaptchaEnabled() });
+};
+
 exports.getCaptcha = (req, res) => {
     const captcha = svgCaptcha.create({
         size: 4,
@@ -22,12 +39,16 @@ exports.getCaptcha = (req, res) => {
 exports.login = async (req, res) => {
     const { email, password, captcha } = req.body;
     try {
-        // Validate CAPTCHA
-        const sessionCaptcha = req.session.captcha;
-        req.session.captcha = null; // Clear used captcha token
+        // Validate CAPTCHA (bisa dimatikan via Pengaturan -> Keamanan)
+        if (await isCaptchaEnabled()) {
+            const sessionCaptcha = req.session.captcha;
+            req.session.captcha = null; // Clear used captcha token
 
-        if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
-            return res.render('login', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false, email });
+            if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
+                return res.render('login', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false, email, captchaEnabled: true });
+            }
+        } else {
+            req.session.captcha = null;
         }
 
         const [users] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
@@ -70,12 +91,16 @@ exports.login = async (req, res) => {
 exports.register = async (req, res) => {
     const { fullname, email, password, whatsapp, captcha } = req.body;
     try {
-        // Validate CAPTCHA
-        const sessionCaptcha = req.session.captcha;
-        req.session.captcha = null; // Clear used captcha token
+        // Validate CAPTCHA (bisa dimatikan via Pengaturan -> Keamanan)
+        if (await isCaptchaEnabled()) {
+            const sessionCaptcha = req.session.captcha;
+            req.session.captcha = null; // Clear used captcha token
 
-        if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
-            return res.render('register', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false });
+            if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
+                return res.render('register', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false, captchaEnabled: true });
+            }
+        } else {
+            req.session.captcha = null;
         }
 
         const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
