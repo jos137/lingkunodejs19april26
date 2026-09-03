@@ -2,7 +2,7 @@
 /* Modern Minimalist & Premium UI for Tarik Dana */
 .wd-top-card {
     display: grid;
-    grid-template-columns: 1.2fr 1fr 1fr 1fr 1fr;
+    grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr));
     gap: 16px;
     background: #fff;
     border: 1px solid #e2e8f0;
@@ -16,6 +16,7 @@
     display: flex;
     align-items: center;
     gap: 14px;
+    min-width: 0;
 }
 
 @media (min-width: 1025px) {
@@ -45,6 +46,8 @@
 .metric-info {
     display: flex;
     flex-direction: column;
+    min-width: 0;
+    flex: 1;
 }
 
 .wd-metric-label {
@@ -55,16 +58,22 @@
 
 .wd-metric-value {
     font-size: 18px;
-    font-weight: 800;
+    font-weight: 600;
     color: #0f172a;
     letter-spacing: -0.5px;
     margin-top: 2px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .wd-metric-value.large {
-    font-size: 24px;
-    font-weight: 900;
+    font-size: clamp(18px, 1.8vw, 24px);
+    font-weight: 700;
     letter-spacing: -0.8px;
+    white-space: nowrap;
 }
 
 .text-green { color: #10b981 !important; }
@@ -117,9 +126,15 @@
 @media (max-width: 640px) {
     .wd-top-card {
         grid-template-columns: 1fr;
+        gap: 0;
     }
     .wd-top-card > div:first-child {
         grid-column: span 1;
+    }
+    .wd-top-card > div:not(:last-child) {
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 16px;
+        margin-bottom: 16px;
     }
 }
 
@@ -509,7 +524,7 @@
 </style>
 
 <%
-const fmt = (n) => 'Rp ' + (parseFloat(n || 0)).toLocaleString('id-ID');
+const fmt = (n) => 'Rp\u00A0' + (parseFloat(n || 0)).toLocaleString('id-ID');
 const bal = parseFloat(balance || 0);
 const totalCair = withdrawals.filter(w => w.status === 'completed').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
 const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
@@ -536,25 +551,13 @@ const minAmount = isPro ? 0 : 100000;
                     <span class="badge-plan free">FREE</span>
                 <% } %>
             </div>
-            <div class="wd-metric-value large"><%= fmt(bal) %></div>
+            <div class="wd-metric-value large" title="<%= fmt(bal) %>"><%= fmt(bal) %></div>
             <div class="metric-status-text">
                 <span class="status-dot"></span> Dana siap ditarik
             </div>
         </div>
     </div>
     
-    <!-- Komisi Affiliate -->
-    <div class="metric-card">
-        <div class="metric-icon-box affiliate">
-            <i class="fas fa-users"></i>
-        </div>
-        <div class="metric-info">
-            <span class="wd-metric-label">Komisi Affiliate</span>
-            <div class="wd-metric-value"><%= fmt(locals.affiliate_commission || 0) %></div>
-            <div class="metric-status-text plain">Akumulasi referral</div>
-        </div>
-    </div>
-
     <!-- Telah Cair -->
     <div class="metric-card">
         <div class="metric-icon-box cair">
@@ -562,7 +565,7 @@ const minAmount = isPro ? 0 : 100000;
         </div>
         <div class="metric-info">
             <span class="wd-metric-label">Telah Cair</span>
-            <div class="wd-metric-value text-green"><%= fmt(totalCair) %></div>
+            <div class="wd-metric-value text-green" title="<%= fmt(totalCair) %>"><%= fmt(totalCair) %></div>
             <div class="metric-status-text plain">Dana sukses dicairkan</div>
         </div>
     </div>
@@ -574,7 +577,7 @@ const minAmount = isPro ? 0 : 100000;
         </div>
         <div class="metric-info">
             <span class="wd-metric-label">Pending</span>
-            <div class="wd-metric-value text-orange"><%= fmt(totalPending) %></div>
+            <div class="wd-metric-value text-orange" title="<%= fmt(totalPending) %>"><%= fmt(totalPending) %></div>
             <div class="metric-status-text plain">Pencairan diproses</div>
         </div>
     </div>
@@ -586,7 +589,7 @@ const minAmount = isPro ? 0 : 100000;
         </div>
         <div class="metric-info">
             <span class="wd-metric-label">Ditolak</span>
-            <div class="wd-metric-value text-red"><%= fmt(totalDitolak) %></div>
+            <div class="wd-metric-value text-red" title="<%= fmt(totalDitolak) %>"><%= fmt(totalDitolak) %></div>
             <div class="metric-status-text plain">Pengajuan ditolak</div>
         </div>
     </div>
