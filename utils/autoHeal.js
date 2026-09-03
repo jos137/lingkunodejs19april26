@@ -16,6 +16,9 @@ async function runAutoHeal() {
         try { await db.execute("ALTER TABLE users ADD COLUMN referred_by INT DEFAULT NULL AFTER affiliate_code"); } catch(e){}
         try { await db.execute("ALTER TABLE users ADD COLUMN ipaymu_sandbox TINYINT(1) DEFAULT 0"); } catch(e){}
         try { await db.execute("ALTER TABLE users ADD COLUMN ipaymu_expiry INT DEFAULT 15"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN bank_name VARCHAR(100) DEFAULT NULL"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN account_number VARCHAR(100) DEFAULT NULL"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN account_name VARCHAR(100) DEFAULT NULL"); } catch(e){}
 
         // 2. PRODUCTS TABLE (Image Columns)
         const productCols = [

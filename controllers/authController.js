@@ -2,10 +2,34 @@ const db = require('../config/db');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const mailer = require('../utils/mailer');
+const svgCaptcha = require('svg-captcha');
+
+exports.getCaptcha = (req, res) => {
+    const captcha = svgCaptcha.create({
+        size: 4,
+        noise: 1,
+        color: true,
+        background: '#f8fafc',
+        width: 120,
+        height: 34,
+        fontSize: 32
+    });
+    req.session.captcha = captcha.text.toLowerCase();
+    res.type('svg');
+    res.status(200).send(captcha.data);
+};
 
 exports.login = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, captcha } = req.body;
     try {
+        // Validate CAPTCHA
+        const sessionCaptcha = req.session.captcha;
+        req.session.captcha = null; // Clear used captcha token
+
+        if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
+            return res.render('login', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false, email });
+        }
+
         const [users] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             return res.render('login', { error: 'User tidak ditemukan', layout: false });
@@ -44,8 +68,16 @@ exports.login = async (req, res) => {
 };
 
 exports.register = async (req, res) => {
-    const { fullname, email, password, whatsapp } = req.body;
+    const { fullname, email, password, whatsapp, captcha } = req.body;
     try {
+        // Validate CAPTCHA
+        const sessionCaptcha = req.session.captcha;
+        req.session.captcha = null; // Clear used captcha token
+
+        if (!captcha || !sessionCaptcha || captcha.trim().toLowerCase() !== sessionCaptcha) {
+            return res.render('register', { error: 'Kode Keamanan (CAPTCHA) salah atau kadaluarsa', layout: false });
+        }
+
         const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             return res.render('register', { error: 'Email sudah terdaftar', layout: false });

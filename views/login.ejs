@@ -211,6 +211,17 @@
                 <input type="password" id="password" name="password" class="form-input" required>
             </div>
 
+            <div class="form-group">
+                <label class="form-label" for="captcha">Security Code</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="captcha" name="captcha" class="form-input" placeholder="input code" required autocomplete="off" style="text-transform: lowercase; font-weight: 500; letter-spacing: 0.5px; border-color: #cbd5e1; background: #f8fafc; color: #334155;">
+                    <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 4px; opacity: 0.9;">
+                        <img id="captchaImg" src="/auth/captcha" alt="CAPTCHA" style="height: 34px; cursor: pointer; border-radius: 3px;" title="Klik untuk ganti gambar" onclick="refreshCaptcha()">
+                        <button type="button" onclick="refreshCaptcha()" style="background: none; border: none; cursor: pointer; padding: 2px 4px; color: #94a3b8; font-size: 13px; transition: color 0.15s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#94a3b8'" title="Refresh CAPTCHA">🔄</button>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-row">
                 <label class="remember-label">
                     <input type="checkbox" name="remember" value="1"> Remember Me
@@ -221,6 +232,12 @@
             <button type="submit" class="login-btn">Log In</button>
         </form>
     </div>
+
+    <script>
+        function refreshCaptcha() {
+            document.getElementById('captchaImg').src = '/auth/captcha?' + Date.now();
+        }
+    </script>
 
     <div class="login-links">
         <a href="/auth/register">Don't have an account? Register</a>

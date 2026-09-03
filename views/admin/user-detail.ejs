@@ -1,10 +1,10 @@
 <style>
 .detail-header-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 24px; padding: 35px; margin-bottom: 25px; display: flex; align-items: center; gap: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); position: relative; }
-.user-info-avatar { width: 70px; height: 70px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 1000; color: white; flex-shrink: 0; }
+.user-info-avatar { width: 70px; height: 70px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: 1000; color: white; flex-shrink: 0; object-fit: cover; }
 .user-info-text h1 { margin: 0; font-size: 22px; font-weight: 1000; color: #111827; letter-spacing: -0.5px; }
 .user-info-text p { margin: 6px 0 0; color: #64748b; font-size: 14px; font-weight: 600; }
 
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
 .stat-box { background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
 .stat-label { font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1.2px; }
 .stat-value { font-size: 18px; font-weight: 1000; color: #111827; }
@@ -56,11 +56,19 @@
         const colors = ['#6366f1','#10b981','#f59e0b','#ec4899','#3b82f6','#8b5cf6','#ef4444'];
         const color = colors[targetUser.id % colors.length];
         let displayName = targetUser.fullname || targetUser.name || targetUser.email.split('@')[0];
+        let photo = targetUser.profile_photo || targetUser.profile_pic || '';
+        if (photo && !photo.startsWith('http') && !photo.startsWith('/')) {
+            photo = '/uploads/profiles/' + photo;
+        }
     %>
     
-    <div class="user-info-avatar" style="background: <%= color %>">
-        <%= displayName.charAt(0).toUpperCase() %>
-    </div>
+    <% if (photo) { %>
+        <img src="<%= photo %>" class="user-info-avatar" alt="Foto profil" onerror="this.style.display='none'">
+    <% } else { %>
+        <div class="user-info-avatar" style="background: <%= color %>">
+            <%= displayName.charAt(0).toUpperCase() %>
+        </div>
+    <% } %>
 
     <div class="user-info-text">
         <h1><%= displayName %></h1>
@@ -85,14 +93,32 @@
     </a>
 </div>
 
+<!-- Bank Account Information Card -->
+<div style="background: #fff; border: 1px solid #e5e7eb; border-radius: 20px; padding: 22px 25px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
+    <div style="font-size: 14px; font-weight: 900; color: #111827; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;">
+        <i class="fas fa-university" style="color: #10b981; font-size: 16px;"></i>
+        <span>Informasi Rekening Bank / Payout User</span>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div style="background: #f8fafc; padding: 14px 18px; border-radius: 14px; border: 1px solid #f1f5f9;">
+            <div style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Nama Bank</div>
+            <div style="font-size: 15px; font-weight: 900; color: #1e293b; margin-top: 4px;"><%= (locals.bankInfo && bankInfo.bank_name) ? bankInfo.bank_name : '-' %></div>
+        </div>
+        <div style="background: #f8fafc; padding: 14px 18px; border-radius: 14px; border: 1px solid #f1f5f9;">
+            <div style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">No. Rekening / E-Wallet</div>
+            <div style="font-size: 15px; font-weight: 900; color: #1e293b; margin-top: 4px; font-family: monospace; letter-spacing: 0.5px;"><%= (locals.bankInfo && bankInfo.account_number) ? bankInfo.account_number : '-' %></div>
+        </div>
+        <div style="background: #f8fafc; padding: 14px 18px; border-radius: 14px; border: 1px solid #f1f5f9;">
+            <div style="font-size: 10px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px;">Nama Pemilik Akun</div>
+            <div style="font-size: 15px; font-weight: 900; color: #1e293b; margin-top: 4px;"><%= (locals.bankInfo && bankInfo.account_name) ? bankInfo.account_name : '-' %></div>
+        </div>
+    </div>
+</div>
+
 <div class="stats-grid">
     <div class="stat-box">
-        <div class="stat-label">Total Pesanan Diurus</div>
+        <div class="stat-label">Total Pesanan</div>
         <div class="stat-value"><%= totalItems %></div>
-    </div>
-    <div class="stat-box">
-        <div class="stat-label">Member Role</div>
-        <div class="stat-value" style="color: #3b82f6;"><%= (targetUser.role || 'USER').toUpperCase() %></div>
     </div>
     <div class="stat-box">
         <div class="stat-label">Total Belanja (IDR)</div>

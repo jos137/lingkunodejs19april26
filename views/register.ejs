@@ -45,8 +45,23 @@
                 <label>Password</label>
                 <input type="password" name="password" required>
             </div>
+            <div class="form-group">
+                <label>Security Code</label>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="captcha" name="captcha" placeholder="input code" required autocomplete="off" style="text-transform: lowercase; font-weight: 500; border-color: #cbd5e1; background: #f8fafc; color: #334155;">
+                    <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 4px; opacity: 0.9;">
+                        <img id="captchaImgReg" src="/auth/captcha" alt="CAPTCHA" style="height: 34px; cursor: pointer; border-radius: 3px;" title="Klik untuk ganti gambar" onclick="refreshCaptchaReg()">
+                        <button type="button" onclick="refreshCaptchaReg()" style="background: none; border: none; cursor: pointer; padding: 2px 4px; color: #94a3b8; font-size: 13px; transition: color 0.15s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#94a3b8'" title="Refresh CAPTCHA">🔄</button>
+                    </div>
+                </div>
+            </div>
             <button type="submit" class="btn">Register</button>
         </form>
+        <script>
+            function refreshCaptchaReg() {
+                document.getElementById('captchaImgReg').src = '/auth/captcha?' + Date.now();
+            }
+        </script>
         <a href="/auth/login" class="link">Already have an account? Login</a>
     </div>
 </body>

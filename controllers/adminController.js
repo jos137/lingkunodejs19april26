@@ -982,12 +982,34 @@ exports.getUserBuyers = async (req, res) => {
             [id]
         );
 
+        // NEW: Fetch user's bank details (from profile or latest withdrawal)
+        let bankInfo = {
+            bank_name: targetUser.bank_name || null,
+            account_number: targetUser.account_number || null,
+            account_name: targetUser.account_name || null
+        };
+
+        if (!bankInfo.bank_name || !bankInfo.account_number) {
+            try {
+                const [wdRows] = await db.execute(
+                    "SELECT bank_name, account_number, account_name FROM withdrawals WHERE user_id = ? ORDER BY id DESC LIMIT 1",
+                    [id]
+                );
+                if (wdRows.length > 0) {
+                    bankInfo.bank_name = bankInfo.bank_name || wdRows[0].bank_name;
+                    bankInfo.account_number = bankInfo.account_number || wdRows[0].account_number;
+                    bankInfo.account_name = bankInfo.account_name || wdRows[0].account_name;
+                }
+            } catch(e) {}
+        }
+
         const pageTitle = targetUser.name || targetUser.username || targetUser.email || 'User';
 
         res.render('admin/user-detail', { 
             title: 'Member',
             layout: './layouts/admin',
             targetUser,
+            bankInfo,
             orders,
             totalSpent,
             totalSales,

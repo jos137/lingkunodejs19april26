@@ -3,6 +3,8 @@ const router = express.Router();
 
 const authController = require('../controllers/authController');
 
+router.get('/captcha', authController.getCaptcha);
+
 router.get('/login', (req, res) => {
     res.render('login', { title: 'Login - Lingku.xyz', layout: false, error: null });
 });
