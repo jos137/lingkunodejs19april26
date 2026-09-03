@@ -12,24 +12,30 @@
 <style>
 .dash-cards-row {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
     margin-top: 10px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+}
+.dash-cards-row > div:not(:last-child) {
+    border-right: 1px solid #f1f5f9;
+    padding-right: 16px;
 }
 .dash-stat-card {
-    background: #fff;
-    border: 1px solid #f1f5f9;
-    border-radius: 16px;
-    padding: 18px 20px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0;
     display: flex;
     align-items: center;
     gap: 14px;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.03);
-}
-.dash-stat-card:hover {
-    border-color: #e2e8f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    box-shadow: none;
+    min-width: 0;
 }
 .dash-stat-icon {
     width: 42px; height: 42px;
@@ -50,18 +56,23 @@
 .dash-stat-label {
     font-size: 11px;
     font-weight: 700;
-    color: #94a3b8;
+    color: #64748b;
     margin-bottom: 4px;
 }
 .dash-stat-value {
     font-size: 17px;
-    font-weight: 800;
+    font-weight: 600;
     color: #0f172a;
     letter-spacing: -0.3px;
     line-height: 1.2;
     display: flex;
     align-items: baseline;
     gap: 2px;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .dash-stat-value small {
     font-size: 11px;
@@ -74,11 +85,20 @@
     color: #94a3b8;
 }
 
-@media (max-width: 1400px) { .dash-cards-row { grid-template-columns: repeat(4, 1fr); gap: 8px; } }
-@media (max-width: 1200px) { .dash-cards-row { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 1400px) { .dash-cards-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; } }
+@media (max-width: 1200px) {
+    .dash-cards-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+    .dash-cards-row > div { padding-bottom: 16px; margin-bottom: 16px; }
+    .dash-cards-row > div:nth-child(odd) { border-right: 1px solid #f1f5f9; padding-right: 16px; }
+    .dash-cards-row > div:nth-child(even) { border-right: none; padding-right: 0; padding-left: 16px; }
+    .dash-cards-row > div:nth-child(1), .dash-cards-row > div:nth-child(2) { border-bottom: 1px solid #f1f5f9; }
+    .dash-cards-row > div:nth-child(3), .dash-cards-row > div:nth-child(4) { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
+}
 @media (max-width: 640px) {
-    .dash-cards-row { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .dash-stat-card { padding: 14px; }
+    .dash-cards-row { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 20px; }
+    .dash-cards-row > div { border-right: none !important; padding-right: 0 !important; padding-left: 0 !important; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0; }
+    .dash-cards-row > div:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .dash-stat-card { padding: 0; }
     .dash-stat-value { font-size: 15px !important; }
     .dash-stat-icon { width: 36px; height: 36px; font-size: 14px; }
 }
@@ -226,8 +246,8 @@
 
 <!-- CHART -->
 <div class="bio-card" style="padding: 24px; margin-top: 24px;">
-    <div style="font-size: 11px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 16px;">
-        <i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE
+    <div style="font-size: 11px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span><i class="fas fa-chart-line" style="color:#3b82f6;"></i> SALES PERFORMANCE
         <% if (locals.filterMonth) { %>
             (<%= new Date(filterMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase() %>)
         <% } else if (locals.filterDate) { %>
@@ -235,6 +255,13 @@
         <% } else { %>
             (LAST 30 DAYS)
         <% } %>
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #64748b;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Revenue
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #64748b;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background: #f97316; display: inline-block;"></span> Visitor
+        </span>
     </div>
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
         <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 14px 32px; text-align: center; min-width: 200px;">
@@ -304,9 +331,11 @@
 <script>
     const labels = [];
     const dataVals = [];
+    const visitorVals = [];
     <% (chartData || []).forEach(function(d) { %>
         labels.push('<%= new Date(d.date).toLocaleDateString("id-ID", { day:"numeric", month:"short" }) %>');
         dataVals.push(<%= d.revenue || 0 %>);
+        visitorVals.push(<%= d.visitors || 0 %>);
     <% }); %>
 
     const isFiltered = '<%= locals.filterDate || locals.filterMonth %>';
@@ -347,6 +376,24 @@
                 pointHoverRadius: 6,
                 pointHoverBorderWidth: 3,
                 hoverBackgroundColor: '#10b981'
+            },
+            {
+                label: 'Visitor',
+                data: visitorVals,
+                borderColor: '#f97316',
+                backgroundColor: chartType === 'bar' ? '#fdba74' : 'rgba(249,115,22,0.12)',
+                fill: chartType === 'bar' ? true : true,
+                tension: 0.35,
+                borderWidth: chartType === 'bar' ? 0 : 2.5,
+                borderRadius: chartType === 'bar' ? 6 : 0,
+                maxBarThickness: chartType === 'bar' ? 36 : undefined,
+                yAxisID: 'y1',
+                pointRadius: chartType === 'bar' ? 0 : 3,
+                pointBackgroundColor: '#fff',
+                pointBorderColor: '#f97316',
+                pointBorderWidth: 2,
+                pointHoverRadius: 5,
+                hoverBackgroundColor: '#f97316'
             }]
         },
         options: {
@@ -367,7 +414,9 @@
                     boxPadding: 6,
                     usePointStyle: true,
                     callbacks: {
-                        label: ctx => 'Rp ' + ctx.parsed.y.toLocaleString('id-ID')
+                        label: ctx => ctx.dataset.label === 'Visitor'
+                            ? 'Visitor: ' + ctx.parsed.y + ' orang'
+                            : 'Rp ' + ctx.parsed.y.toLocaleString('id-ID')
                     }
                 }
             },
@@ -381,6 +430,8 @@
                     }
                 },
                 y: {
+                    type: 'linear',
+                    position: 'left',
                     min: 0,
                     grid: { 
                         color: '#f1f5f9', 
@@ -391,6 +442,18 @@
                         color: '#94a3b8',
                         padding: 8,
                         callback: v => v >= 1000000 ? (v/1000000).toFixed(1) + 'M' : v >= 1000 ? (v/1000) + 'K' : v
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    min: 0,
+                    grid: { display: false, drawBorder: false },
+                    ticks: {
+                        font: { size: 11, weight: '600' },
+                        color: '#fb923c',
+                        padding: 8,
+                        precision: 0
                     }
                 }
             },

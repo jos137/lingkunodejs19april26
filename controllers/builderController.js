@@ -400,9 +400,26 @@ exports.renderUserPage = async (req, res) => {
             recentOrders = oRows;
         } catch(e) {}
 
+        // Track profile visit (unique IP per day, skip owner self-view)
+        try {
+            const viewerId = req.session ? (req.session.userId || (req.session.user ? req.session.user.id : null)) : null;
+            if (viewerId != user.id) {
+                const fwd = req.headers['x-forwarded-for'];
+                const rawIp = (Array.isArray(fwd) ? fwd[0] : (fwd || '')).split(',')[0].trim()
+                    || req.ip || (req.connection && req.connection.remoteAddress) || '';
+                const ip = String(rawIp).slice(0, 64);
+                if (ip) {
+                    db.execute(
+                        "INSERT IGNORE INTO profile_visits (user_id, ip, visit_date) VALUES (?, ?, DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')))",
+                        [user.id, ip]
+                    ).catch(() => {});
+                }
+            }
+        } catch(e) {}
+
         res.render('user-page', {
             title: page.title || user.fullname || 'Landing Page',
-            layout: false, 
+            layout: false,
             user: {
                 fullname: user.fullname,
                 slug: user.slug,

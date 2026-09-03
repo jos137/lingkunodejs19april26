@@ -93,6 +93,51 @@ exports.getDashboardData = async (req, res) => {
             chartData = rows;
         } catch(e) { console.log('Chart query error:', e.message); }
 
+        // Visitor data: unique IPs per day (GMT+7 WIB), same range as revenue chart
+        let visitMap = {};
+        try {
+            let visitQuery = "SELECT DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) as date, COUNT(*) as visitors FROM profile_visits WHERE user_id = ?";
+            let visitParams = [userId];
+
+            if (filterDate) {
+                visitQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
+                visitParams.push(filterDate);
+            } else if (filterMonth) {
+                visitQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) BETWEEN ? AND LAST_DAY(?)";
+                visitParams.push(filterMonth + '-01', filterMonth + '-01');
+            } else {
+                visitQuery += " AND CONVERT_TZ(created_at, '+00:00', '+07:00') >= DATE_SUB(DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')), INTERVAL 30 DAY)";
+            }
+
+            visitQuery += " GROUP BY date";
+            const [vRows] = await db.execute(visitQuery, visitParams);
+            const normDay = (d) => {
+                if (!d) return '';
+                if (d instanceof Date) return d.toISOString().slice(0, 10);
+                return String(d).slice(0, 10);
+            };
+            vRows.forEach(r => { visitMap[normDay(r.date)] = parseInt(r.visitors || 0, 10); });
+        } catch(e) { console.log('Visit query error:', e.message); }
+
+        // Merge revenue + visitors into one date series (days with visits but no sales still show)
+        try {
+            const normDay = (d) => {
+                if (!d) return '';
+                if (d instanceof Date) return d.toISOString().slice(0, 10);
+                return String(d).slice(0, 10);
+            };
+            const merged = {};
+            chartData.forEach(d => {
+                const k = normDay(d.date);
+                merged[k] = { date: k, revenue: parseFloat(d.revenue || 0), orders: parseInt(d.orders || 0, 10), visitors: 0 };
+            });
+            Object.entries(visitMap).forEach(([k, v]) => {
+                if (merged[k]) merged[k].visitors = v;
+                else merged[k] = { date: k, revenue: 0, orders: 0, visitors: v };
+            });
+            chartData = Object.keys(merged).sort().map(k => merged[k]);
+        } catch(e) { console.log('Chart merge error:', e.message); }
+
         const chartTotal = chartData.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0);
 
         res.render('admin/dashboard', {
