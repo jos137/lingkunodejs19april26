@@ -6,8 +6,8 @@
     gap: 16px;
     background: #fff;
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 20px;
     margin-bottom: 24px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
 }
@@ -17,13 +17,10 @@
     align-items: center;
     gap: 14px;
     min-width: 0;
-}
-
-@media (min-width: 1025px) {
-    .wd-top-card > div:not(:last-child) {
-        border-right: 1px solid #f1f5f9;
-        padding-right: 16px;
-    }
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 20px;
 }
 
 .metric-icon-box {
@@ -114,27 +111,14 @@
 @media (max-width: 1024px) {
     .wd-top-card {
         grid-template-columns: 1fr 1fr;
-        gap: 20px;
-    }
-    .wd-top-card > div:first-child {
-        grid-column: span 2;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 16px;
+        gap: 12px;
     }
 }
 
 @media (max-width: 640px) {
     .wd-top-card {
         grid-template-columns: 1fr;
-        gap: 0;
-    }
-    .wd-top-card > div:first-child {
-        grid-column: span 1;
-    }
-    .wd-top-card > div:not(:last-child) {
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 16px;
-        margin-bottom: 16px;
+        gap: 12px;
     }
 }
 

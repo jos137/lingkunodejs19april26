@@ -1,11 +1,17 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-/* Stat Cards */
-.stat-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 25px; }
-.stat-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+/* Stat Cards — outer container + mini-card bordered (like upgrade-orders .top-section/.top-cards/.stats-card) */
+.stat-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 25px; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01); }
+.stat-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 18px 20px; box-shadow: none; min-width: 0; display: flex; align-items: center; gap: 14px; }
+.stat-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.stat-icon.green { background: #ecfdf5; color: #059669; }
+.stat-icon.blue { background: #eff6ff; color: #2563eb; }
+.stat-icon.teal { background: #f0fdfa; color: #0d9488; }
+.stat-icon.indigo { background: #eef2ff; color: #4f46e5; }
+.stat-info { flex: 1; min-width: 0; }
 .stat-card-label { font-size: 10px; font-weight: 900; color: #94a3b8; letter-spacing: 1.2px; margin-bottom: 10px; text-transform: uppercase; }
-.stat-card-value { font-size: 24px; font-weight: 1000; color: #111827; }
+.stat-card-value { font-size: 20px; font-weight: 600; color: #111827; white-space: nowrap; font-variant-numeric: tabular-nums; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 /* Filter & Layout */
 .stats-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #fff; padding: 15px 20px; border-radius: 14px; border: 1px solid #e5e7eb; }
@@ -26,41 +32,53 @@
 .bs-revenue { font-size: 12px; font-weight: 850; color: #10b981; }
 
 @media (max-width: 1024px) {
-    .stat-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding: 20px; }
     .stats-grid { grid-template-columns: 1fr; }
     .stats-box { padding: 15px; border-radius: 12px; width: 100%; overflow: hidden; }
     .page-body { padding: 10px; }
-    .stat-card { padding: 15px; }
 }
 
 @media (max-width: 640px) {
-    .stat-cards { grid-template-columns: 1fr; }
+    .stat-cards { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 20px; }
     .stats-controls { flex-direction: column; align-items: stretch; padding: 12px; gap: 10px; }
     .daily-box-header { flex-direction: column; align-items: stretch; gap: 12px; }
     .daily-mini-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .mini-stat-card { padding: 8px 10px; }
     .mini-value { font-size: 13px; }
     .chart-wrapper { height: 260px; width: 100%; }
+    .stat-icon { width: 36px; height: 36px; font-size: 14px; }
 }
 </style>
 
 <div class="stat-cards">
-    <div class="stat-card" style="border-top: 4px solid #10b981;">
-        <div class="stat-card-label">Overall Revenue</div>
-        <div class="stat-card-value">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-sack-dollar"></i></div>
+        <div class="stat-info">
+            <div class="stat-card-label">Overall Revenue</div>
+            <div class="stat-card-value" title="Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %>">Rp <%= parseFloat(total_revenue || 0).toLocaleString('id-ID') %></div>
+        </div>
     </div>
-    <div class="stat-card" style="border-top: 4px solid #3b82f6;">
-        <div class="stat-card-label">Total Pesanan</div>
-        <div class="stat-card-value"><%= total_orders || 0 %></div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-receipt"></i></div>
+        <div class="stat-info">
+            <div class="stat-card-label">Total Pesanan</div>
+            <div class="stat-card-value"><%= total_orders || 0 %></div>
+        </div>
     </div>
-    <div class="stat-card" style="border-top: 4px solid #059669;">
-        <div class="stat-card-label">Pesanan Selesai</div>
-        <div class="stat-card-value" style="color:#059669;"><%= completed_orders || 0 %></div>
+    <div class="stat-card">
+        <div class="stat-icon teal"><i class="fas fa-circle-check"></i></div>
+        <div class="stat-info">
+            <div class="stat-card-label">Pesanan Selesai</div>
+            <div class="stat-card-value" style="color:#0d9488;"><%= completed_orders || 0 %></div>
+        </div>
     </div>
-    <div class="stat-card" style="border-top: 4px solid #3b82f6; background: #fffbf0;">
-        <div class="stat-card-label">Pesanan Bulan Ini</div>
-        <div class="stat-card-value" style="color:#3b82f6;"><%= thisMonthOrders || 0 %> <span style="font-size:12px; font-weight:700; color:#64748b;">Pesanan</span></div>
-        <div style="font-size:11px; font-weight:700; color:#10b981; margin-top:4px;">Rp <%= parseFloat(thisMonthRevenue || 0).toLocaleString('id-ID') %></div>
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="fas fa-calendar-check"></i></div>
+        <div class="stat-info">
+            <div class="stat-card-label">Pesanan Bulan Ini</div>
+            <div class="stat-card-value" style="color:#4f46e5;"><%= thisMonthOrders || 0 %> <span style="font-size:12px; font-weight:700; color:#64748b;">Pesanan</span></div>
+            <div style="font-size:11px; font-weight:700; color:#10b981; margin-top:4px;">Rp <%= parseFloat(thisMonthRevenue || 0).toLocaleString('id-ID') %></div>
+        </div>
     </div>
 </div>
 
@@ -136,15 +154,12 @@
     .mini-stat-card { padding: 8px 10px; }
     .mini-value { font-size: 13px; }
     .page-header h1 { font-size: 18px; }
-    .stat-card-value { font-size: 16px; } /* Angka dikecilin dikit biar muat 2 kolom */
-    .stat-card { padding: 12px; }
-    .stat-cards { grid-template-columns: 1fr 1fr !important; gap: 10px; } /* PAKSA 2 KOLOM */
+    .stat-card-value { font-size: 16px; } /* Angka dikecilin dikit biar muat */
     .chart-wrapper { height: 250px; }
 }
 
 @media (max-width: 480px) {
     .daily-mini-cards { grid-template-columns: 1fr 1fr; } /* Tetep 2 kolom biar kompak */
-    .stat-cards { grid-template-columns: 1fr 1fr !important; } /* Tetep 2 kolom */
 }
 </style>
 

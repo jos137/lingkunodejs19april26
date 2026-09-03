@@ -2288,13 +2288,22 @@ exports.getUpgradeOrders = async (req, res) => {
             ${whereClause}
         `, queryParams);
 
+        // PRO subscription status (Aktif = masih berlangganan, Expired = sudah lewat masa berlaku)
+        let activePro = 0, expiredPro = 0;
+        try {
+            const [[aRow]] = await db.execute("SELECT COUNT(*) as c FROM users WHERE plan = 'pro' AND (expired_at IS NULL OR expired_at > NOW())");
+            activePro = aRow.c;
+            const [[eRow]] = await db.execute("SELECT COUNT(*) as c FROM users WHERE expired_at IS NOT NULL AND expired_at <= NOW()");
+            expiredPro = eRow.c;
+        } catch(e) { console.log('PRO stats skipped:', e.message); }
+
         res.render('admin/upgrade-orders', {
             title: 'Penjualan Platform',
             layout: './layouts/admin',
             orders,
             currentPage: page,
             totalPages,
-            stats: stats[0],
+            stats: { ...stats[0], active_pro: activePro, expired_pro: expiredPro },
             filters: { date },
             user: req.session.user || res.locals.user
         });
