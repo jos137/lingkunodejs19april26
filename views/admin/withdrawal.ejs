@@ -592,7 +592,7 @@ const minAmount = isPro ? 0 : 100000;
             </div>
         </div>
         
-        <form action="/admin/withdrawal/request" method="POST" id="wdForm">
+        <form action="/admin/withdrawal/request" method="POST" id="wdForm" onsubmit="return requestOtp(event)">
             <div class="wd-input-group">
                 <label class="wd-label">Jumlah Penarikan (Rp)</label>
                 <div style="position: relative; display: flex; align-items: center;">
@@ -736,6 +736,43 @@ const minAmount = isPro ? 0 : 100000;
     </div>
 </div>
 
+<!-- OTP Modal HTML -->
+<div class="wd-modal-overlay" id="otpModal">
+    <div class="wd-modal">
+        <div class="wd-modal-icon" style="background:#ecfdf5; color:#10b981;">
+            <i class="fas fa-shield-halved"></i>
+        </div>
+        <div class="wd-modal-title">Kode OTP Penarikan</div>
+        <div class="wd-modal-desc" style="margin-bottom:16px;">
+            Kami mengirim 6 digit kode ke <strong id="otpEmail">email Anda</strong>.<br>Berlaku <strong id="otpTimer" style="color:#10b981;">5:00</strong>.
+        </div>
+        <div id="otpBoxes" style="display:flex; gap:8px; justify-content:center; margin-bottom:14px;">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+            <input class="otp-box" type="text" inputmode="numeric" maxlength="1">
+        </div>
+        <div id="otpError" style="display:none; font-size:12px; font-weight:700; color:#ef4444; margin-bottom:12px;"></div>
+        <button class="wd-modal-btn" id="otpVerifyBtn" onclick="confirmOtp()">Verifikasi & Tarik Dana</button>
+        <div style="margin-top:14px; font-size:12px; color:#64748b; font-weight:600;">
+            <span id="otpResendWrap" style="display:none;">Tidak terima kode? <a href="#" onclick="return resendOtp()" style="color:#10b981; font-weight:800;">Kirim ulang</a></span>
+            <span id="otpCooldown"></span>
+            &nbsp;•&nbsp;<a href="#" onclick="return editAmount()" style="color:#64748b;">Ubah nominal</a>
+        </div>
+    </div>
+</div>
+
+<style>
+.otp-box { width: 46px; height: 54px; text-align: center; font-size: 22px; font-weight: 800; color: #0f172a; border: 1.5px solid #e2e8f0; border-radius: 12px; outline: none; transition: all 0.15s; background: #f8fafc; }
+.otp-box:focus { border-color: #10b981; background: #fff; box-shadow: 0 0 0 4px rgba(16,185,129,0.1); }
+.otp-shake { animation: otpShake 0.4s; border-color: #ef4444 !important; }
+@keyframes otpShake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
 <!-- Success Modal HTML -->
 <div class="wd-modal-overlay" id="successModal">
     <div class="wd-modal">
@@ -751,7 +788,6 @@ const minAmount = isPro ? 0 : 100000;
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 <script>
 function calcFee() {
     const amount = parseInt(document.getElementById('wdAmount').value) || 0;
@@ -770,6 +806,172 @@ function closeModal() {
     url.searchParams.delete('amount');
     window.history.replaceState({}, document.title, url);
 }
+
+// ===== OTP Penarikan Dana =====
+let otpCountdown = null;
+let otpSecondsLeft = 0;
+
+function collectWdData() {
+    const form = document.getElementById('wdForm');
+    return {
+        amount: form.querySelector('[name=amount]').value,
+        bank_name: form.querySelector('[name=bank_name]').value,
+        account_name: form.querySelector('[name=account_name]').value,
+        account_number: form.querySelector('[name=account_number]').value
+    };
+}
+
+async function requestOtp(e) {
+    if (e) e.preventDefault();
+    const btn = document.querySelector('#wdForm .wd-submit');
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim OTP...';
+    try {
+        const res = await fetch('/admin/withdrawal/request-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectWdData())
+        });
+        const d = await res.json();
+        if (!d.success) {
+            alert(d.message || 'Gagal meminta OTP.');
+            if (d.retry_after) alert('Tunggu ' + d.retry_after + ' detik sebelum kirim ulang.');
+            return false;
+        }
+        document.getElementById('otpEmail').textContent = d.masked_email;
+        openOtpModal(d.expires_in || 300);
+    } catch (err) {
+        alert('Koneksi bermasalah, coba lagi.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    }
+    return false;
+}
+
+function openOtpModal(seconds) {
+    document.querySelectorAll('.otp-box').forEach(b => { b.value = ''; b.classList.remove('otp-shake'); });
+    hideOtpError();
+    document.getElementById('otpModal').classList.add('active');
+    startOtpTimer(seconds);
+    setTimeout(() => document.querySelector('.otp-box').focus(), 300);
+}
+
+function closeOtpModal() { document.getElementById('otpModal').classList.remove('active'); clearInterval(otpCountdown); }
+
+function editAmount() { closeOtpModal(); document.getElementById('wdAmount').focus(); return false; }
+
+function startOtpTimer(seconds) {
+    clearInterval(otpCountdown);
+    otpSecondsLeft = seconds;
+    const el = document.getElementById('otpTimer');
+    const rw = document.getElementById('otpResendWrap');
+    const cd = document.getElementById('otpCooldown');
+    const tick = () => {
+        const m = Math.floor(otpSecondsLeft / 60), s = otpSecondsLeft % 60;
+        el.textContent = m + ':' + String(s).padStart(2, '0');
+        if (otpSecondsLeft <= 0) {
+            clearInterval(otpCountdown);
+            showOtpError('Kode kedaluwarsa. Silakan kirim ulang.');
+            rw.style.display = '';
+            cd.textContent = '';
+            return;
+        }
+        otpSecondsLeft--;
+    };
+    tick();
+    otpCountdown = setInterval(tick, 1000);
+    // Cooldown kirim ulang 60 detik
+    let cool = 60;
+    rw.style.display = 'none';
+    cd.textContent = 'Kirim ulang dalam ' + cool + ' dtk';
+    const coolTick = setInterval(() => {
+        cool--;
+        if (cool <= 0) { clearInterval(coolTick); rw.style.display = ''; cd.textContent = ''; }
+        else cd.textContent = 'Kirim ulang dalam ' + cool + ' dtk';
+    }, 1000);
+}
+
+async function resendOtp() {
+    hideOtpError();
+    await requestOtp(null);
+    return false;
+}
+
+function showOtpError(msg) {
+    const el = document.getElementById('otpError');
+    el.textContent = msg;
+    el.style.display = 'block';
+    document.querySelectorAll('.otp-box').forEach(b => { b.classList.remove('otp-shake'); void b.offsetWidth; b.classList.add('otp-shake'); });
+}
+function hideOtpError() { document.getElementById('otpError').style.display = 'none'; }
+
+function getOtpCode() {
+    return Array.from(document.querySelectorAll('.otp-box')).map(b => b.value).join('');
+}
+
+async function confirmOtp() {
+    const code = getOtpCode();
+    if (code.length !== 6) { showOtpError('Lengkapi 6 digit kode.'); return; }
+    const btn = document.getElementById('otpVerifyBtn');
+    btn.disabled = true;
+    btn.textContent = 'Memverifikasi...';
+    try {
+        const res = await fetch('/admin/withdrawal/confirm-otp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        const d = await res.json();
+        if (!d.success) {
+            showOtpError(d.message || 'Verifikasi gagal.');
+            if (d.expired || d.locked) {
+                document.getElementById('otpResendWrap').style.display = '';
+                document.getElementById('otpCooldown').textContent = '';
+            }
+            return;
+        }
+        closeOtpModal();
+        showWdSuccess(d.amount);
+    } catch (err) {
+        showOtpError('Koneksi bermasalah, coba lagi.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Verifikasi & Tarik Dana';
+    }
+}
+
+function showWdSuccess(amount) {
+    document.getElementById('modalAmount').textContent = 'Rp ' + parseFloat(amount).toLocaleString('id-ID');
+    setTimeout(() => {
+        confetti({ particleCount: 120, spread: 60, origin: { y: 0.65 }, colors: ['#10b981', '#3b82f6', '#f59e0b'], zIndex: 10000 });
+        document.getElementById('successModal').classList.add('active');
+    }, 300);
+    setTimeout(() => window.location.reload(), 4000);
+}
+
+// Navigasi kotak OTP: auto-loncat, backspace mundur, paste sekaligus
+document.addEventListener('DOMContentLoaded', () => {
+    const boxes = Array.from(document.querySelectorAll('.otp-box'));
+    boxes.forEach((box, i) => {
+        box.addEventListener('input', () => {
+            box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+            if (box.value && i < boxes.length - 1) boxes[i + 1].focus();
+            if (getOtpCode().length === 6) confirmOtp();
+        });
+        box.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Backspace' && !box.value && i > 0) boxes[i - 1].focus();
+        });
+        box.addEventListener('paste', (ev) => {
+            ev.preventDefault();
+            const text = (ev.clipboardData.getData('text') || '').replace(/[^0-9]/g, '').slice(0, 6);
+            text.split('').forEach((ch, j) => { if (boxes[j]) boxes[j].value = ch; });
+            if (text.length === 6) confirmOtp();
+            else if (boxes[text.length]) boxes[text.length].focus();
+        });
+    });
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);

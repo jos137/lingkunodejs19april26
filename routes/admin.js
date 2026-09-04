@@ -100,6 +100,8 @@ router.get('/statistics', adminController.getStatistics);
 // ===== WITHDRAWAL =====
 router.get('/withdrawal', adminController.getWithdrawal);
 router.post('/withdrawal/request', adminController.requestWithdrawal);
+router.post('/withdrawal/request-otp', adminController.requestWdOtp);
+router.post('/withdrawal/confirm-otp', adminController.confirmWdOtp);
 
 // ===== GUIDES =====
 router.get('/guides', adminController.getGuides);

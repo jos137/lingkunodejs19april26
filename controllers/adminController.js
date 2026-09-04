@@ -2,7 +2,169 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail } = require('../utils/mailer');
+
+// Mask email untuk ditampilkan di popup OTP (u***@gmail.com)
+function maskEmail(email) {
+    if (!email || !email.includes('@')) return 'email Anda';
+    const [name, domain] = email.split('@');
+    return (name.charAt(0) || '*') + '***@' + domain;
+}
+
+// Kode OTP 6 digit khusus penarikan dana
+exports.requestWdOtp = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.status(401).json({ success: false, message: 'Sesi berakhir, silakan login ulang.' });
+
+        const { amount, bank_name, account_number, account_name } = req.body;
+        const requestedAmount = parseFloat(amount);
+        if (!bank_name || !account_number || !account_name) {
+            return res.status(400).json({ success: false, message: 'Lengkapi bank, nomor rekening, dan nama pemilik.' });
+        }
+        if (!requestedAmount || requestedAmount <= 0) {
+            return res.status(400).json({ success: false, message: 'Nominal tidak valid.' });
+        }
+
+        const [uRows] = await db.execute('SELECT email, fullname, plan FROM users WHERE id = ?', [userId]);
+        if (uRows.length === 0) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+        const user = uRows[0];
+
+        // Cek saldo (sama seperti requestWithdrawal)
+        const [rev] = await db.execute("SELECT COALESCE(SUM(total_price),0) as r FROM orders WHERE user_id = ? AND status='completed'", [userId]);
+        const [wd] = await db.execute("SELECT COALESCE(SUM(amount),0) as w FROM withdrawals WHERE user_id = ? AND status IN ('completed','pending')", [userId]);
+        const balance = parseFloat(rev[0].r) - parseFloat(wd[0].w);
+
+        const minWd = 100000;
+        if (requestedAmount < minWd) {
+            return res.status(400).json({ success: false, message: `Minimal penarikan dana adalah Rp ${minWd.toLocaleString('id-ID')}.` });
+        }
+        if (requestedAmount > balance) {
+            return res.status(400).json({ success: false, message: 'Saldo tidak mencukupi.' });
+        }
+
+        // Cooldown 60 detik (anti spam) — dihitung di sisi DB agar imun beda zona waktu
+        const [recent] = await db.execute(
+            "SELECT id, TIMESTAMPDIFF(SECOND, created_at, NOW()) as age_sec FROM otp_codes WHERE user_id = ? AND purpose = 'wd' AND used = 0 ORDER BY id DESC LIMIT 1",
+            [userId]
+        );
+        if (recent.length > 0) {
+            const ageSec = parseInt(recent[0].age_sec || 0, 10);
+            if (ageSec < 60) {
+                return res.status(429).json({ success: false, message: `Tunggu ${Math.ceil(60 - ageSec)} detik sebelum kirim ulang.`, retry_after: Math.ceil(60 - ageSec) });
+            }
+            // Hanguskan kode lama yang belum dipakai
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE user_id = ? AND purpose = 'wd' AND used = 0", [userId]);
+        }
+
+        const code = String(crypto.randomInt(100000, 1000000));
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+
+        await db.execute(
+            "INSERT INTO otp_codes (user_id, purpose, code_hash, amount, bank_name, account_number, account_name, expires_at) VALUES (?, 'wd', ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))",
+            [userId, codeHash, requestedAmount, bank_name.trim(), account_number.trim(), account_name.trim()]
+        );
+
+        const sent = await sendWdOtpEmail(user.email, user.fullname || 'User', code, requestedAmount);
+        if (!sent) {
+            return res.status(500).json({ success: false, message: 'Gagal mengirim email OTP. Coba lagi.' });
+        }
+
+        res.json({ success: true, masked_email: maskEmail(user.email), expires_in: 300 });
+    } catch (err) {
+        console.error('Request OTP Error:', err.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem.' });
+    }
+};
+
+exports.confirmWdOtp = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.status(401).json({ success: false, message: 'Sesi berakhir, silakan login ulang.' });
+
+        const { code } = req.body;
+        if (!code || String(code).length !== 6) {
+            return res.status(400).json({ success: false, message: 'Kode harus 6 digit.' });
+        }
+
+        const [rows] = await db.execute(
+            "SELECT *, (expires_at > NOW()) AS is_valid FROM otp_codes WHERE user_id = ? AND purpose = 'wd' AND used = 0 ORDER BY id DESC LIMIT 1",
+            [userId]
+        );
+        if (rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'Tidak ada kode aktif. Minta kode baru.' });
+        }
+        const otp = rows[0];
+
+        if (!otp.is_valid) {
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+            return res.status(400).json({ success: false, message: 'Kode kedaluwarsa. Minta kode baru.', expired: true });
+        }
+        if (otp.attempts >= 5) {
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+            return res.status(400).json({ success: false, message: 'Terlalu banyak salah. Minta kode baru.', locked: true });
+        }
+
+        const inputHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+        if (inputHash !== otp.code_hash) {
+            const remaining = 4 - otp.attempts;
+            await db.execute("UPDATE otp_codes SET attempts = attempts + 1 WHERE id = ?", [otp.id]);
+            if (remaining <= 0) {
+                await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+                return res.status(400).json({ success: false, message: 'Terlalu banyak salah. Minta kode baru.', locked: true });
+            }
+            return res.status(400).json({ success: false, message: `Kode salah. Sisa ${remaining} percobaan.`, remaining });
+        }
+
+        // Kode benar -> kunci agar 1x pakai
+        await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+
+        // Validasi ulang saldo + hitung fee (data diambil dari record OTP, bukan input user)
+        const [uRows] = await db.execute('SELECT plan, fullname FROM users WHERE id = ?', [userId]);
+        const plan = (uRows[0] && uRows[0].plan) || 'free';
+        const [rev] = await db.execute("SELECT COALESCE(SUM(total_price),0) as r FROM orders WHERE user_id = ? AND status='completed'", [userId]);
+        const [wd] = await db.execute("SELECT COALESCE(SUM(amount),0) as w FROM withdrawals WHERE user_id = ? AND status IN ('completed','pending')", [userId]);
+        const balance = parseFloat(rev[0].r) - parseFloat(wd[0].w);
+        const requestedAmount = parseFloat(otp.amount);
+
+        if (requestedAmount > balance) {
+            return res.status(400).json({ success: false, message: 'Saldo berubah/tidak mencukupi.' });
+        }
+
+        const [feeSettings] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('fee_free', 'fee_pro')");
+        const fees = {};
+        feeSettings.forEach(s => fees[s.setting_key] = s.setting_value);
+        const feePercent = plan === 'pro' ? parseFloat(fees.fee_pro || 1) : parseFloat(fees.fee_free || 3);
+        const feeAmount = (feePercent / 100) * requestedAmount;
+        const finalAmount = requestedAmount - feeAmount;
+
+        try {
+            const [wCols] = await db.execute("SHOW COLUMNS FROM withdrawals LIKE 'fee_amount'");
+            if (wCols.length === 0) {
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN fee_amount DECIMAL(15,2) DEFAULT 0');
+                await db.execute('ALTER TABLE withdrawals ADD COLUMN net_amount DECIMAL(15,2) DEFAULT 0');
+            }
+        } catch(e) {}
+
+        await db.execute(
+            'INSERT INTO withdrawals (user_id, amount, fee_amount, net_amount, bank_name, account_number, account_name, status) VALUES (?,?,?,?,?,?,?,?)',
+            [userId, requestedAmount, feeAmount, finalAmount, otp.bank_name, otp.account_number, otp.account_name, 'pending']
+        );
+
+        try {
+            const requesterName = (uRows[0] && uRows[0].fullname) || 'User';
+            await db.execute(
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%)`, 'withdrawal', '/admin/withdrawal-queue']
+            );
+        } catch(notifErr) {}
+
+        res.json({ success: true, amount: requestedAmount });
+    } catch (err) {
+        console.error('Confirm OTP Error:', err.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem.' });
+    }
+};
 
 // ===================== DASHBOARD =====================
 exports.getDashboard = async (req, res) => {

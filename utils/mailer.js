@@ -238,8 +238,48 @@ exports.sendProActivationEmail = async (email, fullname) => {
     }
 };
 
-exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {
+exports.sendWdOtpEmail = async (email, fullname, code, amount) => {
     try {
+        const transporter = await getTransporter();
+        const amountStr = 'Rp ' + parseFloat(amount || 0).toLocaleString('id-ID');
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 36px 30px; text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 8px;">🔐</div>
+                        <h2 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800;">Kode Penarikan Dana</h2>
+                    </div>
+                    <div style="padding: 36px 30px; text-align: center;">
+                        <p style="margin: 0 0 8px; color: #475569; font-size: 15px;">Halo <strong>${fullname}</strong>,</p>
+                        <p style="margin: 0 0 24px; color: #64748b; font-size: 14px;">Anda mengajukan penarikan <strong style="color:#111827;">${amountStr}</strong>. Masukkan kode berikut (berlaku 5 menit):</p>
+                        <div style="font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #059669; background: #f0fdf4; border: 2px dashed #6ee7b7; border-radius: 16px; padding: 18px 10px 18px 20px; margin-bottom: 24px;">${code}</div>
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px;">⚠️ Jangan bagikan kode ini ke siapa pun, termasuk admin. Abaikan email ini jika Anda tidak merasa mengajukan penarikan.</p>
+                    </div>
+                    <div style="padding: 20px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Lingku.xyz — Keamanan Dana Anda Prioritas Kami</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku Keamanan" <${fromEmail}>`,
+            to: email,
+            subject: `Kode OTP Penarikan Dana Anda: ${code}`,
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email OTP WD:", err.message);
+        return false;
+    }
+};
+
+exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {    try {
         const transporter = await getTransporter();
         const html = `
             <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
