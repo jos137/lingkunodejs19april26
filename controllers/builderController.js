@@ -947,8 +947,13 @@ exports.ipaymuCallback = async (req, res) => {
                 return res.status(403).send('Invalid Signature');
             }
         } else {
-            // Optional: In production, you might want to reject if no signature is present
-            console.warn('[WARNING] Callback received without signature header.');
+            // Tanpa signature = tidak terbukti dari iPaymu. Di LIVE wajib ditolak,
+            // di SANDBOX hanya warning agar testing tetap mudah.
+            if (!isSandbox) {
+                console.error('[SECURITY ALERT] Callback tanpa signature ditolak (LIVE mode).');
+                return res.status(403).send('Missing Signature');
+            }
+            console.warn('[WARNING] Callback received without signature header (sandbox, diizinkan).');
         }
 
         // 3. Process Payment Logic

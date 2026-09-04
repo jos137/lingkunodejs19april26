@@ -145,7 +145,7 @@
 <div class="bio-row-container" style="display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; margin-bottom: 24px;">
     <% if (locals.features && features.show_today_sales) { %>
         <!-- FEATURE: PENJUALAN HARI INI (Controlled by Feature Flag) -->
-        <div class="bio-card" style="width: 320px; background: linear-gradient(135deg, #10b981, #059669); border: none; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 120px;">
+        <div class="bio-card" style="width: 320px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 120px;">
             <!-- ORNAMEN UANG (SILUET) -->
             <i class="fas fa-money-bill-wave" style="position: absolute; right: -20px; bottom: -20px; font-size: 120px; color: rgba(255,255,255,0.12); transform: rotate(-15deg);"></i>
             
@@ -156,8 +156,8 @@
                     </div>
                     <div style="font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase;">PENJUALAN HARI INI</div>
                 </div>
-                <div style="font-size: 26px; font-weight: 700; color: white; display: flex; align-items: baseline; gap: 4px;">
-                    <small style="font-size: 14px; opacity: 0.8; font-weight: 600;">Rp</small>
+                <div style="font-size: 26px; font-weight: 500; color: white; display: flex; align-items: baseline; gap: 4px;">
+                    <small style="font-size: 14px; opacity: 0.8; font-weight: 500;">Rp</small>
                     <%= todaySales.toLocaleString('id-ID') %>
                 </div>
 
