@@ -15,8 +15,10 @@
 
         /* ===== SIDEBAR ===== */
         .sidebar {
-            width: 230px;
-            background: #111827;
+            width: 236px;
+            background:
+                radial-gradient(300px 200px at 50% -30px, rgba(59, 130, 246, 0.5), rgba(37, 99, 235, 0.18) 55%, transparent 75%),
+                linear-gradient(180deg, #0d1633 0%, #0a1128 60%, #080d20 100%);
             color: #fff;
             position: fixed;
             top: 0; left: 0; bottom: 0;
@@ -24,43 +26,57 @@
             flex-direction: column;
             overflow-y: auto;
             z-index: 100;
+            border-right: 1px solid rgba(148, 163, 184, 0.12);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
         }
+        .sidebar::-webkit-scrollbar { width: 5px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.25); border-radius: 4px; }
+        .sidebar::-webkit-scrollbar-track { background: transparent; }
 
         .sidebar-logo {
-            padding: 22px 22px 15px;
+            padding: 22px 20px 18px;
             display: flex;
             align-items: center;
+            border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+            margin-bottom: 6px;
         }
 
         .sidebar-section-label {
-            padding: 14px 22px 8px;
+            padding: 16px 24px 8px;
             font-size: 9px;
             font-weight: 800;
-            letter-spacing: 2px;
-            color: #475569;
+            letter-spacing: 2.5px;
+            color: #5b6b85;
             text-transform: uppercase;
         }
 
-        .sidebar-nav { flex: 1; }
+        .sidebar-nav { flex: 1; padding: 0 12px; }
         .sidebar-link {
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 11px 22px;
-            color: #94a3b8;
+            padding: 11px 14px;
+            margin: 2px 0;
+            border-radius: 12px;
+            color: #8ea0bd;
             text-decoration: none;
             font-size: 13px;
             font-weight: 600;
-            transition: all 0.15s;
+            transition: all 0.2s ease;
             position: relative;
+            border: 1px solid transparent;
         }
-        .sidebar-link:hover { color: #e2e8f0; background: rgba(255,255,255,0.04); }
+        .sidebar-link:hover { color: #fff; background: rgba(148, 163, 184, 0.10); border-color: rgba(148, 163, 184, 0.08); }
         .sidebar-link.active {
-            color: #10b981;
-            background: rgba(16,185,129,0.08);
-            border-right: 3px solid #10b981;
+            color: #fff;
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+            border-color: rgba(147, 197, 253, 0.25);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+            font-weight: 700;
         }
-        .sidebar-link i { width: 18px; text-align: center; font-size: 14px; }
+        .sidebar-link i { width: 20px; text-align: center; font-size: 14px; opacity: 0.85; }
+        .sidebar-link.active i { opacity: 1; }
 
         .sidebar-link .notif-badge {
             position: absolute;
@@ -77,18 +93,20 @@
         }
 
         .sidebar-bottom {
-            border-top: 1px solid rgba(255,255,255,0.06);
-            padding: 6px 0;
+            border-top: 1px solid rgba(148, 163, 184, 0.12);
+            padding: 10px 12px;
             margin-top: auto;
         }
-        .sidebar-link.logout { color: #ef4444; }
-        .sidebar-link.logout:hover { background: rgba(239,68,68,0.08); }
+        .sidebar-link.logout { color: #f87171; }
+        .sidebar-link.logout:hover { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.15); color: #fca5a5; }
 
         /* ===== SUBMENU ===== */
         .sidebar-submenu {
             display: none;
-            background: rgba(0,0,0,0.2);
-            padding-left: 12px;
+            background: rgba(2, 6, 23, 0.45);
+            padding: 6px 8px 6px 12px;
+            border-radius: 12px;
+            margin: 2px 0 4px;
         }
         .sidebar-submenu.show { display: block; }
         .sidebar-submenu .sidebar-link {
@@ -112,7 +130,7 @@
 
         /* ===== MAIN CONTENT ===== */
         .main-content {
-            margin-left: 230px;
+            margin-left: 236px;
             flex: 1;
             display: flex;
             flex-direction: column;
