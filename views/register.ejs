@@ -1,70 +1,320 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Lingku.xyz</title>
     <link rel="icon" type="image/x-icon" href="/images/fav.ico">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background: #f3f4f6; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .auth-card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 350px; }
-        h2 { text-align: center; color: #111827; margin-bottom: 30px; font-weight: 700; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+            background:
+                radial-gradient(800px 420px at 85% -60px, rgba(16, 185, 129, 0.16), transparent 60%),
+                radial-gradient(700px 400px at 5% 110%, rgba(59, 130, 246, 0.12), transparent 60%),
+                linear-gradient(180deg, #f2faf6 0%, #eef4fb 100%);
+            position: relative;
+            -webkit-font-smoothing: antialiased;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: radial-gradient(720px 480px at 50% 30%, #000 25%, transparent 75%);
+            -webkit-mask-image: radial-gradient(720px 480px at 50% 30%, #000 25%, transparent 75%);
+            pointer-events: none;
+        }
+        .blob {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.45;
+            pointer-events: none;
+            animation: drift 16s ease-in-out infinite alternate;
+        }
+        .blob.b1 { width: 380px; height: 380px; background: #a7f3d0; top: -120px; right: -90px; }
+        .blob.b2 { width: 300px; height: 300px; background: #bfdbfe; bottom: -110px; left: -90px; animation-delay: -7s; }
+        @keyframes drift {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(-46px, 36px) scale(1.1); }
+        }
+
+        .reg-wrap {
+            position: relative;
+            z-index: 2;
+            width: 440px;
+            max-width: 100%;
+            animation: rise 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(26px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .reg-logo { text-align: center; margin-bottom: 22px; }
+        .reg-logo a { display: inline-block; transition: transform 0.25s; }
+        .reg-logo a:hover { transform: translateY(-2px); }
+        .reg-logo img { height: 52px; filter: drop-shadow(0 8px 18px rgba(2, 32, 24, 0.15)); }
+
+        .reg-card {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(20px) saturate(1.3);
+            -webkit-backdrop-filter: blur(20px) saturate(1.3);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: 28px;
+            padding: 38px 36px 32px;
+            box-shadow: 0 30px 70px rgba(2, 32, 24, 0.12);
+        }
+        .reg-head { text-align: center; margin-bottom: 26px; }
+        .reg-head h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.6px; color: #0f172a; }
+        .reg-head p { font-size: 13px; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 14px; font-weight: 500; color: #374151; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 4px; box-sizing: border-box; }
-        .btn { width: 100%; padding: 10px; background: #e83a6b; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
-        .btn:hover { background: #d11e51; }
-        .link { display: block; text-align: center; margin-top: 15px; font-size: 14px; color: #3b82f6; text-decoration: none; }
+        .form-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 7px;
+        }
+        .input-wrap { position: relative; }
+        .input-wrap > i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .form-input {
+            width: 100%;
+            padding: 13px 16px 13px 44px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #0f172a;
+            background: #f8fafc;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+        .form-input::placeholder { color: #b6c2d1; font-weight: 500; }
+        .form-input:focus {
+            border-color: #10b981;
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+        }
+        .pw-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #94a3b8;
+            font-size: 14px;
+            padding: 8px;
+            transition: color 0.2s;
+        }
+        .pw-toggle:hover { color: #059669; }
+
+        .captcha-row { display: flex; gap: 10px; align-items: stretch; }
+        .captcha-row .input-wrap { flex: 1; }
+        .captcha-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #fff;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 4px 8px 4px 4px;
+        }
+        .captcha-box img { height: 40px; cursor: pointer; border-radius: 9px; }
+        .captcha-refresh {
+            background: #f1f5f9;
+            border: none;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            color: #64748b;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .captcha-refresh:hover { background: #dcfce7; color: #059669; transform: rotate(60deg); }
+
+        .reg-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 8px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            font-size: 15px;
+            font-weight: 800;
+            font-family: inherit;
+            cursor: pointer;
+            transition: transform 0.25s, box-shadow 0.25s;
+            box-shadow: 0 10px 26px rgba(16, 185, 129, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .reg-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -80%;
+            width: 55%;
+            height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+            transform: skewX(-20deg);
+        }
+        .reg-btn:hover { transform: translateY(-2px); box-shadow: 0 14px 34px rgba(16, 185, 129, 0.5); }
+        .reg-btn:hover::after { animation: shine 0.8s ease; }
+        @keyframes shine { to { left: 130%; } }
+
+        .reg-error {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 13px 15px;
+            border-radius: 14px;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 18px;
+        }
+
+        .reg-login { text-align: center; margin-top: 22px; font-size: 13px; color: #94a3b8; font-weight: 500; }
+        .reg-login a { color: #059669; text-decoration: none; font-weight: 800; }
+        .reg-login a:hover { text-decoration: underline; }
+        .reg-back { text-align: center; margin-top: 18px; }
+        .reg-back a { font-size: 13px; font-weight: 600; color: #94a3b8; text-decoration: none; transition: 0.2s; }
+        .reg-back a:hover { color: #0f172a; }
+        .reg-footer { text-align: center; margin-top: 26px; font-size: 11px; color: #b6c2d1; font-weight: 500; }
+
+        @media (max-width: 480px) {
+            .reg-card { padding: 30px 24px 26px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
     </style>
 </head>
 <body>
-    <div class="auth-card">
-        <div style="text-align: center; margin-bottom: 25px;">
-            <img src="/images/logo.png" alt="Logo" style="height: 50px;">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+
+    <div class="reg-wrap">
+        <div class="reg-logo">
+            <a href="/">
+                <img src="/images/logo.png" alt="Lingku">
+            </a>
         </div>
-        <% if (error) { %>
-            <div style="background: #fee2e2; color: #ef4444; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 15px; text-align: center;">
-                <%= error %>
+
+        <div class="reg-card">
+            <div class="reg-head">
+                <h1>Buat akun gratis</h1>
+                <p>Mulai jualan produk digital hari ini</p>
             </div>
-        <% } %>
-        <form action="/auth/register" method="POST">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" name="fullname" required>
-            </div>
-            <div class="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" required>
-            </div>
-            <div class="form-group">
-                <label>WhatsApp Number</label>
-                <input type="text" name="whatsapp" required placeholder="628...">
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-            <% if (locals.captchaEnabled !== false) { %>
-            <div class="form-group">
-                <label>Security Code</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="captcha" name="captcha" placeholder="input code" required autocomplete="off" style="text-transform: lowercase; font-weight: 500; border-color: #cbd5e1; background: #f8fafc; color: #334155;">
-                    <div style="display: flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; padding: 1px 4px; opacity: 0.9;">
-                        <img id="captchaImgReg" src="/auth/captcha" alt="CAPTCHA" style="height: 34px; cursor: pointer; border-radius: 3px;" title="Klik untuk ganti gambar" onclick="refreshCaptchaReg()">
-                        <button type="button" onclick="refreshCaptchaReg()" style="background: none; border: none; cursor: pointer; padding: 2px 4px; color: #94a3b8; font-size: 13px; transition: color 0.15s;" onmouseover="this.style.color='#64748b'" onmouseout="this.style.color='#94a3b8'" title="Refresh CAPTCHA">🔄</button>
+
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="reg-error"><i class="fas fa-circle-exclamation" style="margin-top:2px;"></i><span><%= error %></span></div>
+            <% } %>
+
+            <form action="/auth/register" method="POST">
+                <div class="form-group">
+                    <label class="form-label" for="fullname">Nama Lengkap</label>
+                    <div class="input-wrap">
+                        <i class="far fa-user"></i>
+                        <input type="text" id="fullname" name="fullname" class="form-input" placeholder="Nama kamu" required autofocus autocomplete="name">
                     </div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label" for="email">Email</label>
+                    <div class="input-wrap">
+                        <i class="far fa-envelope"></i>
+                        <input type="email" id="email" name="email" class="form-input" placeholder="nama@email.com" required autocomplete="email">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="whatsapp">WhatsApp</label>
+                    <div class="input-wrap">
+                        <i class="fab fa-whatsapp"></i>
+                        <input type="text" id="whatsapp" name="whatsapp" class="form-input" placeholder="628..." required autocomplete="tel">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-wrap">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="password" name="password" class="form-input" placeholder="Min. 8 karakter" required autocomplete="new-password" style="padding-right: 44px;">
+                        <button type="button" class="pw-toggle" onclick="togglePw()" title="Tampilkan password"><i class="far fa-eye" id="pwEye"></i></button>
+                    </div>
+                </div>
+                <% if (locals.captchaEnabled !== false) { %>
+                <div class="form-group">
+                    <label class="form-label" for="captcha">Kode Keamanan</label>
+                    <div class="captcha-row">
+                        <div class="input-wrap">
+                            <i class="fas fa-shield-halved"></i>
+                            <input type="text" id="captcha" name="captcha" class="form-input" placeholder="Kode di gambar" required autocomplete="off" style="text-transform: lowercase;">
+                        </div>
+                        <div class="captcha-box">
+                            <img id="captchaImgReg" src="/auth/captcha" alt="CAPTCHA" title="Klik untuk ganti gambar" onclick="refreshCaptchaReg()">
+                            <button type="button" class="captcha-refresh" onclick="refreshCaptchaReg()" title="Muat ulang"><i class="fas fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <% } %>
+                <button type="submit" class="reg-btn">Daftar Sekarang <i class="fas fa-arrow-right" style="margin-left:6px; font-size:13px;"></i></button>
+            </form>
+
+            <div class="reg-login">
+                Sudah punya akun? <a href="/auth/login">Masuk</a>
             </div>
-            <% } %>
-            <button type="submit" class="btn">Register</button>
-        </form>
-        <script>
-            function refreshCaptchaReg() {
-                document.getElementById('captchaImgReg').src = '/auth/captcha?' + Date.now();
-            }
-        </script>
-        <a href="/auth/login" class="link">Already have an account? Login</a>
+        </div>
+
+        <div class="reg-back">
+            <a href="/">← Kembali ke Lingku.xyz</a>
+        </div>
+
+        <div class="reg-footer">
+            &copy; 2026 Lingku.xyz
+        </div>
     </div>
+
+    <script>
+        function refreshCaptchaReg() {
+            document.getElementById('captchaImgReg').src = '/auth/captcha?' + Date.now();
+        }
+        function togglePw() {
+            const input = document.getElementById('password');
+            const eye = document.getElementById('pwEye');
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            eye.className = show ? 'far fa-eye-slash' : 'far fa-eye';
+        }
+    </script>
 </body>
 </html>
