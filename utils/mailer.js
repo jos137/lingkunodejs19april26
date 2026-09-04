@@ -279,6 +279,79 @@ exports.sendWdOtpEmail = async (email, fullname, code, amount) => {
     }
 };
 
+exports.sendBankOtpEmail = async (email, fullname, code) => {
+    try {
+        const transporter = await getTransporter();
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); padding: 36px 30px; text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 8px;">🏦</div>
+                        <h2 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 800;">Kode Ganti Rekening</h2>
+                    </div>
+                    <div style="padding: 36px 30px; text-align: center;">
+                        <p style="margin: 0 0 8px; color: #475569; font-size: 15px;">Halo <strong>${fullname}</strong>,</p>
+                        <p style="margin: 0 0 24px; color: #64748b; font-size: 14px;">Anda meminta mengganti data rekening payout. Masukkan kode berikut (berlaku 5 menit):</p>
+                        <div style="font-size: 38px; font-weight: 900; letter-spacing: 10px; color: #1d4ed8; background: #eff6ff; border: 2px dashed #93c5fd; border-radius: 16px; padding: 18px 10px 18px 20px; margin-bottom: 24px;">${code}</div>
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px;">⚠️ Jangan bagikan kode ini ke siapa pun. Abaikan jika Anda tidak merasa mengganti rekening.</p>
+                    </div>
+                    <div style="padding: 20px; background: #f8fafc; text-align: center; border-top: 1px solid #f1f5f9;">
+                        <p style="margin: 0; color: #94a3b8; font-size: 12px; font-weight: 600;">Lingku.xyz — Keamanan Dana Anda Prioritas Kami</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku Keamanan" <${fromEmail}>`,
+            to: email,
+            subject: `Kode OTP Ganti Rekening Anda: ${code}`,
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim email OTP bank:", err.message);
+        return false;
+    }
+};
+
+exports.sendBankChangedEmail = async (email, fullname, bankName) => {
+    try {
+        const transporter = await getTransporter();
+        const html = `
+            <div style="background-color: #f8fafc; padding: 40px 20px; font-family: 'Inter', system-ui, -apple-system, sans-serif;">
+                <div style="max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+                    <div style="padding: 36px 30px; text-align: center;">
+                        <div style="font-size: 40px; margin-bottom: 8px;">✅</div>
+                        <h2 style="margin: 0 0 12px; color: #1e293b; font-size: 20px; font-weight: 800;">Rekening Berhasil Diganti</h2>
+                        <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.6;">Halo <strong>${fullname}</strong>,<br>Data rekening payout Anda kini memakai <strong>${bankName}</strong>. Penarikan berikutnya akan dikirim ke rekening baru ini.</p>
+                        <p style="margin: 16px 0 0; color: #dc2626; font-size: 13px; font-weight: 700;">Bukan Anda yang mengganti? Segera amankan akun dan hubungi admin!</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const opt = transporter.options;
+        const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+
+        await transporter.sendMail({
+            from: `"Lingku Keamanan" <${fromEmail}>`,
+            to: email,
+            subject: 'Rekening Payout Anda Telah Diganti',
+            html: html
+        });
+
+        return true;
+    } catch (err) {
+        console.error("Gagal mengirim notifikasi ganti rekening:", err.message);
+        return false;
+    }
+};
+
 exports.sendResetPasswordEmail = async (email, fullname, resetLink) => {    try {
         const transporter = await getTransporter();
         const html = `

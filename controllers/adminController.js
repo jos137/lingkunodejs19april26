@@ -2,7 +2,7 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail, sendBankOtpEmail, sendBankChangedEmail } = require('../utils/mailer');
 
 // Mask email untuk ditampilkan di popup OTP (u***@gmail.com)
 function maskEmail(email) {
@@ -11,24 +11,38 @@ function maskEmail(email) {
     return (name.charAt(0) || '*') + '***@' + domain;
 }
 
+// Masking rekening: hanya 3 karakter terakhir yang tampil
+function maskAccount(value) {
+    const s = String(value || '');
+    if (s.length <= 3) return '•••';
+    return '•'.repeat(s.length - 3) + s.slice(-3);
+}
+function maskName(value) {
+    const s = String(value || '');
+    if (s.length <= 3) return '•••';
+    return s.slice(0, -3).replace(/[^\s]/g, '•') + s.slice(-3);
+}
+
 // Kode OTP 6 digit khusus penarikan dana
 exports.requestWdOtp = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         if (!userId) return res.status(401).json({ success: false, message: 'Sesi berakhir, silakan login ulang.' });
 
-        const { amount, bank_name, account_number, account_name } = req.body;
+        const { amount } = req.body;
         const requestedAmount = parseFloat(amount);
+        // Data rekening OTORITATIF dari menu Pembayaran (abaikan kiriman form agar tak bisa diutak-atik)
+        const [uRows] = await db.execute('SELECT email, fullname, plan, bank_name, account_number, account_name FROM users WHERE id = ?', [userId]);
+        if (uRows.length === 0) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+        const user = uRows[0];
+        const bank_name = user.bank_name, account_number = user.account_number, account_name = user.account_name;
+
         if (!bank_name || !account_number || !account_name) {
-            return res.status(400).json({ success: false, message: 'Lengkapi bank, nomor rekening, dan nama pemilik.' });
+            return res.status(400).json({ success: false, message: 'Rekening belum diisi. Lengkapi dulu di Pengaturan → Pembayaran.' });
         }
         if (!requestedAmount || requestedAmount <= 0) {
             return res.status(400).json({ success: false, message: 'Nominal tidak valid.' });
         }
-
-        const [uRows] = await db.execute('SELECT email, fullname, plan FROM users WHERE id = ?', [userId]);
-        if (uRows.length === 0) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
-        const user = uRows[0];
 
         // Cek saldo (sama seperti requestWithdrawal)
         const [rev] = await db.execute("SELECT COALESCE(SUM(total_price),0) as r FROM orders WHERE user_id = ? AND status='completed'", [userId]);
@@ -907,17 +921,25 @@ exports.getWithdrawal = async (req, res) => {
         const [uRowsFresh] = await db.execute("SELECT * FROM users WHERE id = ?", [userId]);
         const freshUser = uRowsFresh[0] || req.session.user;
 
+        const hasRekening = !!(freshUser && freshUser.bank_name && freshUser.account_number && freshUser.account_name);
+
         res.render('admin/withdrawal', {
             title: 'Tarik Dana',
             layout: './layouts/admin',
             balance,
             affiliate_commission,
             withdrawals,
-            user: freshUser
+            user: freshUser,
+            payout: {
+                bank_name: (freshUser && freshUser.bank_name) || '',
+                account_masked: maskAccount(freshUser && freshUser.account_number),
+                name_masked: maskName(freshUser && freshUser.account_name),
+                hasRekening
+            }
         });
     } catch (err) {
         console.error(err.message);
-        res.render('admin/withdrawal', { title: 'Tarik Dana', layout: './layouts/admin', balance: 0, withdrawals: [], user: req.session.user || res.locals.user });
+        res.render('admin/withdrawal', { title: 'Tarik Dana', layout: './layouts/admin', balance: 0, withdrawals: [], user: req.session.user || res.locals.user, payout: { bank_name: '', account_masked: '•••', name_masked: '•••', hasRekening: false } });
     }
 };
 
@@ -1700,8 +1722,133 @@ exports.updateBankSettings = async (req, res) => {
     }
 };
 
-exports.updateSecuritySettings = async (req, res) => {
+// OTP konfirmasi ganti rekening payout (berlaku semua role: owner & client)
+exports.requestBankOtp = async (req, res) => {
     try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.status(401).json({ success: false, message: 'Sesi berakhir, silakan login ulang.' });
+
+        const { bank_name, account_number, account_name } = req.body;
+        if (!bank_name || !account_number || !account_name) {
+            return res.status(400).json({ success: false, message: 'Lengkapi bank, nomor rekening, dan nama pemilik.' });
+        }
+
+        const [uRows] = await db.execute('SELECT email, fullname, bank_name, account_number, account_name FROM users WHERE id = ?', [userId]);
+        if (uRows.length === 0) return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
+        const user = uRows[0];
+
+        const same = (user.bank_name || '') === bank_name.trim()
+            && (user.account_number || '') === account_number.trim()
+            && (user.account_name || '') === account_name.trim();
+        if (same) return res.json({ success: true, unchanged: true });
+
+        // Cooldown 60 detik (DB-side, imun zona waktu)
+        const [recent] = await db.execute(
+            "SELECT id, TIMESTAMPDIFF(SECOND, created_at, NOW()) as age_sec FROM otp_codes WHERE user_id = ? AND purpose = 'bank' AND used = 0 ORDER BY id DESC LIMIT 1",
+            [userId]
+        );
+        if (recent.length > 0) {
+            const ageSec = parseInt(recent[0].age_sec || 0, 10);
+            if (ageSec < 60) {
+                return res.status(429).json({ success: false, message: `Tunggu ${Math.ceil(60 - ageSec)} detik sebelum kirim ulang.`, retry_after: Math.ceil(60 - ageSec) });
+            }
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE user_id = ? AND purpose = 'bank' AND used = 0", [userId]);
+        }
+
+        const code = String(crypto.randomInt(100000, 1000000));
+        const codeHash = crypto.createHash('sha256').update(code).digest('hex');
+
+        await db.execute(
+            "INSERT INTO otp_codes (user_id, purpose, code_hash, bank_name, account_number, account_name, expires_at) VALUES (?, 'bank', ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 5 MINUTE))",
+            [userId, codeHash, bank_name.trim(), account_number.trim(), account_name.trim()]
+        );
+
+        const sent = await sendBankOtpEmail(user.email, user.fullname || 'User', code);
+        if (!sent) {
+            return res.status(500).json({ success: false, message: 'Gagal mengirim email OTP. Coba lagi.' });
+        }
+
+        res.json({ success: true, masked_email: maskEmail(user.email), expires_in: 300 });
+    } catch (err) {
+        console.error('Request Bank OTP Error:', err.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem.' });
+    }
+};
+
+exports.confirmBankOtp = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        if (!userId) return res.status(401).json({ success: false, message: 'Sesi berakhir, silakan login ulang.' });
+
+        const { code } = req.body;
+        if (!code || String(code).length !== 6) {
+            return res.status(400).json({ success: false, message: 'Kode harus 6 digit.' });
+        }
+
+        const [rows] = await db.execute(
+            "SELECT *, (expires_at > NOW()) AS is_valid FROM otp_codes WHERE user_id = ? AND purpose = 'bank' AND used = 0 ORDER BY id DESC LIMIT 1",
+            [userId]
+        );
+        if (rows.length === 0) {
+            return res.status(400).json({ success: false, message: 'Tidak ada kode aktif. Minta kode baru.' });
+        }
+        const otp = rows[0];
+
+        if (!otp.is_valid) {
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+            return res.status(400).json({ success: false, message: 'Kode kedaluwarsa. Minta kode baru.', expired: true });
+        }
+        if (otp.attempts >= 5) {
+            await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+            return res.status(400).json({ success: false, message: 'Terlalu banyak salah. Minta kode baru.', locked: true });
+        }
+
+        const inputHash = crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+        if (inputHash !== otp.code_hash) {
+            const remaining = 4 - otp.attempts;
+            await db.execute("UPDATE otp_codes SET attempts = attempts + 1 WHERE id = ?", [otp.id]);
+            if (remaining <= 0) {
+                await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+                return res.status(400).json({ success: false, message: 'Terlalu banyak salah. Minta kode baru.', locked: true });
+            }
+            return res.status(400).json({ success: false, message: `Kode salah. Sisa ${remaining} percobaan.`, remaining });
+        }
+
+        await db.execute("UPDATE otp_codes SET used = 1 WHERE id = ?", [otp.id]);
+
+        const query = 'UPDATE users SET bank_name = ?, account_number = ?, account_name = ? WHERE id = ?';
+        const params = [otp.bank_name, otp.account_number, otp.account_name, userId];
+        try {
+            await db.execute(query, params);
+        } catch (e) {
+            if (e.message.includes('Unknown column')) {
+                try { await db.execute('ALTER TABLE users ADD COLUMN bank_name VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                try { await db.execute('ALTER TABLE users ADD COLUMN account_number VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                try { await db.execute('ALTER TABLE users ADD COLUMN account_name VARCHAR(100) DEFAULT NULL'); } catch(err) {}
+                await db.execute(query, params);
+            } else throw e;
+        }
+
+        if (req.session.user) {
+            req.session.user.bank_name = otp.bank_name;
+            req.session.user.account_number = otp.account_number;
+            req.session.user.account_name = otp.account_name;
+        }
+
+        // Notifikasi: rekening telah diganti
+        try {
+            const [u2] = await db.execute('SELECT email, fullname FROM users WHERE id = ?', [userId]);
+            if (u2.length > 0) await sendBankChangedEmail(u2[0].email, u2[0].fullname || 'User', otp.bank_name);
+        } catch(e) {}
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Confirm Bank OTP Error:', err.message);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan sistem.' });
+    }
+};
+
+exports.updateSecuritySettings = async (req, res) => {    try {
         // Lapis 2: pastikan Owner saja (lapis 1: middleware isAdmin di route)
         if (!req.session.user || req.session.user.role !== 'admin') {
             return res.status(403).send('Akses ditolak: khusus Owner.');

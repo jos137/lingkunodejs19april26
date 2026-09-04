@@ -186,10 +186,10 @@
                     <i class="fas fa-check-circle"></i> <%= success %>
                 </div>
             <% } %>
-            <form action="/admin/settings/update-bank" method="POST">
+            <form action="/admin/settings/update-bank" method="POST" id="bankForm" onsubmit="return saveBank(event)">
             <div class="s-group">
                 <label class="s-label">Nama Bank</label>
-                <select class="s-input s-select" name="bank_name" required>
+                <select class="s-input s-select" name="bank_name" id="bankName" required>
                     <% const _banks = ['BCA','BNI','Mandiri','BRI','CIMB Niaga','Danamon','BSI','DANA','OVO','GoPay','ShopeePay']; %>
                     <% const _cur = (locals.user && (user.bank_name || '')) || ''; %>
                     <option value="" disabled <%= !_cur ? 'selected' : '' %>>-- Pilih Bank / E-Wallet --</option>
@@ -205,16 +205,113 @@
             <div class="s-row">
                 <div class="s-group">
                     <label class="s-label">Nomor Rekening</label>
-                    <input class="s-input" type="text" name="account_number" value="<%= (locals.user && (user.account_number || '')) || '' %>" placeholder="e.g. 1234567890" required>
+                    <input class="s-input" type="text" name="account_number" id="bankNumber" value="<%= (locals.user && (user.account_number || '')) || '' %>" placeholder="e.g. 1234567890" required>
                 </div>
                 <div class="s-group">
                     <label class="s-label">Nama Pemilik Rekening</label>
-                    <input class="s-input" type="text" name="account_name" value="<%= (locals.user && (user.account_name || '')) || '' %>" placeholder="Sesuai buku tabungan" required>
+                    <input class="s-input" type="text" name="account_name" id="bankOwner" value="<%= (locals.user && (user.account_name || '')) || '' %>" placeholder="Sesuai buku tabungan" required>
+                </div>
+            </div>
+            <div id="bankOtpBox" style="display:none; background:#eff6ff; border:1.5px dashed #93c5fd; border-radius:12px; padding:18px; margin-bottom:18px;">
+                <div style="font-size:12px; font-weight:800; color:#1d4ed8; margin-bottom:4px;"><i class="fas fa-shield-halved"></i> Verifikasi Pergantian Rekening</div>
+                <div style="font-size:12px; color:#475569; margin-bottom:12px;">Kode 6 digit dikirim ke <strong id="bankOtpEmail">email Anda</strong> • <span id="bankOtpTimer" style="font-weight:800; color:#1d4ed8;">5:00</span></div>
+                <div style="display:flex; gap:8px;">
+                    <input class="s-input" id="bankOtpCode" inputmode="numeric" maxlength="6" placeholder="••••••" autocomplete="one-time-code" style="flex:1; text-align:center; font-size:20px; font-weight:800; letter-spacing:8px;">
+                    <button type="button" class="s-save" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8); white-space:nowrap;" onclick="confirmBankOtp()">Verifikasi</button>
+                </div>
+                <div id="bankOtpError" style="display:none; font-size:12px; font-weight:700; color:#dc2626; margin-top:10px;"></div>
+                <div style="font-size:12px; color:#64748b; margin-top:10px; font-weight:600;">
+                    <span id="bankResendWrap" style="display:none;"><a href="#" onclick="return resendBankOtp()" style="color:#1d4ed8; font-weight:800;">Kirim ulang kode</a></span>
+                    <span id="bankCooldown"></span>
+                    &nbsp;•&nbsp;<a href="#" onclick="return cancelBankOtp()" style="color:#64748b;">Batal</a>
                 </div>
             </div>
             <hr class="s-divider">
-            <button type="submit" class="s-save">Simpan Rekening</button>
+            <button type="submit" class="s-save" id="bankSaveBtn">Simpan Rekening</button>
             </form>
+            <script>
+            const _currentBank = <%- JSON.stringify({ bank: (locals.user && user.bank_name) || '', number: (locals.user && user.account_number) || '', owner: (locals.user && user.account_name) || '' }) %>;
+            let _bankTimer = null;
+            function _bankVals() {
+                return {
+                    bank_name: document.getElementById('bankName').value,
+                    account_number: document.getElementById('bankNumber').value.trim(),
+                    account_name: document.getElementById('bankOwner').value.trim()
+                };
+            }
+            async function saveBank(e) {
+                e.preventDefault();
+                const v = _bankVals();
+                if (!v.bank_name || !v.account_number || !v.account_name) { alert('Lengkapi bank, nomor rekening, dan nama pemilik.'); return false; }
+                // Tidak berubah -> simpan langsung tanpa OTP
+                if (v.bank_name === _currentBank.bank && v.account_number === _currentBank.number && v.account_name === _currentBank.owner) {
+                    document.getElementById('bankForm').submit();
+                    return false;
+                }
+                const btn = document.getElementById('bankSaveBtn');
+                btn.disabled = true; btn.textContent = 'Mengirim OTP...';
+                try {
+                    const res = await fetch('/admin/settings/request-bank-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(v) });
+                    const d = await res.json();
+                    if (d.unchanged) { document.getElementById('bankForm').submit(); return false; }
+                    if (!d.success) { alert(d.message || 'Gagal meminta OTP.'); return false; }
+                    document.getElementById('bankOtpEmail').textContent = d.masked_email;
+                    document.getElementById('bankOtpBox').style.display = 'block';
+                    _bankTick(d.expires_in || 300);
+                    document.getElementById('bankOtpCode').focus();
+                } catch (err) { alert('Koneksi bermasalah, coba lagi.'); }
+                finally { btn.disabled = false; btn.textContent = 'Simpan Rekening'; }
+                return false;
+            }
+            function _bankTick(sec) {
+                clearInterval(_bankTimer);
+                let left = sec;
+                const el = document.getElementById('bankOtpTimer');
+                _bankTimer = setInterval(() => {
+                    const m = Math.floor(left / 60), s = left % 60;
+                    el.textContent = m + ':' + String(s).padStart(2, '0');
+                    if (left <= 0) { clearInterval(_bankTimer); _bankOtpErr('Kode kedaluwarsa. Silakan kirim ulang.'); _bankShowResend(); }
+                    left--;
+                }, 1000);
+                // cooldown kirim ulang 60 dtk
+                let cool = 60;
+                document.getElementById('bankResendWrap').style.display = 'none';
+                document.getElementById('bankCooldown').textContent = 'Kirim ulang dalam ' + cool + ' dtk';
+                const ci = setInterval(() => { cool--; if (cool <= 0) { clearInterval(ci); _bankShowResend(); } else document.getElementById('bankCooldown').textContent = 'Kirim ulang dalam ' + cool + ' dtk'; }, 1000);
+            }
+            function _bankShowResend() { document.getElementById('bankResendWrap').style.display = ''; document.getElementById('bankCooldown').textContent = ''; }
+            function _bankOtpErr(m) { const el = document.getElementById('bankOtpError'); el.textContent = m; el.style.display = 'block'; }
+            function _bankOtpHide() { document.getElementById('bankOtpError').style.display = 'none'; }
+            async function resendBankOtp() {
+                _bankOtpHide();
+                const btn = document.getElementById('bankSaveBtn');
+                btn.disabled = true;
+                try {
+                    const res = await fetch('/admin/settings/request-bank-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_bankVals()) });
+                    const d = await res.json();
+                    if (!d.success) { _bankOtpErr(d.message || 'Gagal kirim ulang.'); return false; }
+                    _bankTick(d.expires_in || 300);
+                } catch (err) { _bankOtpErr('Koneksi bermasalah.'); }
+                finally { btn.disabled = false; }
+                return false;
+            }
+            function cancelBankOtp() { clearInterval(_bankTimer); document.getElementById('bankOtpBox').style.display = 'none'; _bankOtpHide(); return false; }
+            async function confirmBankOtp() {
+                const code = document.getElementById('bankOtpCode').value.trim();
+                if (code.length !== 6) { _bankOtpErr('Masukkan 6 digit kode.'); return; }
+                _bankOtpHide();
+                try {
+                    const res = await fetch('/admin/settings/confirm-bank-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ..._bankVals(), code }) });
+                    const d = await res.json();
+                    if (!d.success) {
+                        _bankOtpErr(d.message || 'Verifikasi gagal.');
+                        if (d.expired || d.locked) _bankShowResend();
+                        return;
+                    }
+                    window.location.href = '/admin/settings?tab=pembayarann&success=' + encodeURIComponent('Rekening berhasil diganti & terverifikasi OTP!');
+                } catch (err) { _bankOtpErr('Koneksi bermasalah, coba lagi.'); }
+            }
+            </script>
         </div>
 
         <!-- NOTIFIKASI -->

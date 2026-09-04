@@ -202,6 +202,8 @@ router.post('/settings/update-profile', uploadProfile.single('profile_photo'), a
 router.post('/settings/update-store', adminController.updateStoreSettings);
 router.post('/settings/update-security', isAdmin, adminController.updateSecuritySettings);
 router.post('/settings/update-bank', adminController.updateBankSettings);
+router.post('/settings/request-bank-otp', adminController.requestBankOtp);
+router.post('/settings/confirm-bank-otp', adminController.confirmBankOtp);
 router.post('/settings/update-admin-theme', adminController.updateAdminTheme);
 router.post('/settings/update-announcement', adminController.updateAnnouncement);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
