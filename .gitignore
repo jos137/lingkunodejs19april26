@@ -17,3 +17,7 @@ public/uploads/products/*
 !public/uploads/products/.gitkeep
 public/uploads/profiles/*
 !public/uploads/profiles/.gitkeep
+
+# Video tutorial lokal (jangan masuk git - terlalu besar)
+Tutorial/
+*.mp4

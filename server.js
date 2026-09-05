@@ -1,4 +1,12 @@
 console.log('>>> DEBUG: STARTING SERVER.JS');
+// Anti-mati: error DB sesaat (ETIMEDOUT tethering) tidak boleh membunuh server.
+// Cukup catat; request berikutnya memakai koneksi pool yang baru.
+process.on('uncaughtException', (err) => {
+    console.error('⚠ UNCAUGHT (server tetap hidup):', err.code || err.message);
+});
+process.on('unhandledRejection', (reason) => {
+    console.error('⚠ UNHANDLED REJECTION (server tetap hidup):', (reason && (reason.code || reason.message)) || reason);
+});
 require('dotenv').config(); console.log('>>> DEBUG: DOTENV LOADED');
 const express = require('express'); console.log('>>> DEBUG: EXPRESS LOADED');
 const expressLayouts = require('express-ejs-layouts'); console.log('>>> DEBUG: LAYOUTS LOADED');
