@@ -16,14 +16,19 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    connectTimeout: 10000,
-    debug: false
+    connectTimeout: 30000, // longgar untuk jaringan seluler/tethering
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000,
+    // reconnect otomatis saat koneksi idle diputus server
+    maxIdle: 10,
+    idleTimeout: 60000
 });
 
-// Tambahan log manual untuk setiap kejadian
-pool.on('acquire', (connection) => console.log('  [DEBUG] Connection %d acquired', connection.threadId));
+// Tambahan log manual untuk setiap kejadian (acquire dimatikan: terlalu berisik)
 pool.on('connection', (connection) => console.log('  [DEBUG] New connection established'));
 pool.on('enqueue', () => console.log('  [DEBUG] Waiting for available connection slot...'));
+// WAJIB: tanpa listener ini, 1x ETIMEDOUT membuat seluruh server crash
+pool.on('error', (err) => console.error('  [DB POOL ERROR - server tetap hidup]:', err.code || err.message));
 
 const promisePool = pool.promise();
 promisePool.pool = pool;
