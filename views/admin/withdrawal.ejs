@@ -515,7 +515,7 @@ const totalPending = withdrawals.filter(w => w.status === 'pending').reduce((s, 
 const totalDitolak = withdrawals.filter(w => w.status === 'rejected').reduce((s, w) => s + parseFloat(w.amount || 0), 0);
 
 const isPro = (user.plan || 'free') === 'pro';
-const feePct = isPro ? 2 : 3;
+const feePct = isPro ? 1 : 3;
 const minAmount = isPro ? 0 : 100000;
 %>
 
@@ -630,7 +630,7 @@ const minAmount = isPro ? 0 : 100000;
                         <i class="fas fa-crown"></i>
                     </div>
                     <div class="promo-info">
-                        <div class="promo-title">Upgrade ke PRO untuk fee hanya 2%</div>
+                        <div class="promo-title">Upgrade ke PRO untuk fee hanya 1%</div>
                         <div class="promo-subtitle">Tarik dana bebas tanpa minimal dan biaya lebih rendah.</div>
                     </div>
                     <i class="fas fa-chevron-right promo-arrow"></i>
@@ -800,7 +800,7 @@ const minAmount = isPro ? 0 : 100000;
 function calcFee() {
     const amount = parseInt(document.getElementById('wdAmount').value) || 0;
     const isPro = <%= isPro %>;
-    const feePct = isPro ? 0.02 : 0.03;
+    const feePct = isPro ? 0.01 : 0.03;
     const fee = Math.round(amount * feePct);
     const est = amount - fee;
     document.getElementById('feeDisplay').textContent = '- Rp ' + fee.toLocaleString('id-ID');

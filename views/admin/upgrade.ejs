@@ -5,8 +5,8 @@
     </div>
 </div>
 
-<div style="max-width: 900px; margin: 0 auto;">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-bottom: 40px;">
+<div style="max-width: 1100px; margin: 0 auto;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px;">
         
         <!-- FREE PLAN (Current) -->
         <div style="background: white; border-radius: 24px; padding: 40px; border: 1.5px solid #e2e8f0; position: relative; opacity: 0.7;">
@@ -27,12 +27,11 @@
             </ul>
         </div>
 
-        <!-- PRO PLAN -->
-        <div style="background: white; border-radius: 24px; padding: 40px; border: 2.5px solid #8b5cf6; position: relative; box-shadow: 0 20px 40px -10px rgba(139, 92, 246, 0.15);">
-            <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: #8b5cf6; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 800; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);">PALING POPULER</div>
-            <div style="font-size: 14px; font-weight: 800; color: #8b5cf6; margin-bottom: 8px; text-transform: uppercase;">Lingku PRO</div>
-            <div style="font-size: 32px; font-weight: 900; color: #1e293b; margin-bottom: 8px;">Rp <%= Number(price_pro).toLocaleString('id-ID') %> <span style="font-size: 14px; font-weight: 500; color: #94a3b8;">/ Tahun</span></div>
-            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 24px;">Hanya Rp <%= Math.round(Number(price_pro)/12).toLocaleString('id-ID') %> / bulan. Sangat hemat!</div>
+        <!-- PRO BULANAN -->
+        <div style="background: white; border-radius: 24px; padding: 40px; border: 1.5px solid #e2e8f0; position: relative;">
+            <div style="font-size: 14px; font-weight: 800; color: #8b5cf6; margin-bottom: 8px; text-transform: uppercase;">Lingku PRO Bulanan</div>
+            <div style="font-size: 32px; font-weight: 900; color: #1e293b; margin-bottom: 8px;">Rp <%= Number(locals.price_monthly || price_pro).toLocaleString('id-ID') %> <span style="font-size: 14px; font-weight: 500; color: #94a3b8;">/ Bulan</span></div>
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 24px;">Fleksibel, berhenti kapan saja.</div>
             
             <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; display: flex; flex-direction: column; gap: 16px;">
                 <li style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #1e293b; font-weight: 600;">
@@ -49,7 +48,37 @@
                 </li>
             </ul>
 
-            <a href="/admin/upgrade/checkout" style="text-decoration:none; width: 100%; padding: 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 14px; color: white; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4); transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <a href="/admin/upgrade/checkout?package=monthly" style="text-decoration:none; width: 100%; padding: 16px; background: #fff; border: 1.5px solid #8b5cf6; border-radius: 14px; color: #7c3aed; font-size: 15px; font-weight: 800; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                Pilih Bulanan <i class="fas fa-bolt"></i>
+            </a>
+            <div style="text-align: center; margin-top: 15px; font-size: 11px; color: #94a3b8;">
+                <i class="fas fa-shield-alt"></i> Pembayaran Aman via iPaymu (QRIS & VA)
+            </div>
+        </div>
+
+        <!-- PRO TAHUNAN -->
+        <div style="background: white; border-radius: 24px; padding: 40px; border: 2.5px solid #8b5cf6; position: relative; box-shadow: 0 20px 40px -10px rgba(139, 92, 246, 0.15);">
+            <div style="position: absolute; top: -15px; left: 50%; transform: translateX(-50%); background: #8b5cf6; color: white; padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 800; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); white-space: nowrap;">PALING HEMAT</div>
+            <div style="font-size: 14px; font-weight: 800; color: #8b5cf6; margin-bottom: 8px; text-transform: uppercase;">Lingku PRO Tahunan</div>
+            <div style="font-size: 32px; font-weight: 900; color: #1e293b; margin-bottom: 8px;">Rp <%= Number(locals.price_yearly || price_pro).toLocaleString('id-ID') %> <span style="font-size: 14px; font-weight: 500; color: #94a3b8;">/ Tahun</span></div>
+            <div style="font-size: 12px; color: #94a3b8; margin-bottom: 24px;">Hanya Rp <%= Math.round(Number(locals.price_yearly || price_pro)/12).toLocaleString('id-ID') %> / bulan. Sangat hemat!</div>
+            
+            <ul style="list-style: none; padding: 0; margin: 0 0 30px 0; display: flex; flex-direction: column; gap: 16px;">
+                <li style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #1e293b; font-weight: 600;">
+                    <i class="fas fa-check-circle" style="color: #8b5cf6;"></i> Fee Penarikan Hanya 1%
+                </li>
+                <li style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #475569;">
+                    <i class="fas fa-check-circle" style="color: #8b5cf6;"></i> Hapus Label "Powered by Lingku"
+                </li>
+                <li style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #475569;">
+                    <i class="fas fa-check-circle" style="color: #8b5cf6;"></i> Akses Semua Tema Eksklusif
+                </li>
+                <li style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #475569;">
+                    <i class="fas fa-check-circle" style="color: #8b5cf6;"></i> Prioritas Support 24/7
+                </li>
+            </ul>
+
+            <a href="/admin/upgrade/checkout?package=yearly" style="text-decoration:none; width: 100%; padding: 16px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 14px; color: white; font-size: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px -5px rgba(139, 92, 246, 0.4); transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px;">
                 Aktivasi Sekarang <i class="fas fa-bolt"></i>
             </a>
             <div style="text-align: center; margin-top: 15px; font-size: 11px; color: #94a3b8;">

@@ -156,8 +156,8 @@ exports.getDashboardData = async (req, res) => {
                         let total = parseFloat(psRow[0].total);
 
                         // 2. Fallback for historical data (Count PRO users not in orders)
-                        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-                        const currentPrice = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+                        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro_yearly'");
+                        const currentPrice = parseFloat(priceRow[0] ? priceRow[0].setting_value : '190000');
                         
                         const [orderCountRow] = await db.execute("SELECT COUNT(*) as count FROM orders WHERE product_id = 0 AND status = 'completed'");
                         const recordedCount = orderCountRow[0].count;

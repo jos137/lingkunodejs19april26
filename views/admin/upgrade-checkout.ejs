@@ -61,12 +61,13 @@
                 <i class="fas fa-crown"></i>
             </div>
             <div class="product-info">
-                <div class="product-name">Upgrade Paket PRO (1 Tahun)</div>
+                <div class="product-name">Upgrade Paket PRO (<%= (locals.package_label || 'Tahunan') %>)</div>
                 <div class="product-price">Rp <%= Number(price_pro).toLocaleString('id-ID') %></div>
             </div>
         </div>
 
         <form action="/admin/upgrade/process" method="POST" id="checkoutForm">
+            <input type="hidden" name="package" value="<%= locals.package || 'yearly' %>">
             <input type="hidden" name="payment_method" id="payMethod" value="qr">
             <input type="hidden" name="payment_channel" id="payChannel" value="qris">
             

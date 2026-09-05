@@ -1403,10 +1403,10 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key = 'price_pro' OR setting_key = 'enable_captcha'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key LIKE 'price_pro%' OR setting_key = 'enable_captcha'");
         const smtp = {};
         const affiliate = {};
-        let fee_free = '3', fee_pro = '1', price_pro = '99000', enable_captcha = '1';
+        let fee_free = '3', fee_pro = '1', price_pro = '99000', price_pro_monthly = '19000', price_pro_yearly = '190000', enable_captcha = '1';
 
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
@@ -1414,6 +1414,8 @@ exports.getSettings = async (req, res) => {
             if (r.setting_key === 'fee_free') fee_free = r.setting_value;
             if (r.setting_key === 'fee_pro') fee_pro = r.setting_value;
             if (r.setting_key === 'price_pro') price_pro = r.setting_value;
+            if (r.setting_key === 'price_pro_monthly') price_pro_monthly = r.setting_value;
+            if (r.setting_key === 'price_pro_yearly') price_pro_yearly = r.setting_value;
             if (r.setting_key === 'enable_captcha') enable_captcha = r.setting_value;
         });
 
@@ -1426,6 +1428,8 @@ exports.getSettings = async (req, res) => {
             fee_free,
             fee_pro,
             price_pro,
+            price_pro_monthly,
+            price_pro_yearly,
             enable_captcha,
             success: req.query.success,
             tab: req.query.tab || 'profil'
@@ -1456,8 +1460,8 @@ exports.updateSMTPSettings = async (req, res) => {
 
 exports.updateFeeSettings = async (req, res) => {
     try {
-        const { fee_free, fee_pro, price_pro } = req.body;
-        const keys = { fee_free, fee_pro, price_pro };
+        const { fee_free, fee_pro, price_pro_monthly, price_pro_yearly } = req.body;
+        const keys = { fee_free, fee_pro, price_pro_monthly, price_pro_yearly };
 
         for (const [key, val] of Object.entries(keys)) {
             await db.execute(
@@ -2406,14 +2410,19 @@ exports.getUpgradePage = async (req, res) => {
             return res.redirect('/admin?info=already_pro');
         }
 
-        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-        const price_pro = priceRow[0] ? priceRow[0].setting_value : '99000';
+        const [priceRow] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('price_pro_monthly', 'price_pro_yearly', 'price_pro')");
+        const pmap = {};
+        priceRow.forEach(r => pmap[r.setting_key] = r.setting_value);
+        const price_monthly = pmap.price_pro_monthly || '19000';
+        const price_yearly = pmap.price_pro_yearly || pmap.price_pro || '190000';
 
         res.render('admin/upgrade', { 
             title: 'Upgrade Pro', 
             layout: './layouts/admin', 
             user: req.session.user || res.locals.user,
-            price_pro
+            price_pro: price_yearly,
+            price_monthly,
+            price_yearly
         });
     } catch (err) {
         console.error('Get Upgrade Page Error:', err.message);
@@ -2429,13 +2438,20 @@ exports.getUpgradeCheckout = async (req, res) => {
 
         if (user.plan === 'pro') return res.redirect('/admin');
 
-        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-        const price_pro = priceRow[0] ? priceRow[0].setting_value : '99000';
+        const pkg = req.query.package === 'monthly' ? 'monthly' : 'yearly';
+        const [priceRow] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('price_pro_monthly', 'price_pro_yearly', 'price_pro')");
+        const pmap = {};
+        priceRow.forEach(r => pmap[r.setting_key] = r.setting_value);
+        const price_pro = pkg === 'monthly'
+            ? (pmap.price_pro_monthly || '19000')
+            : (pmap.price_pro_yearly || pmap.price_pro || '190000');
 
         res.render('admin/upgrade-checkout', { 
             layout: false, // Clean page, no sidebar
             user: user,
-            price_pro
+            price_pro,
+            package: pkg,
+            package_label: pkg === 'monthly' ? 'Bulanan (30 hari)' : 'Tahunan (12 bulan)'
         });
     } catch (err) {
         console.error('Get Upgrade Checkout Error:', err.message);
@@ -2447,6 +2463,7 @@ exports.processUpgrade = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
         const { name, email, phone, payment_method, payment_channel } = req.body;
+        const pkg = req.body.package === 'monthly' ? 'monthly' : 'yearly';
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users[0];
 
@@ -2476,9 +2493,14 @@ exports.processUpgrade = async (req, res) => {
             method = 'cstore';
         }
 
-        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-        const price = Math.floor(parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000'));
-        const referenceId = `UPGRADE-PRO-${userId}-${Date.now()}`;
+        const [priceRow] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('price_pro_monthly', 'price_pro_yearly', 'price_pro')");
+        const pmap = {};
+        priceRow.forEach(r => pmap[r.setting_key] = r.setting_value);
+        const price = pkg === 'monthly'
+            ? Math.floor(parseFloat(pmap.price_pro_monthly || '19000'))
+            : Math.floor(parseFloat(pmap.price_pro_yearly || pmap.price_pro || '190000'));
+        const pkgCode = pkg === 'monthly' ? 'M' : 'Y';
+        const referenceId = `UPGRADE-PRO-${userId}-${pkgCode}-${Date.now()}`;
 
         // Robust Phone Formatting
         let cleanPhone = (phone || user.whatsapp || user.phone || '081234567890').replace(/[^0-9]/g, '');
@@ -2503,7 +2525,7 @@ exports.processUpgrade = async (req, res) => {
             cancelUrl: `${req.protocol}://${req.get('host')}/admin/upgrade`,
             paymentMethod: method,
             paymentChannel: chan,
-            product: ['Upgrade PRO Lingku'],
+            product: [pkg === 'monthly' ? 'Upgrade PRO Lingku (Bulanan)' : 'Upgrade PRO Lingku (Tahunan)'],
             qty: [1],
             price: [price]
         };
@@ -2567,8 +2589,8 @@ exports.getUpgradeOrders = async (req, res) => {
         // AUTO-SYNC: Ensure historical PRO users are in the orders table
         try {
             const [proUsers] = await db.execute("SELECT * FROM users WHERE plan = 'pro'");
-            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro_yearly'");
+            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '190000');
 
             for (const user of proUsers) {
                 const [existing] = await db.execute("SELECT id FROM orders WHERE product_id = 0 AND customer_email = ?", [user.email]);

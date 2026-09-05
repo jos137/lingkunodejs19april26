@@ -566,14 +566,23 @@
                         </div>
                     </div>
                 </div>
-                <div class="s-group" style="margin-top:20px;">
-                    <label class="s-label">Harga Aktivasi Paket PRO (Rp)</label>
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:14px; font-weight:700; color:#94a3b8;">RP</span>
-                        <input class="s-input" type="number" name="price_pro" value="<%= locals.price_pro || '99000' %>" placeholder="99000" style="max-width: 200px;">
+                <div class="s-row" style="margin-top:20px;">
+                    <div class="s-group">
+                        <label class="s-label">Harga PRO Bulanan (Rp)</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:14px; font-weight:700; color:#94a3b8;">RP</span>
+                            <input class="s-input" type="number" name="price_pro_monthly" value="<%= locals.price_pro_monthly || '19000' %>" placeholder="19000" style="max-width: 200px;">
+                        </div>
                     </div>
-                    <div style="font-size:11px; color:#94a3b8; margin-top:8px;">* Harga ini akan tampil di halaman Upgrade PRO dan menjadi nominal tagihan iPaymu.</div>
+                    <div class="s-group">
+                        <label class="s-label">Harga PRO Tahunan (Rp)</label>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <span style="font-size:14px; font-weight:700; color:#94a3b8;">RP</span>
+                            <input class="s-input" type="number" name="price_pro_yearly" value="<%= locals.price_pro_yearly || '190000' %>" placeholder="190000" style="max-width: 200px;">
+                        </div>
+                    </div>
                 </div>
+                <div style="font-size:11px; color:#94a3b8; margin-top:8px;">* Harga ini akan tampil di halaman Upgrade PRO & landing page, dan menjadi nominal tagihan iPaymu.</div>
                 <div style="font-size:11px; color:#94a3b8; margin-top:8px;">* Perubahan ini akan langsung berlaku pada setiap permintaan penarikan dana baru.</div>
                 <hr class="s-divider">
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #10b981, #059669);">Simpan Pengaturan Pro</button>

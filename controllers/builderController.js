@@ -965,7 +965,10 @@ exports.ipaymuCallback = async (req, res) => {
             if (sid.startsWith('UPGRADE-PRO-')) {
                 try {
                     const parts = sid.split('-');
-                    const targetUserId = parts[2]; // UPGRADE-PRO-{userId}-{timestamp}
+                    const targetUserId = parts[2]; // UPGRADE-PRO-{userId}-[{M|Y}]-{timestamp}
+                    // Paket baru: UPGRADE-PRO-{id}-M/Y-{ts} | format lama: UPGRADE-PRO-{id}-{ts} (tahunan)
+                    const pkgCode = parts[3] === 'M' ? 'M' : 'Y';
+                    const durationSql = pkgCode === 'M' ? 'INTERVAL 1 MONTH' : 'INTERVAL 1 YEAR';
                     
                     // 1. Ensure expired_at column exists
                     try { await db.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS expired_at DATETIME AFTER plan"); } catch(err2) {
@@ -974,7 +977,7 @@ exports.ipaymuCallback = async (req, res) => {
                     
                     // 2. Update Plan
                     await db.execute(
-                        "UPDATE users SET plan = 'pro', expired_at = DATE_ADD(NOW(), INTERVAL 1 YEAR) WHERE id = ?",
+                        `UPDATE users SET plan = 'pro', expired_at = DATE_ADD(NOW(), ${durationSql}) WHERE id = ?`,
                         [targetUserId]
                     );
 
@@ -993,8 +996,8 @@ exports.ipaymuCallback = async (req, res) => {
                             const buyerEmail = userData[0] ? userData[0].email : '';
                             const buyerPhone = userData[0] ? (userData[0].whatsapp || userData[0].phone) : '';
                             
-                            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro'");
-                            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '99000');
+                            const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro_yearly'");
+                            const price = parseFloat(priceRow[0] ? priceRow[0].setting_value : '190000');
                             
                             await db.execute(
                                 "INSERT INTO orders (user_id, product_id, reference_id, total_price, status, customer_name, customer_email, customer_whatsapp, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())",
