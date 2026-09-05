@@ -66,14 +66,21 @@ console.log('✔ Session Store Configured.');
 
 app.set('trust proxy', 1);
 
+const isProduction = process.env.NODE_ENV === 'production';
+if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
+    console.warn('⚠ PERINGATAN KEAMANAN: SESSION_SECRET kosong/lemah (<32 karakter). Set string acak panjang di production!');
+}
+
 app.use(session({
     key: 'lingku_session',
     secret: process.env.SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
-    cookie: { 
-        secure: false, 
+    cookie: {
+        secure: isProduction, // HTTPS-only di produksi
+        httpOnly: true, // Tidak bisa dibaca JavaScript (anti pencurian via XSS)
+        sameSite: 'lax', // Anti CSRF dasar, login redirect tetap jalan
         maxAge: 1000 * 60 * 60 * 24 // 1 day
     }
 }));

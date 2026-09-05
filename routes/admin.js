@@ -32,6 +32,14 @@ function isAdmin(req, res, next) {
     res.status(403).send('Akses dilarang: Hanya Admin yang bisa mengakses halaman ini.');
 }
 
+// Hanya file gambar yang boleh diupload (anti webshell/executable)
+function imageOnlyFilter(req, file, cb) {
+    const mimeOk = /^image\/(png|jpe?g|gif|webp)$/.test(file.mimetype || '');
+    const extOk = /\.(png|jpe?g|gif|webp)$/i.test(file.originalname || '');
+    if (mimeOk && extOk) return cb(null, true);
+    cb(new Error('Hanya file gambar (PNG/JPG/GIF/WebP) yang diizinkan!'));
+}
+
 // Multer setup for image uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -41,7 +49,7 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + '-' + file.originalname);
     }
 });
-const upload = multer({ storage });
+const upload = multer({ storage, fileFilter: imageOnlyFilter, limits: { fileSize: 2 * 1024 * 1024 } });
 
 // Apply auth to all admin routes
 router.use(isAuth);
@@ -80,7 +88,7 @@ const productStorage = multer.diskStorage({
         cb(null, 'prod-' + Date.now() + path.extname(file.originalname));
     }
 });
-const uploadProduct = multer({ storage: productStorage, limits: { fileSize: 2 * 1024 * 1024 } });
+const uploadProduct = multer({ storage: productStorage, fileFilter: imageOnlyFilter, limits: { fileSize: 2 * 1024 * 1024 } });
 
 router.get('/products', adminController.getProducts);
 router.get('/products/create', adminController.getProductCreate);
@@ -146,7 +154,7 @@ const ticketStorage = multer.diskStorage({
         cb(null, 'ticket-' + Date.now() + path.extname(file.originalname));
     }
 });
-const uploadTicket = multer({ storage: ticketStorage, limits: { fileSize: 2 * 1024 * 1024 } });
+const uploadTicket = multer({ storage: ticketStorage, fileFilter: imageOnlyFilter, limits: { fileSize: 2 * 1024 * 1024 } });
 
 router.get('/help', adminController.getHelpCenter);
 router.get('/help/report', adminController.getReportForm);
@@ -197,7 +205,7 @@ const profileStorage = multer.diskStorage({
         cb(null, 'profile-' + Date.now() + path.extname(file.originalname));
     }
 });
-const uploadProfile = multer({ storage: profileStorage, limits: { fileSize: 2 * 1024 * 1024 } });
+const uploadProfile = multer({ storage: profileStorage, fileFilter: imageOnlyFilter, limits: { fileSize: 2 * 1024 * 1024 } });
 router.post('/settings/update-profile', uploadProfile.single('profile_photo'), adminController.updateProfile);
 router.post('/settings/update-store', adminController.updateStoreSettings);
 router.post('/settings/update-security', isAdmin, adminController.updateSecuritySettings);

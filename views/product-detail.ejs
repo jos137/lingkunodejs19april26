@@ -151,7 +151,7 @@
                         }
                         return s;
                     }
-                    const cleanDesc = manualDecode(product.description || '');
+                    const cleanDesc = (typeof cleanHtml === 'function' ? cleanHtml(manualDecode(product.description || '')) : manualDecode(product.description || ''));
                 %>
                 <%- cleanDesc %>
             </div>

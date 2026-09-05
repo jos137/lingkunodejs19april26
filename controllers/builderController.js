@@ -2,6 +2,7 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { sendPaymentInstructionEmail, sendAccessEmail } = require('../utils/mailer');
+const { cleanHtml, safeUrl } = require('../utils/sanitize');
 
 // Ensure tables exist
 async function ensureTables() {
@@ -296,33 +297,33 @@ exports.renderUserPage = async (req, res) => {
         // Get Blocks
         const [blocks] = await db.execute('SELECT * FROM page_blocks WHERE page_id = ? AND visible = 1 ORDER BY block_order ASC', [page.id]);
 
-        // Map blocks to template format
+        // Map blocks to template format (sanitized against Stored XSS)
         const mappedBlocks = blocks.map(b => {
             const mapped = { type: b.type, id: b.id };
             if (b.type === 'image') {
                 try {
                     const imgData = typeof b.content === 'object' ? b.content : JSON.parse(b.content);
-                    mapped.url = imgData.url || b.content;
-                } catch(e) { mapped.url = b.content; }
+                    mapped.url = safeUrl(imgData.url || b.content, '');
+                } catch(e) { mapped.url = safeUrl(b.content, ''); }
             }
             if (b.type === 'product' || b.type === 'affiliate') mapped.pid = b.content;
             if (b.type === 'button') {
                 try {
                     const btnData = typeof b.content === 'object' ? b.content : JSON.parse(b.content);
                     mapped.label = btnData.label || btnData.text || b.content;
-                    mapped.link = btnData.link || btnData.url || '#';
+                    mapped.link = safeUrl(btnData.link || btnData.url || '#');
                     mapped.color = btnData.color || 'default';
                 } catch(e) {
                     mapped.label = b.content || 'Button';
                     mapped.link = '#';
                 }
             }
-            if (b.type === 'text') mapped.text = b.content;
+            if (b.type === 'text') mapped.text = cleanHtml(b.content);
             if (b.type === 'video') {
                 try {
                     const vidData = typeof b.content === 'object' ? b.content : JSON.parse(b.content);
-                    mapped.url = vidData.url || b.content;
-                } catch(e) { mapped.url = b.content; }
+                    mapped.url = safeUrl(vidData.url || b.content, '');
+                } catch(e) { mapped.url = safeUrl(b.content, ''); }
             }
             if (b.type === 'divider') {
                 try {
@@ -480,7 +481,8 @@ exports.renderProductPage = async (req, res) => {
         res.render('product-detail', {
             title: product.name,
             layout: false,
-            product
+            product,
+            cleanHtml
         });
     } catch (err) {
         console.error('Render Product Error:', err.message);
