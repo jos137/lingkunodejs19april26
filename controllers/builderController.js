@@ -924,38 +924,70 @@ exports.ipaymuCallback = async (req, res) => {
     try {
         console.log('--- IPAYMU CALLBACK DEBUG ---');
         const { trx_id, sid, status, status_code } = req.body;
-        const incomingSignature = req.headers.signature;
-        
+        // Header resmi iPaymu: X-Signature (bukan "signature")
+        const incomingSignature = req.headers['x-signature'];
+        console.log('Content-Type:', req.headers['content-type'], '| X-Signature ada:', !!incomingSignature, '| sid:', sid, '| status:', status);
+
         // 1. Fetch Admin iPaymu Config for Verification
         const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
         if (adminRows.length === 0) return res.status(500).send('Admin config not found');
-        
+
         const adminConfig = adminRows[0];
         const isSandbox = adminConfig.ipaymu_sandbox == 1;
         const va = adminConfig.ipaymu_va || (isSandbox ? process.env.IPAYMU_VA_SANDBOX : process.env.IPAYMU_VA_LIVE);
-        const apiKey = adminConfig.ipaymu_apikey || (isSandbox ? process.env.IPAYMU_APIKEY_SANDBOX : process.env.IPAYMU_APIKEY_LIVE);
 
-        // 2. Verify Signature (Security Hardening)
-        // Note: iPaymu callback usually sends signature in headers. 
-        // We verify by recreating the hash from the raw body.
-        if (incomingSignature) {
-            const jsonBody = JSON.stringify(req.body);
-            const bodyHash = crypto.createHash('sha256').update(jsonBody).digest('hex').toLowerCase();
-            const stringToSign = `POST:${va}:${bodyHash}:${apiKey}`; // Standard iPaymu v2 Sign Pattern
-            const expectedSignature = crypto.createHmac('sha256', apiKey).update(stringToSign).digest('hex').toLowerCase();
-            
-            if (incomingSignature !== expectedSignature) {
-                console.error('[SECURITY ALERT] Invalid iPaymu Callback Signature!');
-                return res.status(403).send('Invalid Signature');
+        // 2. Verify Signature SESUAI DOKUMENTASI RESMI iPaymu:
+        //    normalisasi tipe -> sort key A-Z -> JSON + escape slash -> HMAC-SHA256(json, VA)
+        //    (https://docs.ipaymu.com/en/docs/callback)
+        const normalizeIpaymu = (raw) => {
+            const out = {};
+            for (const key of Object.keys(raw || {})) {
+                const val = raw[key];
+                if (key === 'is_escrow') {
+                    out[key] = (val === 'true' || val === '1' || val === 1 || val === true);
+                } else if (['trx_id', 'status_code', 'transaction_status_code', 'paid_off'].includes(key)) {
+                    out[key] = parseInt(val, 10);
+                } else if (key === 'additional_info') {
+                    out[key] = (val === '[]' || val === undefined) ? [] : val;
+                } else {
+                    out[key] = String(val);
+                }
             }
+            if (!Object.prototype.hasOwnProperty.call(out, 'additional_info')) out['additional_info'] = [];
+            if (out.signature) delete out.signature;
+            return out;
+        };
+
+        if (incomingSignature) {
+            const sorted = Object.keys(normalizeIpaymu(req.body))
+                .sort((a, b) => a.localeCompare(b))
+                .reduce((acc, k) => { acc[k] = normalizeIpaymu(req.body)[k]; return acc; }, {});
+            let jsonBody = JSON.stringify(sorted);
+            jsonBody = jsonBody.replace(/\//g, '\\/');
+            const expectedSignature = crypto.createHmac('sha256', String(va)).update(jsonBody).digest('hex');
+
+            let match = false;
+            try {
+                const a = Buffer.from(String(incomingSignature));
+                const b = Buffer.from(expectedSignature);
+                match = a.length === b.length && crypto.timingSafeEqual(a, b);
+            } catch (e) { match = false; }
+
+            if (!match) {
+                console.error('[SECURITY ALERT] Invalid iPaymu Callback Signature!');
+                console.error('Expected(X-Signature):', incomingSignature);
+                console.error('Calculated:', expectedSignature);
+                return res.status(400).send('Invalid Signature');
+            }
+            console.log('[CALLBACK] Signature valid.');
         } else {
-            // Tanpa signature = tidak terbukti dari iPaymu. Di LIVE wajib ditolak,
+            // Tanpa X-Signature = tidak terbukti dari iPaymu. Di LIVE wajib ditolak,
             // di SANDBOX hanya warning agar testing tetap mudah.
             if (!isSandbox) {
-                console.error('[SECURITY ALERT] Callback tanpa signature ditolak (LIVE mode).');
-                return res.status(403).send('Missing Signature');
+                console.error('[SECURITY ALERT] Callback tanpa X-Signature ditolak (LIVE mode).');
+                return res.status(400).send('Missing Signature');
             }
-            console.warn('[WARNING] Callback received without signature header (sandbox, diizinkan).');
+            console.warn('[WARNING] Callback received without X-Signature header (sandbox, diizinkan).');
         }
 
         // 3. Process Payment Logic
