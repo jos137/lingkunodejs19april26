@@ -29,6 +29,7 @@ async function runAutoHeal() {
             'photo VARCHAR(255) DEFAULT NULL',
             'stock INT DEFAULT 999',
             'download_url TEXT',
+            'access_links TEXT',
             'is_affiliate TINYINT(1) DEFAULT 1',
             'commission_percent DECIMAL(5,2) DEFAULT 20.00'
         ];

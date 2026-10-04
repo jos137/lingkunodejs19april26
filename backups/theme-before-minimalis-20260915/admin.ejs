@@ -425,59 +425,29 @@
 
     </style>
 <style>
-#sidebar {
- --sb-bg:linear-gradient(180deg,#304e7b,#263f65); --sb-text:#e1e9f6; --sb-muted:#b0c3df; --sb-border:#ffffff20; --sb-hover:#ffffff0d; --sb-active:#ffffff20; --sb-active-text:#fff; --sb-accent:#9ec5ff;
-}
-#sidebar.theme-dark_green { --sb-bg:#141e1c; --sb-text:#cbdad3; --sb-muted:#94afa2; --sb-border:#ffffff14; --sb-hover:#20332b; --sb-active:#b1f95b; --sb-active-text:#182b10; --sb-accent:#b1f95b; }
-#sidebar.theme-light_glass { --sb-bg:rgba(255,255,255,.94); --sb-text:#52627a; --sb-muted:#7a8da5; --sb-border:#e4eaf2; --sb-hover:#f4f7fc; --sb-active:#eaf2ff; --sb-active-text:#315aa8; --sb-accent:#729ce7; backdrop-filter:blur(18px); }
-#sidebar.theme-stan { --sb-bg:linear-gradient(180deg,#ede5ff,#f7f2ff); --sb-text:#614a80; --sb-muted:#8a73a4; --sb-border:#ddcff2; --sb-hover:#e6daf9; --sb-active:#8152c8; --sb-active-text:#fff; --sb-accent:#b89ae7; }
-#sidebar.theme-minimalis { --sb-bg:#f5f5f2; --sb-text:#4d5656; --sb-muted:#7b8580; --sb-border:#d8ddd8; --sb-hover:#eaece7; --sb-active:#dde5de; --sb-active-text:#304f3d; --sb-accent:#527b60; }
 /* Shared sidebar appearance across admin pages. */
 #sidebar {
-    background: var(--sb-bg); color: var(--sb-text); border-right: 1px solid var(--sb-border);
+    background: #fff; color: #334155; border-right: 1px solid #e7ecf3;
     box-shadow: 4px 0 24px rgba(25,47,83,.025);
     scrollbar-color: #d5deeb transparent;
 }
-#sidebar .sidebar-logo { padding:26px 20px; border-bottom:1px solid var(--sb-border); margin-bottom:10px; }
-#sidebar .sidebar-logo > div { background:var(--sb-hover) !important; border:1px solid var(--sb-border) !important; padding:5px 9px !important; border-radius:8px !important; }
-#sidebar .sidebar-logo > div > div { background:var(--sb-active) !important; }
-#sidebar .sidebar-logo > div i { color:var(--sb-accent) !important; }
-#sidebar .sidebar-logo > div span { color:var(--sb-text) !important; font-size:8px !important; letter-spacing:1px !important; }
-#sidebar .sidebar-logo > .admin-premium-badge { background:linear-gradient(135deg,#2563eb 0%,#1d4ed8 55%,#172554 100%) !important; border:1px solid #6096f3 !important; box-shadow:0 3px 12px rgba(15,35,90,.3),inset 0 1px 0 rgba(255,255,255,.2); }
-#sidebar .sidebar-logo > .admin-premium-badge > div { background:rgba(191,219,254,.2) !important; }
-#sidebar .sidebar-logo > .admin-premium-badge i { color:#bfdbfe !important; }
-#sidebar .sidebar-logo > .admin-premium-badge span { color:#eff6ff !important; }
-#sidebar .sidebar-section-label { color:var(--sb-muted); font-size:9px; letter-spacing:1.8px; padding:20px 15px 10px; }
-#sidebar .sidebar-nav { padding:8px 14px 0; }
-#sidebar .sidebar-link { color:var(--sb-text); padding:12px 14px; margin:3px 0; border-radius:10px; font-size:12px; font-weight:600; background:transparent; border:1px solid transparent; box-shadow:none; }
-#sidebar .sidebar-link i { color:var(--sb-muted); font-size:14px; opacity:1; }
-#sidebar .sidebar-link:hover { background:var(--sb-hover); color:var(--sb-text); }
-#sidebar .sidebar-link.active { background:var(--sb-active); color:var(--sb-active-text); border-color:var(--sb-border); box-shadow:none; }
-#sidebar .sidebar-link.active::before { content:''; position:absolute; left:-1px; top:12px; bottom:12px; width:3px; background:var(--sb-accent); border-radius:4px; }
-#sidebar .sidebar-link.active i { color:var(--sb-active-text); }
-#sidebar .sidebar-submenu { background:var(--sb-hover); border-left:1px solid var(--sb-border); border-radius:0 10px 10px 0; margin-left:22px; padding-left:0; }
-#sidebar .sidebar-bottom { border-top:1px solid var(--sb-border); }
+#sidebar .sidebar-logo { padding:26px 20px; border-bottom:1px solid #eef2f7; margin-bottom:10px; }
+#sidebar .sidebar-logo > div { background:#f5f7fb !important; border:1px solid #e4e9f1 !important; padding:5px 9px !important; border-radius:8px !important; }
+#sidebar .sidebar-logo > div > div { background:#e1e9f8 !important; }
+#sidebar .sidebar-logo > div i { color:#5474a9 !important; }
+#sidebar .sidebar-logo > div span { color:#62748e !important; font-size:8px !important; letter-spacing:1px !important; }
+#sidebar .sidebar-section-label { color:#91a0b5; font-size:9px; letter-spacing:1.8px; padding:20px 15px 10px; }
+#sidebar .sidebar-nav { padding:0 14px; }
+#sidebar .sidebar-link { color:#637188; padding:12px 14px; margin:3px 0; border-radius:10px; font-size:12px; font-weight:600; background:transparent; border:1px solid transparent; box-shadow:none; }
+#sidebar .sidebar-link i { color:#8b9ab0; font-size:14px; opacity:1; }
+#sidebar .sidebar-link:hover { background:#f5f8fc; color:#284e91; }
+#sidebar .sidebar-link.active { background:#edf3ff; color:#2a59bf; border-color:#e1eaff; box-shadow:none; }
+#sidebar .sidebar-link.active::before { content:''; position:absolute; left:-1px; top:12px; bottom:12px; width:3px; background:#3c6bd7; border-radius:4px; }
+#sidebar .sidebar-link.active i { color:#3c6bd7; }
+#sidebar .sidebar-submenu { background:#f7f9fc; border-left:1px solid #e3eaf4; border-radius:0 10px 10px 0; margin-left:22px; padding-left:0; }
+#sidebar .sidebar-bottom { border-top:1px solid #eef2f7; }
 #sidebar .sidebar-link.logout { color:#c65c66; }
 #sidebar .sidebar-link:focus-visible { outline:3px solid #aac4ff; outline-offset:2px; }
-</style>
-
-<style>
-/* A saved, account-specific square-corner dashboard theme. */
-body:has(#sidebar.theme-minimalis) :is(#sidebar, .main-content),
-body:has(#sidebar.theme-minimalis) :is(#sidebar, .main-content) *,
-body:has(#sidebar.theme-minimalis) :is(#sidebar, .main-content) *::before,
-body:has(#sidebar.theme-minimalis) :is(#sidebar, .main-content) *::after {
-    border-radius: 0 !important;
-}
-body:has(#sidebar.theme-minimalis) #sidebar { background:var(--sb-bg); border-right:1px solid var(--sb-border); box-shadow:none; }
-body:has(#sidebar.theme-minimalis) #sidebar .sidebar-link.active { background:var(--sb-active); color:var(--sb-active-text); border-color:var(--sb-border); box-shadow:none; }
-body:has(#sidebar.theme-minimalis) .main-content { background:#f4f5f6; }
-body:has(#sidebar.theme-minimalis) :is(.bio-card,.dash-stat-card,.prod-card,.settings-panel) { box-shadow:none !important; border:1px solid #d8dde3 !important; }
-body:has(#sidebar.theme-minimalis) :is(.cat-modal,.editor-modal,.cat-card,.ed-input,.ed-btn) { border-radius:0 !important; }
-</style>
-<style>
-#sidebar.theme-dark_green .sidebar-link.active i { background:transparent; box-shadow:none; color:var(--sb-active-text); }
-#sidebar.theme-stan .sidebar-link { margin:3px 0; }
 </style>
 </head>
 <body>
@@ -504,7 +474,7 @@ body:has(#sidebar.theme-minimalis) :is(.cat-modal,.editor-modal,.cat-card,.ed-in
     <aside class="sidebar <%= currentTheme !== 'default' ? 'theme-' + currentTheme : '' %>" id="sidebar">
         <div class="sidebar-logo" style="justify-content: space-between; align-items: center;">
             <img src="/images/logo.png" alt="Logo" style="height: 30px;">
-            <div class="<%= roleLower === 'admin' ? 'admin-premium-badge' : '' %>" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef9c3, #fef08a); border: 1px solid #fde047; border-radius: 20px; padding: 3px 10px 3px 8px;">
+            <div style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #fef9c3, #fef08a); border: 1px solid #fde047; border-radius: 20px; padding: 3px 10px 3px 8px;">
                 <div style="width: 18px; height: 18px; background: #eab308; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-shield-alt" style="color: #fff; font-size: 8px;"></i>
                 </div>
@@ -513,6 +483,7 @@ body:has(#sidebar.theme-minimalis) :is(.cat-modal,.editor-modal,.cat-card,.ed-in
         </div>
         
         <nav class="sidebar-nav">
+            <div class="sidebar-section-label">Main Menu</div>
             <a href="/admin" class="sidebar-link <%= title === 'Dashboard' ? 'active' : '' %>">
                 <i class="fas fa-tachometer-alt"></i><span>Dashboard</span>
             </a>

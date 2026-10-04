@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS products (
     price DECIMAL(15,2) NOT NULL,
     image_url VARCHAR(255),
     description TEXT,
+    access_links TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

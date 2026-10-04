@@ -1,3 +1,4 @@
+const { getAccessLinks, accessUpdates } = require('../utils/productAccess');
 const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
@@ -271,6 +272,7 @@ exports.getProductEdit = async (req, res) => {
             title: 'Edit Produk',
             layout: './layouts/admin',
             product: rows[0],
+            getAccessLinks,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
@@ -286,6 +288,7 @@ exports.getProductCreate = async (req, res) => {
         title: 'Tambah Produk',
         layout: './layouts/admin',
         product: { type },
+        getAccessLinks,
         user: req.session.user || res.locals.user
     });
 };
@@ -308,7 +311,7 @@ exports.updateProduct = async (req, res) => {
             description: req.body.description || '',
             price: parseFloat(req.body.price) || 0,
             stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 0),
-            download_url: req.body.download_url || '',
+            ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
             promo_duration: parseInt(req.body.promo_duration) || 0,
@@ -348,6 +351,8 @@ exports.updateProduct = async (req, res) => {
                 const addCols = [
                     'ALTER TABLE products ADD stock INT DEFAULT 0',
                     'ALTER TABLE products ADD download_url TEXT',
+                    'ALTER TABLE products ADD access_links TEXT',
+                    'ALTER TABLE products ADD access_link TEXT',
                     'ALTER TABLE products ADD normal_price DECIMAL(15,2)',
                     'ALTER TABLE products ADD promo_enabled TINYINT(1) DEFAULT 0',
                     'ALTER TABLE products ADD promo_duration INT DEFAULT 0',
@@ -392,7 +397,7 @@ exports.createProductPost = async (req, res) => {
             price: parseFloat(req.body.price) || 0,
             stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 999),
             product_type: req.body.type || 'digital',
-            download_url: req.body.download_url || '',
+            ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
             promo_duration: parseInt(req.body.promo_duration) || 0,
@@ -428,6 +433,8 @@ exports.createProductPost = async (req, res) => {
                 const addCols = [
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INT DEFAULT 0',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS download_url TEXT',
+                    'ALTER TABLE products ADD access_links TEXT',
+                    'ALTER TABLE products ADD access_link TEXT',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS normal_price DECIMAL(15,2)',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_enabled TINYINT(1) DEFAULT 0',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS promo_duration INT DEFAULT 0',
@@ -1094,7 +1101,22 @@ exports.deleteGuide = async (req, res) => {
 // ===================== USERS (Admin) =====================
 exports.getUsers = async (req, res) => {
     try {
-        const [users] = await db.execute('SELECT * FROM users ORDER BY id DESC');
+        // One product per order in processCheckout; aggregate before joining users.
+        // Completed only: pending, failed, and refunded statuses are excluded.
+        const [users] = await db.execute(`
+            SELECT u.*, COALESCE(sales.digital_revenue, 0) AS digital_revenue,
+                   COALESCE(sales.digital_units, 0) AS digital_units
+            FROM users u
+            LEFT JOIN (
+                SELECT o.user_id, SUM(o.total_price) AS digital_revenue,
+                       COUNT(*) AS digital_units
+                FROM orders o
+                INNER JOIN products p ON p.id = o.product_id
+                WHERE o.status = 'completed' AND p.product_type = 'digital'
+                GROUP BY o.user_id
+            ) sales ON sales.user_id = u.id
+            ORDER BY u.id DESC
+        `);
         res.render('admin/users', { 
             title: 'Manajemen User', 
             layout: './layouts/admin', 

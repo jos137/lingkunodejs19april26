@@ -89,11 +89,6 @@
 .block-action.delete { color: #fca5a5; }
 .block-action.delete:hover { color: #ef4444; background: #fef2f2; }
 .block-body { padding: 18px; }
-.block-body[hidden] { display: none !important; }
-.block-header { cursor: pointer; }
-.block-toggle { color: #64748b; flex-shrink: 0; }
-.block-toggle:focus-visible { outline: 2px solid #739bea; outline-offset: 2px; }
-.block-item.is-collapsed .block-header { border-bottom-color: transparent; }
 
 /* Inputs */
 .b-input {
@@ -193,46 +188,21 @@
             .add-block-menu { width: 90%; grid-template-columns: repeat(2, 1fr); }
         }
 
-        /* Slim titanium preview frame; content retains its own scroll area. */
+        /* Re-adding missing preview styles */
         .preview-phone {
-            position: sticky; top: 24px; width: 100%; max-width: 320px;
-            justify-self: center; padding: 5px;
-            background: linear-gradient(110deg, #dedbd4, #99968f 14%, #e9e6df 48%, #a09c94 90%, #d5d1c9);
-            border: 1px solid #b9b5ad; border-radius: 43px;
-            box-shadow: inset 1px 0 1px #fff, 2px 1px 0 #a29e96,
-                0 8px 16px rgba(30,41,59,.08), 0 28px 50px rgba(30,41,59,.13);
-        }
-        .preview-phone::before {
-            content: ''; position: absolute; left: -3px; top: 110px;
-            height: 30px; width: 3px; border-radius: 2px; background: #aaa59b;
-            box-shadow: 0 42px 0 #aaa59b; pointer-events: none;
-        }
-        .preview-phone::after {
-            content: ''; position: absolute; right: -3px; top: 142px;
-            height: 50px; width: 3px; border-radius: 2px; background: #aaa59b; pointer-events: none;
+            background: #111827; border-radius: 36px; padding: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            position: sticky; top: 20px;
         }
         .preview-screen {
-            background: #fff; border: 4px solid #181b20; border-radius: 37px;
-            overflow: hidden; display: flex; flex-direction: column;
-            height: clamp(380px, 72vh, 680px); min-height: 0;
-        }
-        .preview-device-top {
-            height: 43px; flex-shrink: 0; position: relative; background: #fff;
+            background: #fff; border-radius: 24px; overflow: hidden;
+            min-height: 580px; max-height: 75vh; overflow-y: auto;
         }
         .preview-notch {
-            position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
-            height: 23px; width: 80px; border-radius: 20px; background: #101216;
+            height: 24px; background: #111827; border-radius: 0 0 18px 18px;
+            width: 100px; margin: 0 auto;
         }
-        .preview-notch::after {
-            content: ''; position: absolute; right: 9px; top: 7px; width: 8px; height: 8px;
-            border-radius: 50%; background: radial-gradient(circle at 35% 30%, #405077, #101624 60%);
-        }
-        .preview-content {
-            padding: 12px 16px 24px; flex: 1; min-height: 0; overflow-y: auto;
-            overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #d8dde5 transparent;
-        }
-        .preview-device-bottom { height: 19px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
-        .preview-device-bottom::after { content: ''; height: 4px; width: 86px; border-radius: 4px; background: #25282d; }
+        .preview-content { padding: 16px; }
 </style>
 
 <script>
@@ -446,11 +416,10 @@ document.addEventListener('click', (e) => {
     <!-- MOBILE PREVIEW -->
     <div class="preview-phone">
         <div class="preview-screen">
-            <div class="preview-device-top" aria-hidden="true"><div class="preview-notch"></div></div>
+            <div class="preview-notch"></div>
             <div class="preview-content" id="previewContent">
                 <!-- Dynamic Content via updatePreview() -->
             </div>
-            <div class="preview-device-bottom" aria-hidden="true"></div>
         </div>
     </div>
 </div>
@@ -603,7 +572,6 @@ function addBlock(type) {
         <div class="block-body">${bodyHTML}</div>
     `;
     list.appendChild(div);
-    setupBlockAccordion(div, true);
     updatePreview();
     triggerAutoSave();
 }
@@ -826,38 +794,6 @@ function updateVideoPreview(input) {
     updatePreview();
     triggerAutoSave();
 }
-
-// Accordion state is UI-only: never replaces inputs or triggers autosave.
-let accordionSequence = 0;
-function setupBlockAccordion(item, expanded = false) {
-    const header = item.querySelector('.block-header');
-    const body = item.querySelector('.block-body');
-    if (!header || !body || header.querySelector('.block-toggle')) return;
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'block-action block-toggle';
-    body.id = 'builder-block-panel-' + (++accordionSequence);
-    toggle.setAttribute('aria-controls', body.id);
-    const type = item.dataset.type || 'elemen';
-    function setExpanded(open) {
-        body.hidden = !open;
-        item.classList.toggle('is-collapsed', !open);
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.setAttribute('aria-label', (open ? 'Lipat ' : 'Buka ') + type);
-        toggle.innerHTML = '<i class="fas fa-chevron-' + (open ? 'up' : 'down') + '" aria-hidden="true"></i>';
-    }
-    toggle.addEventListener('click', event => {
-        event.stopPropagation();
-        setExpanded(body.hidden);
-    });
-    header.querySelector('.block-type-label').after(toggle);
-    header.addEventListener('click', event => {
-        if (event.target.closest('button, a, input, select, .block-drag')) return;
-        setExpanded(body.hidden);
-    });
-    setExpanded(expanded);
-}
-document.querySelectorAll('#blockList > .block-item').forEach(item => setupBlockAccordion(item));
 
 // Initial preview
 updatePreview();

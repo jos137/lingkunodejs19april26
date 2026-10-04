@@ -407,27 +407,90 @@
 
         .phone-mockup {
             width: 280px;
-            background: #0b1220;
-            border-radius: 40px;
-            padding: 12px;
-            box-shadow: 0 40px 90px rgba(13, 25, 60, 0.28), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
-            transform: perspective(1000px) rotateY(-9deg) rotateX(2deg);
+            background: linear-gradient(105deg, #d8d3ca, #918c83 9%, #eeeae2 22%, #b4afa5 65%, #77736d 93%, #dad6ce);
+            border-radius: 44px;
+            padding: 4px;
+            border: 1px solid #e5e1d9;
+            box-shadow: 1px 0 0 #ece9e2, 3px 1px 0 #a09b92,
+                5px 2px 0 #77736c, 7px 3px 0 #b1aba1, 8px 3px 0 #635f58,
+                18px 30px 38px rgba(30, 29, 26, .16), 0 45px 75px rgba(13, 25, 60, .22);
+            transform: perspective(1200px) rotateY(-9deg) rotateX(9deg) rotateZ(13deg);
             transition: transform 0.35s ease;
             position: relative;
             z-index: 2;
         }
 
+        .phone-mockup::before,
+        .phone-mockup::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #6d685f, #dfdad0, #a59e93);
+        }
+        .phone-mockup::before { left: -3px; top: 108px; height: 32px; box-shadow: 0 43px 0 #aaa397; }
+        .phone-mockup::after { right: -5px; top: 143px; height: 57px; }
+        .phone-island {
+            position: absolute;
+            top: 13px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 82px;
+            height: 24px;
+            border-radius: 20px;
+            background: #05070c;
+            box-shadow: inset 0 1px 2px #333a47;
+            z-index: 3;
+        }
+        .phone-island::after {
+            content: '';
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #48619a, #111c36 45%, #05070c 70%);
+        }
+        .phone-status {
+            position: absolute;
+            top: 18px;
+            left: 21px;
+            right: 21px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            z-index: 2;
+        }
+        .phone-status-icons { display: flex; align-items: center; gap: 4px; font-size: 9px; }
+        .phone-action {
+            position: absolute; left: -3px; top: 73px; width: 3px; height: 17px;
+            border-radius: 3px; background: #aaa397;
+        }
+        .phone-home {
+            position: absolute;
+            bottom: 10px;
+            width: 92px;
+            height: 4px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.85);
+        }
+
         .phone-screen {
             background: linear-gradient(160deg, #2563eb, #1e40af 70%, #1e3a8a);
-            border-radius: 30px;
-            min-height: 480px;
+            border-radius: 40px;
+            border: 5px solid #08090b;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.2);
+            min-height: 550px;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             align-items: center;
             color: white;
             text-align: center;
-            padding: 42px 20px 30px;
+            padding: 80px 18px 36px;
             position: relative;
         }
 
@@ -729,24 +792,26 @@
         }
 
         .pricing-card.popular {
-            background: linear-gradient(165deg, #0f172a 0%, #16295e 60%, #0f1f4d 100%);
-            border: 1px solid rgba(37, 99, 235, 0.4);
-            color: #fff;
-            box-shadow: 0 30px 70px rgba(30, 64, 175, 0.35);
+            background: radial-gradient(ellipse at 100% 0%, #fff3cf 0%, transparent 48%), linear-gradient(155deg, #eff6ff, #ffffff 65%, #f0f5ff);
+            border: 2px solid #91b5ff;
+            color: #172554;
+            box-shadow: 0 20px 55px rgba(37, 99, 235, .13), 0 0 0 6px #f0f5ff;
             overflow: hidden;
         }
 
         .pricing-card.popular::before {
-            content: '';
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.35), transparent 65%);
-            top: -120px;
-            right: -100px;
-            pointer-events: none;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px;
+            background: linear-gradient(90deg, #2563eb, #91baff 65%, #f4c55b);
         }
+        .pricing-card.popular .pricing-period { color: #64748b; }
+        .pricing-value {
+            margin: 0 0 22px; padding: 12px 14px; border-radius: 14px;
+            background: #eaf2ff; color: #214aa5; font-size: 13px; line-height: 1.6;
+        }
+        .pricing-card.popular .pricing-features li i { background: #dfeaff; color: #2563eb; }
+        .pricing-btn:focus-visible { outline: 3px solid #f4b942; outline-offset: 4px; }
+        .pricing-btn.primary i { margin-left: 8px; transition: transform .2s; }
+        .pricing-btn.primary:hover i { transform: translateX(4px); }
 
         .pricing-badge {
             position: absolute;
@@ -785,11 +850,11 @@
         }
 
         .pricing-card.popular .pricing-price .per {
-            color: rgba(255, 255, 255, 0.6);
+            color: #64748b;
         }
 
         .pricing-card.popular .pricing-price {
-            color: #fff;
+            color: #172554;
         }
 
         .pricing-period {
@@ -832,8 +897,8 @@
         }
 
         .pricing-card.popular .pricing-features li {
-            color: #cbd5e1;
-            border-bottom-color: rgba(255, 255, 255, 0.1);
+            color: #334155;
+            border-bottom-color: #e2eaf5;
         }
 
         .pricing-btn {
@@ -1198,8 +1263,12 @@
             </div>
             <div class="hero-visual hero-enter e3" id="heroVisual">
                 <div class="hero-glow"></div>
-                <div class="phone-mockup" id="phoneMockup">
+                <div class="phone-mockup" id="phoneMockup" role="img" aria-label="Pratinjau toko Lingku dalam mockup iPhone 15 Pro titanium">
+                    <span class="phone-action" aria-hidden="true"></span>
                     <div class="phone-screen">
+                        <span class="phone-island" aria-hidden="true"></span>
+                        <div class="phone-status" aria-hidden="true"><span>9:41</span><span class="phone-status-icons"><i class="fas fa-signal"></i><i class="fas fa-wifi"></i><i class="fas fa-battery-full"></i></span></div>
+                        <span class="phone-home" aria-hidden="true"></span>
                         <div class="ps-logo">
                             <img src="/images/logo.png" alt="Logo" style="height: 28px; filter: brightness(0) invert(1);">
                         </div>
@@ -1328,10 +1397,11 @@
                 <a href="/auth/register" class="pricing-btn outline">Daftar Sekarang</a>
             </div>
             <div class="pricing-card popular reveal d2">
-                <div class="pricing-badge">Best Value</div>
+                <div class="pricing-badge">✦ Pilihan Kreator</div>
                 <div class="pricing-plan">PRO</div>
                 <div class="pricing-price">Rp 19K <span class="per">/bulan</span></div>
                 <div class="pricing-period">Rp 190K per tahun</div>
+                <div class="pricing-value"><strong>Lebih banyak hasil untukmu.</strong><br>Fee penarikan hanya 1% dengan paket PRO.</div>
                 <ul class="pricing-features">
                     <li><i class="fas fa-check"></i> Semua fitur Starter</li>
                     <li><i class="fas fa-check"></i> Custom domain</li>
@@ -1340,7 +1410,7 @@
                     <li><i class="fas fa-check"></i> Fee transaksi 1%</li>
                     <li><i class="fas fa-check"></i> Fitur Update Terbaru</li>
                 </ul>
-                <a href="/auth/register" class="pricing-btn primary">Daftar Sekarang</a>
+                <a href="/auth/register" class="pricing-btn primary">Mulai dengan PRO <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
             </div>
         </div>
     </section>
@@ -1424,7 +1494,7 @@
                 const r = wrap.getBoundingClientRect();
                 const x = (e.clientX - r.left) / r.width - 0.5;
                 const y = (e.clientY - r.top) / r.height - 0.5;
-                phone.style.transform = `perspective(1000px) rotateY(${-9 + x * 10}deg) rotateX(${2 - y * 8}deg)`;
+                phone.style.transform = `perspective(1200px) rotateY(${-9 + x * 6}deg) rotateX(${9 - y * 5}deg) rotateZ(13deg)`;
             });
             wrap.addEventListener('mouseleave', () => {
                 phone.style.transform = '';

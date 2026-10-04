@@ -89,11 +89,6 @@
 .block-action.delete { color: #fca5a5; }
 .block-action.delete:hover { color: #ef4444; background: #fef2f2; }
 .block-body { padding: 18px; }
-.block-body[hidden] { display: none !important; }
-.block-header { cursor: pointer; }
-.block-toggle { color: #64748b; flex-shrink: 0; }
-.block-toggle:focus-visible { outline: 2px solid #739bea; outline-offset: 2px; }
-.block-item.is-collapsed .block-header { border-bottom-color: transparent; }
 
 /* Inputs */
 .b-input {
@@ -603,7 +598,6 @@ function addBlock(type) {
         <div class="block-body">${bodyHTML}</div>
     `;
     list.appendChild(div);
-    setupBlockAccordion(div, true);
     updatePreview();
     triggerAutoSave();
 }
@@ -826,38 +820,6 @@ function updateVideoPreview(input) {
     updatePreview();
     triggerAutoSave();
 }
-
-// Accordion state is UI-only: never replaces inputs or triggers autosave.
-let accordionSequence = 0;
-function setupBlockAccordion(item, expanded = false) {
-    const header = item.querySelector('.block-header');
-    const body = item.querySelector('.block-body');
-    if (!header || !body || header.querySelector('.block-toggle')) return;
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'block-action block-toggle';
-    body.id = 'builder-block-panel-' + (++accordionSequence);
-    toggle.setAttribute('aria-controls', body.id);
-    const type = item.dataset.type || 'elemen';
-    function setExpanded(open) {
-        body.hidden = !open;
-        item.classList.toggle('is-collapsed', !open);
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.setAttribute('aria-label', (open ? 'Lipat ' : 'Buka ') + type);
-        toggle.innerHTML = '<i class="fas fa-chevron-' + (open ? 'up' : 'down') + '" aria-hidden="true"></i>';
-    }
-    toggle.addEventListener('click', event => {
-        event.stopPropagation();
-        setExpanded(body.hidden);
-    });
-    header.querySelector('.block-type-label').after(toggle);
-    header.addEventListener('click', event => {
-        if (event.target.closest('button, a, input, select, .block-drag')) return;
-        setExpanded(body.hidden);
-    });
-    setExpanded(expanded);
-}
-document.querySelectorAll('#blockList > .block-item').forEach(item => setupBlockAccordion(item));
 
 // Initial preview
 updatePreview();

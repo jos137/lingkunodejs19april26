@@ -11,7 +11,8 @@
 
 <div class="dashboard-refresh">
 <div class="dash-welcome">
-    <div><p>Pantau penjualan, kelola toko, dan lihat perkembangan bisnismu.</p></div>
+    <div><div class="dash-eyebrow">RUANG KREATOR</div><h2>Bisnis digitalmu, dalam satu tempat.</h2><p>Pantau penjualan, kelola toko, dan lihat perkembangan bisnismu.</p></div>
+    <a class="dash-open-store" href="/<%= encodeURIComponent(userSlug) %>" target="_blank" rel="noopener">Lihat toko <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
 </div>
 <style>
 .dash-cards-row {
@@ -495,7 +496,7 @@
 .dashboard-refresh .dash-open-store { flex-shrink:0; display:inline-flex; gap:12px; align-items:center; color:#2b53ba; padding:12px 17px; border:1px solid #dbe5fb; border-radius:12px; background:#fff; font-size:12px; font-weight:700; text-decoration:none; }
 .dashboard-refresh .bio-row-container { gap:16px !important; margin-bottom:22px !important; }
 .dashboard-refresh .bio-card { border:1px solid #e5eaf2; border-radius:20px; box-shadow:0 4px 20px #233c6505; }
-.dashboard-refresh .dash-today { width:245px !important; background:#bbf7d0 !important; padding:24px !important; }
+.dashboard-refresh .dash-today { width:245px !important; background:linear-gradient(125deg,#2458d4,#5888ec) !important; padding:24px !important; }
 .dashboard-refresh .dash-today > i { font-size:98px !important; right:-10px !important; bottom:-12px !important; opacity:.65; }
 .dashboard-refresh .dash-store { min-width:0 !important; flex-basis:360px !important; padding:24px !important; }
 .dashboard-refresh .bio-input-group { flex-wrap:wrap; gap:8px; }
@@ -531,6 +532,27 @@
 </div>
 
 <style>
-.dashboard-refresh .dash-today, .dashboard-refresh .dash-today div, .dashboard-refresh .dash-today small { color:#14532d !important; }
-.dashboard-refresh .dash-today > i { color:#166534 !important; opacity:.18 !important; }
+/* Sidebar appearance applies only to the dashboard. */
+body:has(.dashboard-refresh) #sidebar {
+    background: #fff; color: #334155; border-right: 1px solid #e7ecf3;
+    box-shadow: 4px 0 24px rgba(25,47,83,.025);
+    scrollbar-color: #d5deeb transparent;
+}
+body:has(.dashboard-refresh) #sidebar .sidebar-logo { padding:26px 20px; border-bottom:1px solid #eef2f7; margin-bottom:10px; }
+body:has(.dashboard-refresh) #sidebar .sidebar-logo > div { background:#f5f7fb !important; border:1px solid #e4e9f1 !important; padding:5px 9px !important; border-radius:8px !important; }
+body:has(.dashboard-refresh) #sidebar .sidebar-logo > div > div { background:#e1e9f8 !important; }
+body:has(.dashboard-refresh) #sidebar .sidebar-logo > div i { color:#5474a9 !important; }
+body:has(.dashboard-refresh) #sidebar .sidebar-logo > div span { color:#62748e !important; font-size:8px !important; letter-spacing:1px !important; }
+body:has(.dashboard-refresh) #sidebar .sidebar-section-label { color:#91a0b5; font-size:9px; letter-spacing:1.8px; padding:20px 15px 10px; }
+body:has(.dashboard-refresh) #sidebar .sidebar-nav { padding:0 14px; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link { color:#637188; padding:12px 14px; margin:3px 0; border-radius:10px; font-size:12px; font-weight:600; background:transparent; border:1px solid transparent; box-shadow:none; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link i { color:#8b9ab0; font-size:14px; opacity:1; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link:hover { background:#f5f8fc; color:#284e91; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link.active { background:#edf3ff; color:#2a59bf; border-color:#e1eaff; box-shadow:none; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link.active::before { content:''; position:absolute; left:-1px; top:12px; bottom:12px; width:3px; background:#3c6bd7; border-radius:4px; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link.active i { color:#3c6bd7; }
+body:has(.dashboard-refresh) #sidebar .sidebar-submenu { background:#f7f9fc; border-left:1px solid #e3eaf4; border-radius:0 10px 10px 0; margin-left:22px; padding-left:0; }
+body:has(.dashboard-refresh) #sidebar .sidebar-bottom { border-top:1px solid #eef2f7; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link.logout { color:#c65c66; }
+body:has(.dashboard-refresh) #sidebar .sidebar-link:focus-visible { outline:3px solid #aac4ff; outline-offset:2px; }
 </style>

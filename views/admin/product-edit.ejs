@@ -85,6 +85,10 @@
     .stan-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--stan-border); }
     .btn-secondary { padding: 12px 24px; border-radius: 12px; border: 1px solid var(--stan-border); background: #fff; color: var(--stan-text); font-weight: 700; cursor: pointer; transition: 0.2s; }
     .btn-primary { padding: 12px 30px; border-radius: 12px; background: var(--stan-primary); color: #fff; border: none; font-weight: 800; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(88, 80, 236, 0.2); }
+    .access-link-row { background: #f0fdf4; border: 1px solid #d1ead9; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .access-link-remove { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: 1px solid #f3c7c7; border-radius: 10px; background: #fff1f2; color: #b42332; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+    .access-link-remove:hover { background: #ffe4e6; }
+    .access-link-remove:focus-visible { outline: 2px solid #b42332; outline-offset: 3px; }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88, 80, 236, 0.3); }
 
     /* Pricing Tabs */
@@ -314,9 +318,33 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         <div id="productAccessFields" style="<%= (p.type || p.product_type) === 'ticket' || (p.type || p.product_type) === 'tiket' ? 'display:none' : '' %>">
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">2</div> Product Access</div>
                         <div class="stan-group">
-                            <label class="stan-label">Access Link (URL)</label>
-                            <input type="url" name="download_url" class="stan-input" value="<%= p.download_url || p.access_url || '' %>" placeholder="https://drive.google.com/...">
-                            <p style="font-size:11px; color:#94a3b8; margin-top:8px;">Customers will be redirected here after successful payment.</p>
+                            <input type="hidden" name="access_links_present" value="1">
+                            <div id="accessLinkRows">
+                                <% const accessLinks = getAccessLinks(p); (accessLinks.length ? accessLinks : [{name:'',url:''}]).forEach(link => { %>
+                                <div class="access-link-row">
+                                    <label class="stan-label">Nama Link<input type="text" name="access_link_name" class="stan-input" maxlength="100" value="<%= link.name %>" placeholder="Contoh: Grup Telegram atau Materi"></label>
+                                    <label class="stan-label">Access Link (URL)<input type="url" name="access_link_url" class="stan-input" maxlength="2048" pattern="https?://.*" value="<%= link.url %>" placeholder="https://drive.google.com/..."></label>
+                                    <button type="button" class="access-link-remove" onclick="this.closest('.access-link-row').remove()"><i class="fas fa-trash-alt" aria-hidden="true"></i> Hapus Link</button>
+                                </div>
+                                <% }); %>
+                            </div>
+                            <button type="button" class="btn-primary" onclick="addAccessLink()">+ Tambah Link Akses</button>
+                            <p style="font-size:12px; color:#64748b; margin-top:8px;">Pembeli dapat membuka semua link ini setelah pembayaran berhasil. Maksimal 20 link.</p>
+                            <template id="accessLinkTemplate">
+                                <div class="access-link-row">
+                                    <label class="stan-label">Nama Link<input type="text" name="access_link_name" class="stan-input" maxlength="100" placeholder="Contoh: Grup Telegram atau Materi"></label>
+                                    <label class="stan-label">Access Link (URL)<input type="url" name="access_link_url" class="stan-input" maxlength="2048" pattern="https?://.*" placeholder="https://drive.google.com/..."></label>
+                                    <button type="button" class="access-link-remove" onclick="this.closest('.access-link-row').remove()"><i class="fas fa-trash-alt" aria-hidden="true"></i> Hapus Link</button>
+                                </div>
+                            </template>
+                            <script>
+                            function addAccessLink() {
+                                const rows = document.getElementById('accessLinkRows');
+                                if (rows.children.length >= 20) return alert('Maksimal 20 link akses per produk.');
+                                rows.appendChild(document.getElementById('accessLinkTemplate').content.cloneNode(true));
+                                rows.lastElementChild.querySelector('input').focus();
+                            }
+                            </script>
                         </div>
                         </div>
 

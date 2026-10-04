@@ -1,3 +1,4 @@
+const { getAccessLinks } = require('../utils/productAccess');
 const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
@@ -1165,7 +1166,7 @@ exports.ipaymuCallback = async (req, res) => {
                     }
 
                     // 4. Send Access Email Automatically (for non-ticket products)
-                    if (!isTicketProduct && order.customer_email && order.access_link) {
+                    if (!isTicketProduct && order.customer_email && (order.download_url || order.access_link)) {
                         const baseUrl = `https://${req.get('host')}`;
                         const { sendAccessEmail } = require('../utils/mailer');
                         sendAccessEmail(
@@ -1256,7 +1257,7 @@ exports.handleAccessLink = async (req, res) => {
         
         // Fetch product access link
         const [rows] = await db.execute(`
-            SELECT p.access_link 
+            SELECT p.*, o.status AS order_status
             FROM orders o 
             LEFT JOIN products p ON o.product_id = p.id 
             WHERE o.id = ?
@@ -1264,11 +1265,15 @@ exports.handleAccessLink = async (req, res) => {
 
         if (rows.length === 0) return res.redirect('/');
 
+        if (rows[0].order_status !== 'completed') return res.status(403).send('Selesaikan pembayaran untuk mengakses produk.');
+        const links = getAccessLinks(rows[0]);
+
         // Log the click
         await db.execute("INSERT INTO email_logs (order_id, event_name, created_at) VALUES (?, 'Clicked', NOW())", [orderId]);
 
         // Redirect to actual access link
-        res.redirect(rows[0].access_link || '/');
+        if (links.length === 1) return res.redirect(links[0].url);
+        res.render('product-access', { layout: false, product: rows[0], links });
     } catch (err) {
         console.error('Handle Access Link Error:', err);
         res.redirect('/');

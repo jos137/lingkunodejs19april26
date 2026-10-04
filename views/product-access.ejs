@@ -1,0 +1,7 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Akses Produk</title>
+<style>body{margin:0;background:#f8fafc;color:#1e293b;font:16px system-ui}main{max-width:520px;margin:60px auto;padding:28px;background:white;border-radius:20px}h1{font-size:26px}p{color:#64748b;line-height:1.6}a{display:block;padding:16px 20px;margin-top:12px;background:#5850ec;color:white;text-decoration:none;border-radius:12px;overflow-wrap:anywhere}a:hover{background:#4338ca}@media(max-width:600px){main{margin:24px 16px}}</style></head>
+<body><main><p>Pembayaran berhasil</p><h1><%= product.name || product.title || 'Akses Produk' %></h1>
+<p><%= links.length ? 'Pilih materi atau grup yang ingin Anda buka.' : 'Link akses belum tersedia. Silakan hubungi penjual.' %></p>
+<% links.forEach(link => { %><a href="<%= link.url %>" target="_blank" rel="noopener noreferrer"><%= link.name || 'Akses Produk' %> ↗</a><% }); %>
+</main></body></html>

@@ -1,0 +1,1 @@
+Salin dashboard.ejs dari folder ini ke views/admin/dashboard.ejs untuk mengembalikan sidebar lama tanpa membatalkan desain dashboard yang telah disetujui. Sidebar baru dibatasi hanya pada halaman dashboard.
