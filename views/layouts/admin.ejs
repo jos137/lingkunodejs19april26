@@ -495,11 +495,7 @@ body:has(#sidebar.theme-minimalis) :is(.cat-modal,.editor-modal,.cat-card,.ed-in
         if (planLabel === 'ADMIN') mainColor = '#eab308';
         else if (planLabel === 'PRO') mainColor = '#10b981';
         
-        let currentTheme = user.sidebar_theme || 'default';
-        // Auto-apply Stan theme for non-admins if they are on default
-        if (user.role !== 'admin' && currentTheme === 'default') {
-            currentTheme = 'stan';
-        }
+        const currentTheme = user.sidebar_theme || 'default';
     %>
     <aside class="sidebar <%= currentTheme !== 'default' ? 'theme-' + currentTheme : '' %>" id="sidebar">
         <div class="sidebar-logo" style="justify-content: space-between; align-items: center;">
