@@ -677,6 +677,20 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
         }
     }
 
+    // Use explicit line breaks so spacing is consistent in the editor and checkout.
+    document.getElementById('richEditor').addEventListener('beforeinput', function(event) {
+        if (event.inputType !== 'insertParagraph' || event.isComposing) return;
+        const selection = window.getSelection();
+        const node = selection.anchorNode;
+        const element = node && (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement);
+        // Preserve native list behavior, including Enter to create or exit a bullet.
+        if (element && element.closest('li')) return;
+        event.preventDefault();
+        document.execCommand('insertLineBreak');
+        document.execCommand('insertLineBreak');
+        syncDescriptionFormatting(this);
+    });
+
     let descriptionSelection = null;
     function rememberDescriptionSelection() {
         const selection = window.getSelection();
