@@ -8,6 +8,7 @@
         --stan-border: #e5e7eb;
     }
 
+    label:has(> #descriptionFont:focus-visible) { outline:2px solid var(--stan-primary); outline-offset:2px; }
     body { background-color: var(--stan-bg); font-family: 'Plus Jakarta Sans', sans-serif; }
 
     .stan-container {
@@ -280,7 +281,28 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             <label class="stan-label">Description Body</label>
                             <div style="border:1.5px solid var(--stan-border); border-radius:12px; overflow:hidden;">
                                 <div style="padding:10px; background:#f9fafb; border-bottom:1px solid var(--stan-border); display:flex; gap:8px; flex-wrap: wrap;">
-                                    <button type="button" onclick="execCmd('foreColor', prompt('Enter color hex (e.g. #ff0000):', '#000000'))" title="Text Color" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-font" style="border-bottom: 2px solid #000;"></i></button>
+                                    <label title="Jenis huruf" style="position:relative;display:inline-flex;width:34px;height:32px;align-items:center;justify-content:center;border:1px solid #dce2e9;border-radius:7px;background:#fff;color:#334155;"><i class="fas fa-font" aria-hidden="true"></i>
+                                    <select id="descriptionFont" aria-label="Jenis huruf deskripsi" onpointerdown="rememberDescriptionSelection()" onchange="applyDescriptionFont(this.value)" title="Jenis huruf" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;">
+                                        <option value="">Jenis huruf</option>
+                                        <option value="Times New Roman">Times New Roman</option>
+                                        <option value="Arial">Arial</option>
+                                        <option value="Calibri">Calibri</option>
+                                        <option value="Georgia">Georgia</option>
+                                        <option value="Garamond">Garamond</option>
+                                        <option value="Verdana">Verdana</option>
+                                        <option value="Courier New">Courier New</option>
+                                        <option value="Helvetica">Helvetica</option>
+                                        <option value="Palatino">Palatino</option>
+                                        <option value="Roboto">Roboto</option>
+                                        <option value="Open Sans">Open Sans</option>
+                                    </select>
+                                    </label>
+                                    <select id="descriptionSize" aria-label="Ukuran huruf deskripsi" onpointerdown="rememberDescriptionSelection()" onchange="applyDescriptionSize(this.value)" style="height:32px;padding:0 8px;border:1px solid #dce2e9;border-radius:7px;background:#fff;color:#334155;font-size:12px;">
+                                        <% for (let size = 8; size <= 24; size++) { %><option value="<%= size %>"><%= size %></option><% } %>
+                                    </select>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;">Warna
+                                        <input type="color" id="descriptionColor" aria-label="Warna teks deskripsi" value="#111827" onpointerdown="rememberDescriptionSelection()" oninput="applyDescriptionColor(this.value)" style="width:32px;height:32px;padding:2px;border:1px solid #dce2e9;border-radius:7px;background:#fff;cursor:pointer;">
+                                    </label>
                                     <button type="button" onclick="execCmd('bold')" title="Bold" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-bold"></i></button>
                                     <button type="button" onclick="execCmd('strikeThrough')" title="Strikethrough" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-strikethrough"></i></button>
                                     <button type="button" onclick="execCmd('italic')" title="Italic" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-italic"></i></button>
@@ -653,6 +675,93 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
             }
             reader.readAsDataURL(input.files[0]);
         }
+    }
+
+    let descriptionSelection = null;
+    function rememberDescriptionSelection() {
+        const selection = window.getSelection();
+        const editor = document.getElementById('richEditor');
+        if (selection.rangeCount && editor.contains(selection.getRangeAt(0).commonAncestorContainer)) {
+            descriptionSelection = selection.getRangeAt(0).cloneRange();
+        }
+    }
+    document.addEventListener('selectionchange', rememberDescriptionSelection);
+
+    function applyDescriptionFont(font) {
+        const picker = document.getElementById('descriptionFont');
+        if (!font || !Array.from(picker.options).some(option => option.value === font)) return;
+        const editor = document.getElementById('richEditor');
+        editor.focus();
+        const selection = window.getSelection();
+        if (descriptionSelection && editor.contains(descriptionSelection.commonAncestorContainer)) {
+            selection.removeAllRanges();
+            selection.addRange(descriptionSelection);
+        }
+        // CSS spans preserve the font through public-page HTML sanitization.
+        const previousCssMode = document.queryCommandState('styleWithCSS');
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('fontName', false, font);
+        document.execCommand('styleWithCSS', false, previousCssMode);
+        rememberDescriptionSelection();
+        document.getElementById('hiddenDesc').value = editor.innerHTML;
+        updatePreview('desc', editor.innerHTML);
+    }
+
+    function restoreDescriptionSelection() {
+        const editor = document.getElementById('richEditor');
+        const savedRange = descriptionSelection && descriptionSelection.cloneRange();
+        editor.focus();
+        const selection = window.getSelection();
+        if (savedRange && editor.contains(savedRange.commonAncestorContainer)) {
+            selection.removeAllRanges();
+            selection.addRange(savedRange);
+        }
+        return editor;
+    }
+
+    function syncDescriptionFormatting(editor) {
+        rememberDescriptionSelection();
+        document.getElementById('hiddenDesc').value = editor.innerHTML;
+        updatePreview('desc', editor.innerHTML);
+    }
+
+    function applyDescriptionSize(value) {
+        const size = Number(value);
+        if (!Number.isInteger(size) || size < 8 || size > 24) return;
+        const editor = restoreDescriptionSelection();
+        const selection = window.getSelection();
+        if (!selection.rangeCount || selection.isCollapsed) {
+            alert('Blok teks yang ingin diubah ukurannya terlebih dahulu.');
+            return;
+        }
+        const cssMode = document.queryCommandState('styleWithCSS');
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('fontSize', false, '7');
+        editor.querySelectorAll('span, font[size="7"]').forEach(element => {
+            if (element.style.fontSize === 'xxx-large' || element.getAttribute('size') === '7') {
+                if (element.tagName === 'FONT') {
+                    const span = document.createElement('span');
+                    span.style.cssText = element.style.cssText;
+                    if (element.face) span.style.fontFamily = element.face;
+                    if (element.color) span.style.color = element.color;
+                    span.style.fontSize = size + 'px';
+                    while (element.firstChild) span.appendChild(element.firstChild);
+                    element.replaceWith(span);
+                } else element.style.fontSize = size + 'px';
+            }
+        });
+        document.execCommand('styleWithCSS', false, cssMode);
+        syncDescriptionFormatting(editor);
+    }
+
+    function applyDescriptionColor(color) {
+        if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+        const editor = restoreDescriptionSelection();
+        const cssMode = document.queryCommandState('styleWithCSS');
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, color);
+        document.execCommand('styleWithCSS', false, cssMode);
+        syncDescriptionFormatting(editor);
     }
 
     function execCmd(cmd, val) { 
