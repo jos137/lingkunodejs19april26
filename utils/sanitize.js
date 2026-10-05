@@ -5,11 +5,24 @@ const sanitizeHtml = require('sanitize-html');
 const cleanHtml = (dirty) => {
     if (dirty === null || dirty === undefined) return '';
     return sanitizeHtml(String(dirty), {
-        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'a', 'img'],
+        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'div', 'a', 'img'],
         allowedAttributes: {
-            a: ['href', 'title', 'target', 'rel'],
+            a: ['href', 'title', 'target', 'rel', 'style'],
             img: ['src', 'alt', 'title'],
-            span: ['style']
+            ...Object.fromEntries(['b', 'i', 'em', 'strong', 'u', 'p', 'ul', 'ol', 'li', 'span', 'div'].map(tag => [tag, ['style']]))
+        },
+        allowedStyles: {
+            '*': {
+                color: [/^#[0-9a-f]{3,8}$/i, /^rgba?\([\d\s.,%]+\)$/i, /^[a-z]+$/i],
+                'background-color': [/^#[0-9a-f]{3,8}$/i, /^rgba?\([\d\s.,%]+\)$/i, /^[a-z]+$/i],
+                'font-family': [/^[a-z0-9\s,'"-]+$/i],
+                'font-size': [/^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i, /^(?:xx-small|x-small|small|medium|large|x-large|xx-large|xxx-large)$/],
+                'font-weight': [/^(?:normal|bold|bolder|lighter|[1-9]00)$/],
+                'font-style': [/^(?:normal|italic|oblique)$/],
+                'text-decoration': [/^(?:none|underline|line-through|overline)(?:\s+(?:underline|line-through|overline))*$/],
+                'text-align': [/^(?:left|right|center|justify|start|end)$/],
+                'line-height': [/^(?:normal|\d+(?:\.\d+)?(?:px|em|rem|%)?)$/]
+            }
         },
         allowedSchemes: ['http', 'https', 'mailto', 'tel'],
         // Paksa link eksternal aman
