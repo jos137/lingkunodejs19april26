@@ -55,6 +55,19 @@ CREATE TABLE IF NOT EXISTS orders (
     FOREIGN KEY (seller_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS product_price_history (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    user_id INT NOT NULL,
+    event_type VARCHAR(40) NOT NULL,
+    stage TINYINT,
+    price DECIMAL(15,2),
+    stock INT,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_product_history (product_id, created_at)
+);
+
 CREATE TABLE IF NOT EXISTS pages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,

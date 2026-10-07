@@ -17,6 +17,16 @@ async function syncPricingTier(product) {
         product.stock = nextStock;
         product.pricing_stage = stage;
         await db.execute('UPDATE products SET price = ?, stock = ?, pricing_stage = ? WHERE id = ?', [nextPrice, nextStock, stage, product.id]);
+        try {
+            await db.execute(
+                'INSERT INTO product_price_history (product_id, user_id, event_type, stage, price, stock, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [product.id, product.user_id, 'automatic_transition', stage, nextPrice, nextStock, `Harga otomatis berpindah ke tahap ${stage}`]
+            );
+            await db.execute(
+                'INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)',
+                [product.user_id, 'Harga produk berubah', `${product.name} sekarang menggunakan harga tahap ${stage}: Rp ${nextPrice.toLocaleString('id-ID')}.`, 'warning', `/admin/products/${product.id}/edit`]
+            );
+        } catch (notificationError) {}
     }
     return product;
 }
@@ -603,9 +613,28 @@ exports.processCheckout = async (req, res) => {
 
         // 1. Decrease Stock (Balance with DB) - Only if NOT unlimited
         if (product.stock !== -1) {
-            const [stockUpdate] = await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [product_id]);
+            const activeStockColumn = `stock_stage_${Math.min(3, Math.max(1, Number(product.pricing_stage || 1)))}`;
+            const [stockUpdate] = await db.execute(
+                `UPDATE products SET stock = stock - 1, ${activeStockColumn} = ${activeStockColumn} - 1 WHERE id = ? AND stock > 0 AND ${activeStockColumn} > 0`,
+                [product_id]
+            );
             if (!stockUpdate.affectedRows) return res.status(400).send('Stok produk baru saja habis.');
             product.stock -= 1;
+            if (product.stock > 0 && product.stock <= 2 && Number(product.pricing_stage || 1) < 3) {
+                try {
+                    const nextStage = Number(product.pricing_stage || 1) + 1;
+                    const [recentNotice] = await db.execute(
+                        "SELECT id FROM notifications WHERE user_id = ? AND title = 'Stok tahap hampir habis' AND message LIKE ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 DAY) LIMIT 1",
+                        [product.user_id, `${product.name}%`]
+                    );
+                    if (!recentNotice.length) {
+                        await db.execute(
+                            'INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)',
+                            [product.user_id, 'Stok tahap hampir habis', `${product.name} tersisa ${product.stock} stok pada tahap ${product.pricing_stage}. Tahap ${nextStage} akan aktif berikutnya.`, 'warning', `/admin/products/${product.id}/edit`]
+                        );
+                    }
+                } catch (notificationError) {}
+            }
             await syncPricingTier(product);
         }
 

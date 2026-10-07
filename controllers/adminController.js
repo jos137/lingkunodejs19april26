@@ -268,10 +268,16 @@ exports.getProductEdit = async (req, res) => {
     try {
         const [rows] = await db.execute('SELECT * FROM products WHERE id = ?', [req.params.id]);
         if (rows.length === 0) return res.redirect('/admin/products');
+        let priceHistory = [];
+        try {
+            const [history] = await db.execute('SELECT * FROM product_price_history WHERE product_id = ? ORDER BY id DESC LIMIT 20', [req.params.id]);
+            priceHistory = history;
+        } catch (historyError) {}
         res.render('admin/product-edit', {
             title: 'Edit Produk',
             layout: './layouts/admin',
             product: rows[0],
+            priceHistory,
             getAccessLinks,
             user: req.session.user || res.locals.user
         });
@@ -312,17 +318,20 @@ exports.updateProduct = async (req, res) => {
         const configuredStage3Price = parseFloat(req.body.price_stage_3) || 0;
         const stage1StockInput = String(req.body.stock_stage_1 ?? '').trim();
         const configuredStage1Stock = stage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(stage1StockInput) || 0);
+        const configuredStage2Stock = parseInt(req.body.stock_stage_2) || 0;
+        const configuredStage3Stock = parseInt(req.body.stock_stage_3) || 0;
+        const activeStageStock = pricingStage === 3 ? configuredStage3Stock : (pricingStage === 2 ? configuredStage2Stock : configuredStage1Stock);
         const updates = {
             name: req.body.name || '',
             description: req.body.description || '',
             price: pricingStage === 3 ? configuredStage3Price : (pricingStage === 2 ? configuredStage2Price : configuredStage1Price),
-            stock: pricingStage > 1 ? (parseInt(req.body.current_stock) || 0) : configuredStage1Stock,
+            stock: activeStageStock,
             price_stage_1: configuredStage1Price,
             price_stage_2: configuredStage2Price || null,
             price_stage_3: configuredStage3Price || null,
             stock_stage_1: configuredStage1Stock >= 0 ? configuredStage1Stock : 0,
-            stock_stage_2: parseInt(req.body.stock_stage_2) || 0,
-            stock_stage_3: parseInt(req.body.stock_stage_3) || 0,
+            stock_stage_2: configuredStage2Stock,
+            stock_stage_3: configuredStage3Stock,
             pricing_stage: pricingStage,
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
@@ -399,6 +408,14 @@ exports.updateProduct = async (req, res) => {
                 await db.execute(query, params);
             } else throw dbErr;
         }
+
+        try {
+            const historyUserId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+            await db.execute(
+                'INSERT INTO product_price_history (product_id, user_id, event_type, stage, price, stock, note) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [id, historyUserId, 'manual_update', pricingStage, updates.price, updates.stock, 'Pengaturan harga dan stok diperbarui']
+            );
+        } catch (historyError) {}
 
         res.redirect('/admin/products');
     } catch (err) {

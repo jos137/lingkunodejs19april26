@@ -66,6 +66,21 @@ async function runAutoHeal() {
         `);
         try { await db.execute("ALTER TABLE notifications ADD COLUMN link VARCHAR(255) AFTER type"); } catch(e){}
 
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS product_price_history (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                product_id INT NOT NULL,
+                user_id INT NOT NULL,
+                event_type VARCHAR(40) NOT NULL,
+                stage TINYINT,
+                price DECIMAL(15,2),
+                stock INT,
+                note VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_product_history (product_id, created_at)
+            )
+        `);
+
         // 4. FEATURE FLAGS
         await db.execute(`
             CREATE TABLE IF NOT EXISTS feature_flags (

@@ -263,16 +263,26 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div class="stan-group" style="grid-column:1/-1"><label class="stan-label">Harga Normal (Rp) <span style="font-weight:400;color:#94a3b8">— tampil tercoret</span></label><input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>"><small>Harga pembanding yang tetap tampil.</small></div>
                             </div>
                         </div>
+                        <% if (typeof priceHistory !== 'undefined' && priceHistory.length) { %>
+                        <div style="margin-top:18px;padding:14px 16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;">
+                            <div style="font-size:12px;font-weight:800;color:#334155;margin-bottom:9px;">Riwayat Harga & Stok</div>
+                            <div style="display:grid;gap:6px;max-height:140px;overflow:auto;">
+                            <% priceHistory.slice(0, 8).forEach(h => { %>
+                                <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#64748b;"><span><%= h.note || h.event_type %></span><strong style="color:#334155;">Rp <%= Number(h.price || 0).toLocaleString('id-ID') %> · <%= h.stock ?? 0 %> stok</strong></div>
+                            <% }); %>
+                            </div>
+                        </div>
+                        <% } %>
 
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">6</div> Stock Inventory</div>
                         <div class="stan-group">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                                <label class="stan-label" style="margin-bottom:0;">Stock Availability</label>
+                                <label class="stan-label" style="margin-bottom:0;">Stok Live (otomatis)</label>
                                 <label style="font-size:12px; color:var(--stan-primary); font-weight:700; cursor:pointer;">
                                     <input type="checkbox" id="unlCheck" <%= p.stock == -1 ? 'checked' : '' %> onchange="toggleStock(this)"> Unlimited
                                 </label>
                             </div>
-                            <input type="number" name="stock" id="stockInp" class="stan-input" value="<%= p.stock || 0 %>" <%= p.stock == -1 ? 'readonly style=background:#f3f4f6;color:#94a3b8' : '' %>>
+                            <input type="number" name="stock" id="stockInp" class="stan-input" value="<%= p.stock ?? 0 %>" readonly style="background:#f3f4f6;color:#64748b;cursor:not-allowed" title="Stok live mengikuti tahap harga yang aktif">
                         </div>
                     </div>
                 </div>
@@ -827,13 +837,16 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 
     function toggleStock(chk) {
         var inp = document.getElementById('stockInp');
+        var stageOneInp = document.querySelector('[name="stock_stage_1"]');
         if (chk.checked) {
             inp.value = -1;
+            if (stageOneInp) stageOneInp.value = '';
             inp.readOnly = true;
             inp.style.background = '#f3f4f6';
             inp.style.color = '#94a3b8';
         } else {
             inp.value = 0;
+            if (stageOneInp && stageOneInp.value === '') stageOneInp.value = 0;
             inp.readOnly = false;
             inp.style.background = '#fff';
             inp.style.color = '#111827';
