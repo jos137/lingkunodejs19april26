@@ -29,13 +29,23 @@ exports.getDashboardData = async (req, res) => {
             totalSales = revRow[0].total_sales;
         } catch(e) { console.log('Revenue query skipped:', e.message); }
 
-        // Balance (Always Cumulative - Saldo tidak dipicu per tanggal)
+        // Saldo tersedia bersifat kumulatif: pendapatan bersih completed dikurangi penarikan.
+        // commission_amount is the affiliate commission already excluded when merchant balance is credited.
         let balance = 0;
         try {
-            const [allRevRow] = await db.execute(
-                "SELECT COALESCE(SUM(total_price), 0) as total_revenue FROM orders WHERE user_id = ? AND status = 'completed'",
-                [userId]
-            );
+            let allRevRow;
+            try {
+                [allRevRow] = await db.execute(
+                    "SELECT COALESCE(SUM(total_price - COALESCE(commission_amount, 0)), 0) as total_revenue FROM orders WHERE user_id = ? AND status = 'completed'",
+                    [userId]
+                );
+            } catch (netQueryError) {
+                // Compatibility with older databases before commission_amount existed.
+                [allRevRow] = await db.execute(
+                    "SELECT COALESCE(SUM(total_price), 0) as total_revenue FROM orders WHERE user_id = ? AND status = 'completed'",
+                    [userId]
+                );
+            }
             const [wdRow] = await db.execute(
                 "SELECT COALESCE(SUM(amount), 0) as total_wd FROM withdrawals WHERE user_id = ? AND status IN ('completed','pending')",
                 [userId]
