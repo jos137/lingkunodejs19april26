@@ -5,7 +5,7 @@ const sanitizeHtml = require('sanitize-html');
 const cleanHtml = (dirty) => {
     if (dirty === null || dirty === undefined) return '';
     return sanitizeHtml(String(dirty), {
-        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'ul', 'ol', 'li', 'span', 'div', 'a', 'img'],
+        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'hr', 'ul', 'ol', 'li', 'span', 'div', 'a', 'img'],
         allowedAttributes: {
             a: ['href', 'title', 'target', 'rel', 'style'],
             img: ['src', 'alt', 'title'],

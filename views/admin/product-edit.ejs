@@ -1,4 +1,5 @@
 <style>
+    #richEditor hr, #prevMainDesc hr { border:0; border-top:1px solid #d5dce5; margin:20px 0; clear:both; }
     :root {
         --stan-primary: #5850ec;
         --stan-bg: #f9fafb;
@@ -243,21 +244,23 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                             </div>
                         </div>
 
-                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Set Price</div>
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Pricing Bertahap</div>
                         <div class="pricing-toggle">
                             <div class="pt-item <%= p.price > 0 ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Fixed Price</div>
                             <div class="pt-item <%= p.price == 0 ? 'active' : '' %>" onclick="setPriceMode('free', this)">Free</div>
                         </div>
                         <div id="price-fields" style="display: <%= p.price == 0 ? 'none' : 'block' %>">
+                            <input type="hidden" name="pricing_stage" value="<%= p.pricing_stage || 1 %>">
+                            <input type="hidden" name="current_stock" value="<%= p.stock ?? 0 %>">
+                            <input type="hidden" name="current_price" value="<%= p.price ?? 0 %>">
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-                                <div class="stan-group">
-                                    <label class="stan-label">Price (Rp)</label>
-                                    <input type="number" name="price" class="stan-input" value="<%= p.price || '' %>" oninput="updatePreview('price', this.value)">
-                                </div>
-                                <div class="stan-group">
-                                    <label class="stan-label">Normal Price (Rp) - <span style="font-weight:400;color:#94a3b8">Strike through</span></label>
-                                    <input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>">
-                                </div>
+                                <div class="stan-group"><label class="stan-label">Flash Sale (Rp)</label><input type="number" name="price_stage_1" class="stan-input" value="<%= p.price_stage_1 || p.price || '' %>" oninput="updatePreview('price', this.value)"><small>Harga flash sale</small></div>
+                                <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_1" class="stan-input" min="0" value="<%= p.stock_stage_1 ?? (p.stock >= 0 ? p.stock : '') %>"><small>Jumlah stok flash sale</small></div>
+                                <div class="stan-group"><label class="stan-label">Spesial Promo (Rp)</label><input type="number" name="price_stage_2" class="stan-input" min="0" value="<%= p.price_stage_2 || '' %>"></div>
+                                <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_2" class="stan-input" min="0" value="<%= p.stock_stage_2 || '' %>"></div>
+                                <div class="stan-group"><label class="stan-label">Diskon (Rp)</label><input type="number" name="price_stage_3" class="stan-input" min="0" value="<%= p.price_stage_3 || '' %>"></div>
+                                <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_3" class="stan-input" min="0" value="<%= p.stock_stage_3 || '' %>"></div>
+                                <div class="stan-group" style="grid-column:1/-1"><label class="stan-label">Harga Normal (Rp) <span style="font-weight:400;color:#94a3b8">— tampil tercoret</span></label><input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>"><small>Harga pembanding yang tetap tampil.</small></div>
                             </div>
                         </div>
 
@@ -309,6 +312,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                     <button type="button" onclick="execCmd('insertUnorderedList')" title="Bullet List" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-list-ul"></i></button>
                                     <div style="width:1px; height:20px; background:#e2e8f0; margin: 5px 4px;"></div>
                                     <button type="button" onclick="execCmd('insertImage', prompt('Enter Image URL:'))" title="Insert Image" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-image"></i></button>
+                                    <button type="button" onpointerdown="rememberDescriptionSelection(); event.preventDefault()" onclick="insertDescriptionDivider()" title="Garis horizontal" aria-label="Sisipkan garis horizontal" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-minus" aria-hidden="true"></i></button>
                                     <button type="button" onclick="insertVideo()" title="Insert Video" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-play"></i></button>
                                     <button type="button" onclick="execCmd('createLink', prompt('Enter Link URL:', 'https://'))" title="Insert Link" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-link"></i></button>
                                 </div>
@@ -775,6 +779,12 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, color);
         document.execCommand('styleWithCSS', false, cssMode);
+        syncDescriptionFormatting(editor);
+    }
+
+    function insertDescriptionDivider() {
+        const editor = restoreDescriptionSelection();
+        document.execCommand('insertHorizontalRule', false, null);
         syncDescriptionFormatting(editor);
     }
 

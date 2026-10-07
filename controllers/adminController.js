@@ -306,11 +306,24 @@ exports.updateProduct = async (req, res) => {
             await db.execute('ALTER TABLE products ADD event_location VARCHAR(255)');
         }
         
+        const pricingStage = Math.min(3, Math.max(1, parseInt(req.body.pricing_stage) || 1));
+        const configuredStage1Price = parseFloat(req.body.price_stage_1 ?? req.body.price) || 0;
+        const configuredStage2Price = parseFloat(req.body.price_stage_2) || 0;
+        const configuredStage3Price = parseFloat(req.body.price_stage_3) || 0;
+        const stage1StockInput = String(req.body.stock_stage_1 ?? '').trim();
+        const configuredStage1Stock = stage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(stage1StockInput) || 0);
         const updates = {
             name: req.body.name || '',
             description: req.body.description || '',
-            price: parseFloat(req.body.price) || 0,
-            stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 0),
+            price: pricingStage === 3 ? configuredStage3Price : (pricingStage === 2 ? configuredStage2Price : configuredStage1Price),
+            stock: pricingStage > 1 ? (parseInt(req.body.current_stock) || 0) : configuredStage1Stock,
+            price_stage_1: configuredStage1Price,
+            price_stage_2: configuredStage2Price || null,
+            price_stage_3: configuredStage3Price || null,
+            stock_stage_1: configuredStage1Stock >= 0 ? configuredStage1Stock : 0,
+            stock_stage_2: parseInt(req.body.stock_stage_2) || 0,
+            stock_stage_3: parseInt(req.body.stock_stage_3) || 0,
+            pricing_stage: pricingStage,
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
@@ -350,6 +363,13 @@ exports.updateProduct = async (req, res) => {
             if (dbErr.message.includes('Unknown column')) {
                 const addCols = [
                     'ALTER TABLE products ADD stock INT DEFAULT 0',
+                    'ALTER TABLE products ADD price_stage_1 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD price_stage_2 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD price_stage_3 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD stock_stage_1 INT DEFAULT 0',
+                    'ALTER TABLE products ADD stock_stage_2 INT DEFAULT 0',
+                    'ALTER TABLE products ADD stock_stage_3 INT DEFAULT 0',
+                    'ALTER TABLE products ADD pricing_stage TINYINT DEFAULT 1',
                     'ALTER TABLE products ADD download_url TEXT',
                     'ALTER TABLE products ADD access_links TEXT',
                     'ALTER TABLE products ADD access_link TEXT',
@@ -390,12 +410,21 @@ exports.updateProduct = async (req, res) => {
 exports.createProductPost = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+        const createStage1StockInput = String(req.body.stock_stage_1 ?? '').trim();
+        const createStage1Stock = createStage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(createStage1StockInput) || 0);
         const data = {
             user_id: userId,
             name: req.body.name || '',
             description: req.body.description || '',
-            price: parseFloat(req.body.price) || 0,
-            stock: req.body.stock === '-1' ? -1 : (parseInt(req.body.stock) || 999),
+            price: parseFloat(req.body.price_stage_1 ?? req.body.price) || 0,
+            stock: createStage1Stock === -1 ? -1 : createStage1Stock,
+            price_stage_1: parseFloat(req.body.price_stage_1) || parseFloat(req.body.price) || 0,
+            price_stage_2: parseFloat(req.body.price_stage_2) || null,
+            price_stage_3: parseFloat(req.body.price_stage_3) || null,
+            stock_stage_1: createStage1Stock >= 0 ? createStage1Stock : 0,
+            stock_stage_2: parseInt(req.body.stock_stage_2) || 0,
+            stock_stage_3: parseInt(req.body.stock_stage_3) || 0,
+            pricing_stage: 1,
             product_type: req.body.type || 'digital',
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
@@ -432,6 +461,13 @@ exports.createProductPost = async (req, res) => {
             if (dbErr.message.includes('Unknown column')) {
                 const addCols = [
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock INT DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS price_stage_1 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS price_stage_2 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS price_stage_3 DECIMAL(15,2)',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_stage_1 INT DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_stage_2 INT DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS stock_stage_3 INT DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_stage TINYINT DEFAULT 1',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS download_url TEXT',
                     'ALTER TABLE products ADD access_links TEXT',
                     'ALTER TABLE products ADD access_link TEXT',

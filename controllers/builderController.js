@@ -5,6 +5,22 @@ const crypto = require('crypto');
 const { sendPaymentInstructionEmail, sendAccessEmail } = require('../utils/mailer');
 const { cleanHtml, safeUrl } = require('../utils/sanitize');
 
+async function syncPricingTier(product) {
+    let stage = Number(product.pricing_stage || 1);
+    if (!product.price_stage_1 || stage < 1 || stage > 3) return product;
+    while (stage < 3 && Number(product.stock || 0) <= 0) {
+        const nextStock = Number(product[`stock_stage_${stage + 1}`] || 0);
+        const nextPrice = Number(product[`price_stage_${stage + 1}`] || 0);
+        if (nextStock <= 0 || nextPrice <= 0) break;
+        stage += 1;
+        product.price = nextPrice;
+        product.stock = nextStock;
+        product.pricing_stage = stage;
+        await db.execute('UPDATE products SET price = ?, stock = ?, pricing_stage = ? WHERE id = ?', [nextPrice, nextStock, stage, product.id]);
+    }
+    return product;
+}
+
 // Ensure tables exist
 async function ensureTables() {
     try {
@@ -458,7 +474,7 @@ exports.renderProductPage = async (req, res) => {
         `, [productId]);
 
         if (products.length === 0) return res.status(404).send('Product not found');
-        const product = products[0];
+        const product = await syncPricingTier(products[0]);
 
         // Process image (Robust detection)
         const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
@@ -497,7 +513,7 @@ exports.renderCheckoutPage = async (req, res) => {
         const [products] = await db.execute('SELECT * FROM products WHERE id = ?', [productId]);
         if (products.length === 0) return res.status(404).send('Product not found');
         
-        const product = products[0];
+        const product = await syncPricingTier(products[0]);
 
         // Process image (Robust detection)
         const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
@@ -565,6 +581,10 @@ exports.processCheckout = async (req, res) => {
 
         // Anti-Spam Removed as requested
 
+        await syncPricingTier(product);
+        if (product.stock !== -1 && product.stock <= 0) return res.status(400).send('Stok produk habis.');
+        const salePrice = parseFloat(product.price || 0);
+
         // 3. AFFILIATE TRACKING LOGIC
         let affiliateId = null;
         let commissionAmount = 0;
@@ -576,16 +596,17 @@ exports.processCheckout = async (req, res) => {
                 if (refUsers.length > 0 && refUsers[0].id !== product.user_id) {
                     affiliateId = refUsers[0].id;
                     const commPercent = parseFloat(product.commission_percent || 0);
-                    commissionAmount = (commPercent / 100) * parseFloat(product.price || 0);
+                    commissionAmount = (commPercent / 100) * salePrice;
                 }
             } catch (e) { console.error('Affiliate Lookup Error:', e.message); }
         }
 
-        if (product.stock !== -1 && product.stock <= 0) return res.status(400).send('Stok produk habis.');
-
         // 1. Decrease Stock (Balance with DB) - Only if NOT unlimited
         if (product.stock !== -1) {
-            await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [product_id]);
+            const [stockUpdate] = await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [product_id]);
+            if (!stockUpdate.affectedRows) return res.status(400).send('Stok produk baru saja habis.');
+            product.stock -= 1;
+            await syncPricingTier(product);
         }
 
         // 2. Generate Reference ID
@@ -594,7 +615,7 @@ exports.processCheckout = async (req, res) => {
         // 4. Create Order (With Auto-Fix for Columns)
         const orderParams = [
             product.user_id, product.id, affiliateId, refId, 
-            name, email, phone, product.price, commissionAmount, payment_channel, clientIp
+            name, email, phone, salePrice, commissionAmount, payment_channel, clientIp
         ];
         const insertQuery = `
             INSERT INTO orders (user_id, product_id, affiliate_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, commission_amount, payment_channel, status, customer_ip)
@@ -656,7 +677,7 @@ exports.processCheckout = async (req, res) => {
         }
 
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
-        const finalAmount = Math.floor(product.price);
+        const finalAmount = Math.floor(salePrice);
 
         // Fixed: iPaymu anti-fraud often flags '6281234567890' or numbers starting with 0. 
         // We ensure it starts with 62 and is realistic.
@@ -738,7 +759,7 @@ exports.processCheckout = async (req, res) => {
                     customerEmail: email,
                     customerName: name,
                     productName: product.name,
-                    totalPrice: product.price,
+                    totalPrice: salePrice,
                     channel: chan,
                     paymentNo: paymentNo,
                     qrUrl: qrUrl
