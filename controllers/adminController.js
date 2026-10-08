@@ -312,7 +312,7 @@ exports.updateProduct = async (req, res) => {
             await db.execute('ALTER TABLE products ADD event_location VARCHAR(255)');
         }
         
-        const pricingStage = Math.min(3, Math.max(1, parseInt(req.body.pricing_stage) || 1));
+        let pricingStage = Math.min(3, Math.max(1, parseInt(req.body.pricing_stage) || 1));
         const configuredStage1Price = parseFloat(req.body.price_stage_1 ?? req.body.price) || 0;
         const configuredStage2Price = parseFloat(req.body.price_stage_2) || 0;
         const configuredStage3Price = parseFloat(req.body.price_stage_3) || 0;
@@ -320,6 +320,8 @@ exports.updateProduct = async (req, res) => {
         const configuredStage1Stock = stage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(stage1StockInput) || 0);
         const configuredStage2Stock = parseInt(req.body.stock_stage_2) || 0;
         const configuredStage3Stock = parseInt(req.body.stock_stage_3) || 0;
+        // Mengisi kembali stok Flash Sale memulai ulang siklus harga dari tahap 1.
+        if (pricingStage > 1 && configuredStage1Stock > 0) pricingStage = 1;
         const activeStageStock = pricingStage === 3 ? configuredStage3Stock : (pricingStage === 2 ? configuredStage2Stock : configuredStage1Stock);
         const updates = {
             name: req.body.name || '',
