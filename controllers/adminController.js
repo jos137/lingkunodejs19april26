@@ -3,7 +3,7 @@ const db = require('../config/db');
 const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
-const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail, sendBankOtpEmail, sendBankChangedEmail } = require('../utils/mailer');
+const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail, sendBankOtpEmail, sendBankChangedEmail, sendTestEmail } = require('../utils/mailer');
 
 // Mask email untuk ditampilkan di popup OTP (u***@gmail.com)
 function maskEmail(email) {
@@ -1509,7 +1509,10 @@ exports.getSettings = async (req, res) => {
             price_pro_yearly,
             enable_captcha,
             success: req.query.success,
-            tab: req.query.tab || 'profil'
+            tab: req.query.tab || 'profil',
+            smtp_test: req.query.smtp_test === 'true',
+            smtp_error: req.query.smtp_error,
+            smtp_recipient: req.query.smtp_recipient
         });
     } catch (err) {
         console.error('Get Settings Error:', err);
@@ -1532,6 +1535,21 @@ exports.updateSMTPSettings = async (req, res) => {
     } catch (err) {
         console.error('SMTP update error:', err.message);
         res.redirect('/admin/settings?tab=smtp&error=true');
+    }
+};
+
+exports.testSMTPSettings = async (req, res) => {
+    try {
+        const [rows] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'smtp_user' LIMIT 1");
+        const recipient = String(req.body.smtp_test_recipient || rows[0]?.setting_value || '').trim();
+        if (!recipient || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+            return res.redirect('/admin/settings?tab=smtp&smtp_error=' + encodeURIComponent('Isi email tujuan pengujian yang valid.'));
+        }
+        await sendTestEmail(recipient);
+        res.redirect('/admin/settings?tab=smtp&smtp_test=true&smtp_recipient=' + encodeURIComponent(recipient));
+    } catch (err) {
+        console.error('SMTP test error:', err.message);
+        res.redirect('/admin/settings?tab=smtp&smtp_error=' + encodeURIComponent('Email tes gagal dikirim. Periksa host, port, username, dan password SMTP.'));
     }
 };
 

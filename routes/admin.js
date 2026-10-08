@@ -215,6 +215,7 @@ router.post('/settings/confirm-bank-otp', adminController.confirmBankOtp);
 router.post('/settings/update-admin-theme', adminController.updateAdminTheme);
 router.post('/settings/update-announcement', adminController.updateAnnouncement);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
+router.post('/settings/test-smtp', isAdmin, adminController.testSMTPSettings);
 router.post('/settings/update-fee', adminController.updateFeeSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
 router.post('/settings/update-affiliate', adminController.updateAffiliateSettings);

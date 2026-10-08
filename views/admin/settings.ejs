@@ -515,6 +515,16 @@
                     <i class="fas fa-check-circle"></i> Berhasil menyimpan pengaturan SMTP
                 </div>
             <% } %>
+            <% if (locals.smtp_test && locals.tab === 'smtp') { %>
+                <div style="padding:14px; background:#eff6ff; border:1px solid #60a5fa; border-radius:12px; color:#1e40af; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-paper-plane"></i> Email pengujian sudah dikirim ke <%= locals.smtp_recipient || 'alamat tujuan' %>.
+                </div>
+            <% } %>
+            <% if (locals.smtp_error && locals.tab === 'smtp') { %>
+                <div style="padding:14px; background:#fff1f2; border:1px solid #fb7185; border-radius:12px; color:#9f1239; font-size:13px; font-weight:700; margin-bottom:24px;">
+                    <i class="fas fa-exclamation-circle"></i> <%= locals.smtp_error %>
+                </div>
+            <% } %>
 
             <form action="/admin/settings/update-smtp" method="POST">
                 <div class="s-group">
@@ -537,6 +547,14 @@
                 </div>
                 <hr class="s-divider">
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #ec4899, #db2777);">Simpan SMTP</button>
+            </form>
+            <form action="/admin/settings/test-smtp" method="POST" style="margin-top:12px;">
+                <div class="s-group">
+                    <label class="s-label">Email Tujuan Pengujian</label>
+                    <input class="s-input" type="email" name="smtp_test_recipient" value="<%= locals.smtp_recipient || (locals.smtp ? (smtp.smtp_user || '') : '') %>" placeholder="contoh@email.com" required>
+                </div>
+                <button type="submit" class="s-save" style="background:linear-gradient(135deg, #2563eb, #1d4ed8);"><i class="fas fa-paper-plane"></i> Kirim Email Percobaan</button>
+                <div style="margin-top:8px;color:#64748b;font-size:12px;">Email percobaan akan dikirim ke alamat yang Anda isi di atas.</div>
             </form>
         </div>
         <% } %>

@@ -17,6 +17,18 @@ async function getTransporter() {
     });
 }
 
+exports.sendTestEmail = async (recipient) => {
+    const transporter = await getTransporter();
+    const opt = transporter.options;
+    const fromEmail = opt.auth ? opt.auth.user : 'admin@lingku.xyz';
+    return transporter.sendMail({
+        from: `\"Lingku\" <${fromEmail}>`,
+        to: recipient,
+        subject: 'Tes SMTP Lingku.xyz',
+        html: '<div style="font-family:Arial,sans-serif;max-width:560px;margin:30px auto;padding:24px;border:1px solid #e5e7eb;border-radius:14px"><h2 style="color:#2563eb;margin-top:0">SMTP berhasil terhubung</h2><p>Email ini adalah pesan pengujian dari Lingku.xyz.</p><p>Jika pesan ini masuk, konfigurasi SMTP sudah siap digunakan.</p></div>'
+    });
+};
+
 exports.sendAccessEmail = async (orderId, customerEmail, customerName, productName, accessLink, baseUrl) => {
     try {
         const host = baseUrl || 'https://lingku.xyz';
