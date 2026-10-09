@@ -3,10 +3,14 @@ const assert=require('node:assert/strict');
 const {cleanHtml}=require('../utils/sanitize');
 test('published descriptions retain formatting on bold, paragraph and nested text',()=>{
  for(const tag of ['b','strong','i','em','u','p','div','span','li']) {
-  const html=cleanHtml(`<${tag} style="color: rgb(255, 38, 0);font-family: Georgia;font-size: 24px">BONUS</${tag}>`);
+const html=cleanHtml(`<${tag} style="color: rgb(255, 38, 0);font-family: Georgia;font-size: 24px">BONUS</${tag}>`);
   assert(html.includes('color:rgb(255, 38, 0)'));
   assert(html.includes('font-family:Georgia'));
-  assert(html.includes('font-size:24px'));
+assert(html.includes('font-size:24px'));
+
+const legacyFont=cleanHtml('<font color="#ff2600" size="6">Bonus</font>');
+assert(legacyFont.includes('color:#ff2600'));
+assert(legacyFont.includes('font-size:24px'));
  }
  assert(cleanHtml('<b style="color:#ff2600"><span>Bonus 1</span></b>').includes('color:#ff2600'));
 });

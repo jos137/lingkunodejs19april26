@@ -5,7 +5,7 @@ const sanitizeHtml = require('sanitize-html');
 const cleanHtml = (dirty) => {
     if (dirty === null || dirty === undefined) return '';
     return sanitizeHtml(String(dirty), {
-        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'hr', 'ul', 'ol', 'li', 'span', 'div', 'a', 'img'],
+        allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'hr', 'ul', 'ol', 'li', 'span', 'div', 'font', 'a', 'img'],
         allowedAttributes: {
             a: ['href', 'title', 'target', 'rel', 'style'],
             img: ['src', 'alt', 'title'],
@@ -27,6 +27,18 @@ const cleanHtml = (dirty) => {
         allowedSchemes: ['http', 'https', 'mailto', 'tel'],
         // Paksa link eksternal aman
         transformTags: {
+            font: (tagName, attribs) => {
+                const sizeMap = { '1': '10px', '2': '12px', '3': '14px', '4': '16px', '5': '20px', '6': '24px', '7': '32px' };
+                const styles = [];
+                if (attribs.color) styles.push(`color:${attribs.color}`);
+                if (attribs.face) styles.push(`font-family:${attribs.face}`);
+                if (attribs.size && sizeMap[attribs.size]) styles.push(`font-size:${sizeMap[attribs.size]}`);
+                if (attribs.style) styles.push(attribs.style);
+                return {
+                    tagName: 'span',
+                    attribs: { style: styles.join(';') }
+                };
+            },
             a: (tagName, attribs) => ({
                 tagName: 'a',
                 attribs: { ...attribs, rel: 'noopener noreferrer nofollow', target: '_blank' }
