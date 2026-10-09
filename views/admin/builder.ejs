@@ -233,6 +233,7 @@
         }
         .preview-device-bottom { height: 19px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
         .preview-device-bottom::after { content: ''; height: 4px; width: 86px; border-radius: 4px; background: #25282d; }
+        .video-preview-box { width: 300px; max-width: 100%; aspect-ratio: 16/9; }
 </style>
 
 <script>
@@ -364,7 +365,7 @@ document.addEventListener('click', (e) => {
                         %>
                             <label class="b-label">URL Video (Youtube)</label>
                             <input type="text" class="b-input b-content" value="<%= block.content %>" placeholder="https://youtube.com/watch?v=..." oninput="updateVideoPreview(this)">
-                            <div class="video-preview-box" style="margin-top:10px; border-radius:12px; overflow:hidden; background:#f1f5f9; aspect-ratio:16/9; display:<%= vidId ? 'block' : 'none' %>;">
+                            <div class="video-preview-box" style="margin-top:10px; border-radius:12px; overflow:hidden; background:#f1f5f9; display:<%= vidId ? 'block' : 'none' %>;">
                                 <img src="<%= vidId ? 'https://img.youtube.com/vi/' + vidId + '/mqdefault.jpg' : '' %>" style="width:100%; height:100%; object-fit:cover;">
                             </div>
                         <% } else if (block.type === 'button') { 
@@ -546,7 +547,7 @@ function addBlock(type) {
                 <div class="custom-editor b-content" contenteditable="true" oninput="triggerAutoSave()"></div>
             </div>`;
     } else if (type === 'video') {
-        bodyHTML = `<label class="b-label">URL Video (Youtube)</label><input type="text" class="b-input b-content" placeholder="https://youtube.com/watch?v=..." oninput="triggerAutoSave()">`;
+        bodyHTML = `<label class="b-label">URL Video (Youtube)</label><input type="text" class="b-input b-content" placeholder="https://youtube.com/watch?v=..." oninput="updateVideoPreview(this)"><div class="video-preview-box" style="margin-top:10px;border-radius:12px;overflow:hidden;background:#f1f5f9;display:none;"><img style="width:100%;height:100%;object-fit:cover;"></div>`;
     } else if (type === 'button') {
         bodyHTML = `
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
@@ -822,6 +823,7 @@ function restoreBackup() {
 function updateVideoPreview(input) {
     const url = input.value;
     const box = input.nextElementSibling;
+    if (!box) { triggerAutoSave(); return; }
     const img = box.querySelector('img');
     let vidId = null;
     try {
