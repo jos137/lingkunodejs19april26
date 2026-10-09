@@ -349,8 +349,12 @@ exports.renderUserPage = async (req, res) => {
             if (b.type === 'video') {
                 try {
                     const vidData = typeof b.content === 'object' ? b.content : JSON.parse(b.content);
-                    mapped.url = safeUrl(vidData.url || b.content, '');
-                } catch(e) { mapped.url = safeUrl(b.content, ''); }
+                    const rawUrl = String(vidData.url || b.content || '').trim();
+                    mapped.url = safeUrl(/^[a-z][a-z\d+.-]*:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`, '');
+                } catch(e) {
+                    const rawUrl = String(b.content || '').trim();
+                    mapped.url = safeUrl(/^[a-z][a-z\d+.-]*:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`, '');
+                }
             }
             if (b.type === 'divider') {
                 try {

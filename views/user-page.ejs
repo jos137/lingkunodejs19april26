@@ -163,9 +163,14 @@
                 <% } else if (block.type === 'video' && block.url) { %>
                     <% 
                         function getEmbed(url) {
-                            const reg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                            const match = url.match(reg);
-                            return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}` : null;
+                            try {
+                                const parsed = new URL(/^https?:\/\//i.test(url) ? url : `https://${url}`);
+                                const host = parsed.hostname.replace(/^www\./, '');
+                                if (host === 'youtu.be') return parsed.pathname.slice(1).split('/')[0].length === 11 ? `https://www.youtube.com/embed/${parsed.pathname.slice(1).split('/')[0]}` : null;
+                                if (host !== 'youtube.com' && host !== 'youtube-nocookie.com') return null;
+                                const id = parsed.searchParams.get('v') || parsed.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/)?.[1];
+                                return id && id.length === 11 ? `https://www.youtube.com/embed/${id}` : null;
+                            } catch (e) { return null; }
                         }
                         const embedUrl = getEmbed(block.url);
                     %>
