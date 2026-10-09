@@ -609,6 +609,7 @@ exports.getOrders = async (req, res) => {
                 FROM orders 
                 WHERE status = 'pending' 
                 AND user_id = ? 
+                AND product_id > 0
                 AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
             `, [userId, expiryMins]);
 
@@ -619,6 +620,7 @@ exports.getOrders = async (req, res) => {
                     SET status = 'expired' 
                     WHERE status = 'pending' 
                     AND user_id = ? 
+                    AND product_id > 0
                     AND created_at < DATE_SUB(NOW(), INTERVAL ? MINUTE)
                 `, [userId, expiryMins]);
 
@@ -635,7 +637,7 @@ exports.getOrders = async (req, res) => {
         } catch(e) { console.error('Auto-expire err:', e.message); }
 
         // Get total count for pagination
-        let countSql = 'SELECT COUNT(*) as total FROM orders o WHERE o.user_id = ?';
+        let countSql = 'SELECT COUNT(*) as total FROM orders o WHERE o.user_id = ? AND o.product_id > 0';
         let countParams = [userId];
         
         let searchCond = '';
@@ -676,7 +678,7 @@ exports.getOrders = async (req, res) => {
                     (SELECT MAX(created_at) FROM email_logs WHERE order_id = o.id AND event_name IN ('Opened', 'Clicked')) as last_opened_at
              FROM orders o
              LEFT JOIN products p ON o.product_id = p.id
-             WHERE o.user_id = ?`;
+             WHERE o.user_id = ? AND o.product_id > 0`;
         let orderParams = [userId];
         
         if (searchCond) {
@@ -2717,7 +2719,12 @@ exports.getUpgradeOrders = async (req, res) => {
         const totalPages = Math.ceil(totalItems / limit);
 
         const [orders] = await db.execute(
-            `SELECT o.*, u.fullname as buyer_name, u.email as buyer_email
+            `SELECT o.*, u.fullname as buyer_name, u.email as buyer_email, u.expired_at as expired_at,
+                    CASE
+                        WHEN o.reference_id LIKE '%-M-%' THEN 'Bulanan (30 hari)'
+                        WHEN o.reference_id LIKE '%-Y-%' THEN 'Tahunan (12 bulan)'
+                        ELSE NULL
+                    END as package_duration
              FROM orders o
              LEFT JOIN users u ON o.customer_email = u.email
              ${whereClause}

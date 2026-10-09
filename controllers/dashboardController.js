@@ -149,6 +149,17 @@ exports.getDashboardData = async (req, res) => {
         } catch(e) { console.log('Chart merge error:', e.message); }
 
         const chartTotal = chartData.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0);
+        const isAdmin = Boolean(req.session.user && req.session.user.role === 'admin');
+        let platformSales = 0;
+        let platformTodaySales = 0;
+        if (isAdmin) {
+            try {
+                const [psRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed'");
+                platformSales = parseFloat(psRow[0].total || 0);
+                const [todayPlatformRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed' AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))");
+                platformTodaySales = parseFloat(todayPlatformRow[0].total || 0);
+            } catch (e) {}
+        }
 
         res.render('admin/dashboard', {
             title: 'Dashboard',
@@ -159,28 +170,8 @@ exports.getDashboardData = async (req, res) => {
                 total_sales: totalSales,
                 total_products: totalProducts,
                 today_sales: todaySales,
-                platform_sales: await (async () => {
-                    try {
-                        // 1. Get from recorded orders (most accurate for future)
-                        const [psRow] = await db.execute("SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE product_id = 0 AND status = 'completed'");
-                        let total = parseFloat(psRow[0].total);
-
-                        // 2. Fallback for historical data (Count PRO users not in orders)
-                        const [priceRow] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'price_pro_yearly'");
-                        const currentPrice = parseFloat(priceRow[0] ? priceRow[0].setting_value : '190000');
-                        
-                        const [orderCountRow] = await db.execute("SELECT COUNT(*) as count FROM orders WHERE product_id = 0 AND status = 'completed'");
-                        const recordedCount = orderCountRow[0].count;
-
-                        const [proUserRow] = await db.execute("SELECT COUNT(*) as count FROM users WHERE plan = 'pro'");
-                        const totalProUsers = proUserRow[0].count;
-
-                        const unrecordedProCount = Math.max(0, totalProUsers - recordedCount);
-                        total += (unrecordedProCount * currentPrice);
-
-                        return total;
-                    } catch(e) { return 0; }
-                })(),
+                platform_sales: platformSales,
+                platform_today_sales: platformTodaySales,
                 slug: slug
             },
             chartData,

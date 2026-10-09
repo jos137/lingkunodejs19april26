@@ -86,6 +86,8 @@
 .uo-table { width: 100%; border-collapse: collapse; }
 .uo-table th { text-align: left; padding: 16px; border-bottom: 1.5px solid #f1f5f9; font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
 .uo-table td { padding: 18px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13.5px; color: #374151; vertical-align: middle; }
+.uo-table tbody tr[data-order] { cursor: pointer; transition: background .15s ease; }
+.uo-table tbody tr[data-order]:hover { background: #f8faff; }
 
 .uo-user { display: flex; align-items: center; gap: 12px; }
 .uo-avatar { width: 36px; height: 36px; border-radius: 10px; background: #8b5cf6; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 14px; }
@@ -172,35 +174,56 @@
             <thead>
                 <tr>
                     <th>Pelanggan</th>
-                    <th>Reference ID</th>
                     <th>Nominal</th>
-                    <th>Metode</th>
                     <th>Status</th>
                     <th>Tanggal</th>
+                    <th>Masa Aktif</th>
+                    <th>Tanggal Expired</th>
                 </tr>
             </thead>
             <tbody>
                 <% if (orders.length > 0) { %>
                     <% orders.forEach(o => { %>
-                        <tr>
+                        <tr data-order="1" onclick="openUpgradeDetail(this)"
+                            data-name="<%= o.customer_name || o.buyer_name || 'User' %>"
+                            data-email="<%= o.buyer_email || o.customer_email || '-' %>"
+                            data-reference="<%= o.reference_id || '-' %>"
+                            data-amount="Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %>"
+                            data-status="<%= o.status || 'pending' %>"
+                            data-date="<%= new Date(o.created_at).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Jakarta' }) %> WIB"
+                            data-duration="<%= o.package_duration || '-' %>"
+                            data-expired="<%= o.expired_at ? new Date(o.expired_at).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short', timeZone:'Asia/Jakarta' }) + ' WIB' : '-' %>">
                             <td>
                                 <div class="uo-user">
                                     <div class="uo-avatar"><%= (o.customer_name || 'U').charAt(0).toUpperCase() %></div>
                                     <div>
                                         <div class="uo-name"><%= o.customer_name || o.buyer_name || 'User' %></div>
-                                        <div class="uo-email"><%= o.buyer_email %></div>
+                                        <div class="uo-email"><%= o.buyer_email || o.customer_email || '-' %></div>
+                                        <div style="display:flex;align-items:center;gap:5px;font-family:monospace;font-size:10px;color:#94a3b8;margin-top:3px;">
+                                            <span>#<%= o.reference_id || '-' %></span>
+                                            <% if (o.reference_id) { %>
+                                                <button type="button" title="Salin Reference ID" data-reference="<%= o.reference_id %>" onclick="copyReference(event, this.dataset.reference, this)" style="border:0;background:transparent;color:#64748b;padding:1px 3px;cursor:pointer;font-size:10px;"><i class="far fa-copy"></i></button>
+                                            <% } %>
+                                        </div>
                                     </div>
                                 </div>
                             </td>
-                            <td style="font-family: monospace; font-weight: 700; color: #64748b;">#<%= o.reference_id %></td>
                             <td class="uo-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></td>
-                            <td style="font-weight: 700; color: #3b82f6; text-transform: uppercase; font-size: 12px;"><%= o.payment_channel || 'QRIS' %></td>
                             <td>
                                 <span class="uo-status <%= o.status %>"><%= o.status.toUpperCase() %></span>
                             </td>
                             <td class="uo-date">
                                 <%= new Date(o.created_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) %><br>
                                 <span style="font-size:10px; opacity:0.6;"><%= new Date(o.created_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) %> WIB</span>
+                            </td>
+                            <td style="font-weight:700;color:#475569;white-space:nowrap;"><%= o.package_duration || '-' %></td>
+                            <td class="uo-date">
+                                <% if (o.expired_at) { %>
+                                    <%= new Date(o.expired_at).toLocaleDateString('id-ID', { day:'numeric', month:'short', year:'numeric' }) %><br>
+                                    <span style="font-size:10px; opacity:0.6;"><%= new Date(o.expired_at).toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' }) %> WIB</span>
+                                <% } else { %>
+                                    <span style="opacity:0.6;">-</span>
+                                <% } %>
                             </td>
                         </tr>
                     <% }) %>
@@ -219,8 +242,68 @@
     <% if (totalPages > 1) { %>
         <div class="uo-pagination">
             <% for(let i = 1; i <= totalPages; i++) { %>
-                <a href="?page=<%= i %>" class="uo-page <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                <a href="?page=<%= i %><%= filters && filters.date ? '&date=' + encodeURIComponent(filters.date) : '' %>" class="uo-page <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
             <% } %>
         </div>
     <% } %>
 </div>
+
+<div id="upgradeDetailModal" style="display:none;position:fixed;inset:0;z-index:2000;background:rgba(15,23,42,.45);align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this) closeUpgradeDetail()">
+    <div style="width:min(440px,100%);background:#fff;border-radius:18px;padding:24px;box-shadow:0 25px 70px rgba(15,23,42,.25);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><strong style="font-size:17px;color:#111827;">Detail Upgrade PRO</strong><button type="button" onclick="closeUpgradeDetail()" style="border:0;background:#f1f5f9;border-radius:8px;width:32px;height:32px;cursor:pointer;color:#64748b;">&times;</button></div>
+        <div style="display:grid;gap:12px;font-size:13px;color:#64748b;">
+            <div><small>Pelanggan</small><div id="upgradeDetailName" style="font-weight:800;color:#111827;"></div><div id="upgradeDetailEmail" style="font-size:11px;"></div></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;"><span>Reference ID</span><span style="display:flex;align-items:center;gap:7px;"><strong id="upgradeDetailReference" style="font-family:monospace;color:#334155;"></strong><button type="button" title="Salin Reference ID" onclick="copyReference(event, document.getElementById('upgradeDetailReference').textContent.replace(/^#/, ''), this)" style="border:0;background:#f1f5f9;color:#64748b;border-radius:6px;padding:5px 7px;cursor:pointer;"><i class="far fa-copy"></i></button></span></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><span>Nominal</span><strong id="upgradeDetailAmount" style="color:#111827;"></strong></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><span>Status</span><strong id="upgradeDetailStatus" style="text-transform:uppercase;color:#059669;"></strong></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><span>Tanggal</span><strong id="upgradeDetailDate" style="color:#334155;"></strong></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><span>Masa Aktif</span><strong id="upgradeDetailDuration" style="color:#334155;"></strong></div>
+            <div style="display:flex;justify-content:space-between;gap:16px;"><span>Tanggal Expired</span><strong id="upgradeDetailExpired" style="color:#334155;"></strong></div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openUpgradeDetail(row) {
+    document.getElementById('upgradeDetailName').textContent = row.dataset.name || 'User';
+    document.getElementById('upgradeDetailEmail').textContent = row.dataset.email || '-';
+    document.getElementById('upgradeDetailReference').textContent = '#' + (row.dataset.reference || '-');
+    document.getElementById('upgradeDetailAmount').textContent = row.dataset.amount || 'Rp 0';
+    document.getElementById('upgradeDetailStatus').textContent = row.dataset.status || 'pending';
+    document.getElementById('upgradeDetailDate').textContent = row.dataset.date || '-';
+    document.getElementById('upgradeDetailDuration').textContent = row.dataset.duration || '-';
+    document.getElementById('upgradeDetailExpired').textContent = row.dataset.expired || '-';
+    document.getElementById('upgradeDetailModal').style.display = 'flex';
+}
+function closeUpgradeDetail() { document.getElementById('upgradeDetailModal').style.display = 'none'; }
+async function copyReference(event, reference, button) {
+    event.stopPropagation();
+    if (!reference || reference === '-') return;
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(reference);
+        } else {
+            const helper = document.createElement('textarea');
+            helper.value = reference;
+            helper.style.position = 'fixed';
+            helper.style.opacity = '0';
+            document.body.appendChild(helper);
+            helper.select();
+            document.execCommand('copy');
+            helper.remove();
+        }
+        if (button) {
+            const icon = button.querySelector('i');
+            if (icon) icon.className = 'fas fa-check';
+            button.title = 'Tersalin';
+            setTimeout(() => {
+                if (icon) icon.className = 'far fa-copy';
+                button.title = 'Salin Reference ID';
+            }, 1200);
+        }
+    } catch (error) {
+        console.error('Gagal menyalin reference ID:', error);
+    }
+}
+document.addEventListener('keydown', function(event) { if (event.key === 'Escape') closeUpgradeDetail(); });
+</script>
