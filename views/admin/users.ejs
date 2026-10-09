@@ -105,7 +105,7 @@
     </div>
 </div>
 
-<p style="font-size:12px;color:#64748b;line-height:1.7;margin:0 0 14px;">Omzet dan unit produk digital sepanjang waktu, hanya pesanan berstatus berhasil. Omzet sebelum potongan, bukan saldo. Satu pesanan = satu unit. Produk yang sudah dihapus tidak termasuk.</p>
+<p style="font-size:12px;color:#64748b;line-height:1.7;margin:0 0 14px;">Omzet produk digital sepanjang waktu, hanya pesanan berstatus berhasil. Omzet sebelum potongan, bukan saldo. Produk yang sudah dihapus tidak termasuk.</p>
 <div class="users-table-wrap">
     <div class="table-responsive">
         <table class="users-table">
@@ -114,11 +114,8 @@
                     <th>#</th>
                     <th>Profil</th>
                     <th>Nama</th>
-                    <th>Email</th>
-                    <th>Role</th>
                     <th>Paket</th>
                     <th>Omzet</th>
-                    <th>Unit Terjual</th>
                     <th>Aksi</th>
                 </tr>
             </thead>
@@ -144,21 +141,9 @@
                                     <div class="user-avatar-sm" style="background:<%= color %>"><%= displayName.charAt(0).toUpperCase() %></div>
                                 <% } %>
                             </td>
-                            <td><strong><%= displayName %></strong></td>
-                            <td><%= u.email || '-' %></td>
                             <td>
-                                <!-- ROLE DROPDOWN -->
-                                <% if (u.role === 'admin') { %>
-                                    <select class="ef-input" disabled style="width: 80px; padding: 4px 6px; font-size: 10px; font-weight: 800; border-radius: 6px; background: #f1f5f9; border: 1.5px solid #e2e8f0; color: #94a3b8; cursor: not-allowed;">
-                                        <option selected>ADMIN</option>
-                                    </select>
-                                <% } else { %>
-                                    <select class="ef-input" style="width: 80px; padding: 4px 6px; font-size: 10px; font-weight: 800; border-radius: 6px; background: #f8fafc; border: 1.5px solid #e2e8f0; color: <%= (u.role === 'pro') ? '#10b981' : '#3b82f6' %>;" 
-                                            onchange="changeRole(<%= u.id %>, this)">
-                                        <option value="user" <%= (u.role || 'user') === 'user' ? 'selected' : '' %>>USER</option>
-                                        <option value="pro" <%= u.role === 'pro' ? 'selected' : '' %>>PRO ✨</option>
-                                    </select>
-                                <% } %>
+                                <strong style="display:block;"><%= displayName %></strong>
+                                <span style="display:block;margin-top:3px;color:#94a3b8;font-size:11px;font-weight:500;white-space:nowrap;"><%= u.email || '-' %></span>
                             </td>
                             <td>
                                 <% if (u.role === 'admin') { %>
@@ -170,7 +155,6 @@
                                 <% } %>
                             </td>
                             <td style="white-space:nowrap;font-variant-numeric:tabular-nums;">Rp <%= Number(u.digital_revenue || 0).toLocaleString('id-ID') %></td>
-                            <td style="white-space:nowrap;font-variant-numeric:tabular-nums;"><%= Number(u.digital_units || 0).toLocaleString('id-ID') %> unit</td>
                             <td>
                                 <div style="display: flex; gap: 8px; align-items: center;">
                                     <% const userSlug = u.slug || u.username || ''; %>
