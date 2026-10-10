@@ -143,8 +143,8 @@ exports.register = async (req, res) => {
         // Notify Admin about new registration
         try {
             await db.execute(
-                "INSERT INTO notifications (user_id, title, message, type) VALUES (?, ?, ?, ?)",
-                [1, '🆘 Registrasi Baru', `${fullname} baru saja mendaftar!`, 'reg']
+                "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
+                [1, '🆘 Registrasi Baru', `${fullname} baru saja mendaftar!`, 'reg', `/admin/users/detail/${result.insertId}`]
             );
         } catch (e) {
             console.error('Notification Error:', e.message);

@@ -671,13 +671,13 @@ exports.processCheckout = async (req, res) => {
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
         `;
         try {
-            await db.execute(insertQuery, orderParams);
+            const [createdOrder] = await db.execute(insertQuery, orderParams);
             
             // Notify Merchant about NEW PENDING ORDER
             try {
                 await db.execute(
                     "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                    [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info', '/admin/orders']
+                    [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info', `/admin/orders?search=${encodeURIComponent(refId)}`]
                 );
             } catch (notifErr) { console.error('Notif Error:', notifErr.message); }
 
@@ -1261,7 +1261,7 @@ exports.ipaymuCallback = async (req, res) => {
                         const formattedPrice = parseFloat(order.total_price || 0).toLocaleString('id-ID');
                         await db.execute(
                             "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                            [order.user_id, '💰 Pembayaran Berhasil!', `Rp ${formattedPrice} masuk dari ${order.customer_name}`, 'pay', '/admin/orders']
+                            [order.user_id, '💰 Pembayaran Berhasil!', `Rp ${formattedPrice} masuk dari ${order.customer_name}`, 'pay', `/admin/orders?search=${encodeURIComponent(order.reference_id || '')}`]
                         );
                     } catch (e) {
                         console.error('Notification Error:', e.message);

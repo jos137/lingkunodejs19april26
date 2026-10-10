@@ -2190,6 +2190,8 @@ exports.readNotification = async (req, res) => {
 
         if (title.includes('pesanan') || title.includes('pembayaran') || title.includes('sale')) {
             targetLink = '/admin/orders';
+        } else if (title.includes('registrasi') || notif.type === 'reg') {
+            targetLink = '/admin/users';
         } else if (title.includes('pro') || title.includes('upgrade')) {
             targetLink = '/admin/upgrade-orders';
         } else if (title.includes('wd') || title.includes('tarik') || notif.type === 'withdrawal') {
