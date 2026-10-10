@@ -150,7 +150,8 @@ exports.confirmWdOtp = async (req, res) => {
         const fees = {};
         feeSettings.forEach(s => fees[s.setting_key] = s.setting_value);
         const feePercent = plan === 'pro' ? parseFloat(fees.fee_pro || 1) : parseFloat(fees.fee_free || 3);
-        const feeAmount = (feePercent / 100) * requestedAmount;
+        const fixedAdminFee = plan === 'pro' ? 9500 : 0;
+        const feeAmount = ((feePercent / 100) * requestedAmount) + fixedAdminFee;
         const finalAmount = requestedAmount - feeAmount;
 
         try {
@@ -170,7 +171,7 @@ exports.confirmWdOtp = async (req, res) => {
             const requesterName = (uRows[0] && uRows[0].fullname) || 'User';
             await db.execute(
                 "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%)`, 'withdrawal', '/admin/withdrawal-queue']
+                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%${fixedAdminFee ? ' + Rp 9.500 admin' : ''})`, 'withdrawal', '/admin/withdrawal-queue']
             );
         } catch(notifErr) {}
 
@@ -1039,12 +1040,13 @@ exports.requestWithdrawal = async (req, res) => {
         
         const minWd = 100000; // Minimal 100rb for everyone
         const feePercent = plan === 'pro' ? parseFloat(fees.fee_pro || 1) : parseFloat(fees.fee_free || 3);
+        const fixedAdminFee = plan === 'pro' ? 9500 : 0;
 
         if (requestedAmount < minWd) {
             return res.redirect('/admin/withdrawal?error=' + encodeURIComponent(`Minimal penarikan dana adalah Rp ${minWd.toLocaleString('id-ID')}. Kumpulkan saldo Anda dulu ya!`));
         }
 
-        const feeAmount = (feePercent / 100) * requestedAmount;
+        const feeAmount = ((feePercent / 100) * requestedAmount) + fixedAdminFee;
         const finalAmount = requestedAmount - feeAmount;
 
         // 4. Ensure Withdrawal columns exist before insert
@@ -1067,7 +1069,7 @@ exports.requestWithdrawal = async (req, res) => {
             const requesterName = user.fullname || 'User';
             await db.execute(
                 "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
-                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%)`, 'withdrawal', '/admin/withdrawal-queue']
+                [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%${fixedAdminFee ? ' + Rp 9.500 admin' : ''})`, 'withdrawal', '/admin/withdrawal-queue']
             );
         } catch (notifErr) { console.error('Notif Error:', notifErr.message); }
 
