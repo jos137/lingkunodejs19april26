@@ -716,6 +716,8 @@ exports.processCheckout = async (req, res) => {
             chan = 'qris';
         } else if (chan === 'alfamart' || chan === 'indomaret') {
             method = 'cstore';
+        } else if (chan === 'dana' || chan === 'shopeepay') {
+            method = 'ewallet';
         }
 
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
@@ -880,6 +882,11 @@ exports.getPaymentPage = async (req, res) => {
         const payNo = order.payment_no;
         const qrImageUrl = order.qr_url;
         const expiryMins = 60; // Default
+
+        // E-wallet payments (such as DANA) are completed on the URL returned by iPaymu.
+        if (['dana', 'shopeepay'].includes(chan.toLowerCase()) && qrImageUrl) {
+            return res.redirect(qrImageUrl);
+        }
 
         res.send(`
             <!DOCTYPE html>

@@ -51,6 +51,11 @@
                 %>
                 <img src="<%= qrUrl %>" class="qr-image" alt="QRIS" onerror="this.src='https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=<%= encodeURIComponent(data.QrString || '') %>'">
             </div>
+        <% } else if (String(data.Via || '').toLowerCase() === 'ewallet' && data.Url) { %>
+            <div class="va-container">
+                <div class="va-label">Pembayaran E-Wallet <%= data.Channel %></div>
+                <a href="<%= data.Url %>" class="home-btn" style="margin-top:18px;background:#147bd1;" target="_self">Buka Pembayaran DANA</a>
+            </div>
         <% } else { %>
             <div class="va-container">
                 <div class="va-label">Transfer ke Nomor <%= data.Channel %></div>

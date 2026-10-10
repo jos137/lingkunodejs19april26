@@ -2588,6 +2588,8 @@ exports.processUpgrade = async (req, res) => {
             chan = 'qris';
         } else if (chan === 'alfamart' || chan === 'indomaret') {
             method = 'cstore';
+        } else if (chan === 'dana' || chan === 'shopeepay') {
+            method = 'ewallet';
         }
 
         const [priceRow] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key IN ('price_pro_monthly', 'price_pro_yearly', 'price_pro')");

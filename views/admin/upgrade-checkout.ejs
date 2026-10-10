@@ -36,10 +36,12 @@
             cursor: pointer; transition: 0.2s; position: relative; background: #fff;
         }
         .pay-option img { height: 20px; width: auto; max-width: 100%; filter: grayscale(1); opacity: 0.6; transition: 0.2s; }
+        .wallet-logo { height: 20px; min-width: 42px; padding: 0 5px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: #147bd1; color: #fff; font-size: 11px; font-weight: 900; letter-spacing: -.4px; opacity: .6; transition: .2s; }
         .pay-option span { font-size: 10px; font-weight: 800; color: #94a3b8; text-transform: uppercase; }
         .pay-option:hover { border-color: #cbd5e1; background: #f8fafc; }
         .pay-option.active { border-color: #8b5cf6; background: #f5f3ff; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.1); }
         .pay-option.active img { filter: grayscale(0); opacity: 1; }
+        .pay-option.active .wallet-logo { opacity: 1; }
         .pay-option.active span { color: #5b21b6; }
         .pay-option.active::after { content: '\f058'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 4px; right: 4px; font-size: 10px; color: #8b5cf6; }
 
@@ -109,9 +111,9 @@
                         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/BRI_Logo.svg/1280px-BRI_Logo.svg.png" alt="BRI">
                         <span>BRI</span>
                     </div>
-                    <div class="pay-option" data-method="cstore" data-channel="alfamart" onclick="selectPay(this)">
-                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Alfamart_logo.svg" alt="Alfamart">
-                        <span>Alfamart</span>
+                    <div class="pay-option" data-method="ewallet" data-channel="dana" onclick="selectPay(this)">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA">
+                        <span>DANA</span>
                     </div>
                 </div>
             </div>
