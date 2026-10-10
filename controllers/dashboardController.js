@@ -81,10 +81,12 @@ exports.getDashboardData = async (req, res) => {
             }
         } catch(e) { console.log('User query note:', e.message); }
 
-        // Chart data (Fixed for GMT+7 WIB)
+        const isAdmin = Boolean(req.session.user && req.session.user.role === 'admin');
+
+        // Chart data produk digital (Fixed for GMT+7 WIB)
         let chartData = [];
         try {
-            let chartQuery = "SELECT DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND status = 'completed'";
+            let chartQuery = "SELECT DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) as date, COALESCE(SUM(total_price), 0) as revenue, COUNT(*) as orders FROM orders WHERE user_id = ? AND product_id > 0 AND status = 'completed'";
             let chartParams = [userId];
 
             if (filterDate) {
@@ -102,6 +104,27 @@ exports.getDashboardData = async (req, res) => {
             const [rows] = await db.execute(chartQuery, chartParams);
             chartData = rows;
         } catch(e) { console.log('Chart query error:', e.message); }
+
+        // Grafik khusus penjualan platform (Upgrade PRO), hanya terlihat oleh admin.
+        let platformChartData = [];
+        if (isAdmin) {
+            try {
+                let platformChartQuery = "SELECT DATE(CONVERT_TZ(o.created_at, '+00:00', '+07:00')) as date, COALESCE(SUM(o.total_price), 0) as revenue, COALESCE(SUM(CASE WHEN EXISTS (SELECT 1 FROM orders prev WHERE prev.product_id = 0 AND prev.status = 'completed' AND prev.customer_email = o.customer_email AND prev.id < o.id) THEN o.total_price ELSE 0 END), 0) as renewal_revenue, COUNT(*) as orders FROM orders o WHERE o.product_id = 0 AND o.status = 'completed'";
+                let platformChartParams = [];
+                if (filterDate) {
+                    platformChartQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?";
+                    platformChartParams.push(filterDate);
+                } else if (filterMonth) {
+                    platformChartQuery += " AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) BETWEEN ? AND LAST_DAY(?)";
+                    platformChartParams.push(filterMonth + '-01', filterMonth + '-01');
+                } else {
+                    platformChartQuery += " AND CONVERT_TZ(created_at, '+00:00', '+07:00') >= DATE_SUB(DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00')), INTERVAL 30 DAY)";
+                }
+                platformChartQuery += " GROUP BY date ORDER BY date ASC";
+                const [platformRows] = await db.execute(platformChartQuery, platformChartParams);
+                platformChartData = platformRows;
+            } catch(e) { console.log('Platform chart query error:', e.message); }
+        }
 
         // Visitor data: unique IPs per day (GMT+7 WIB), same range as revenue chart
         let visitMap = {};
@@ -149,7 +172,6 @@ exports.getDashboardData = async (req, res) => {
         } catch(e) { console.log('Chart merge error:', e.message); }
 
         const chartTotal = chartData.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0);
-        const isAdmin = Boolean(req.session.user && req.session.user.role === 'admin');
         let platformSales = 0;
         let platformTodaySales = 0;
         if (isAdmin) {
@@ -175,7 +197,9 @@ exports.getDashboardData = async (req, res) => {
                 slug: slug
             },
             chartData,
+            platformChartData,
             chartTotal,
+            platformChartTotal: platformChartData.reduce((sum, d) => sum + parseFloat(d.revenue || 0), 0),
             filterDate,
             filterMonth,
             user: req.session.user || { name: userName, role: 'admin', roleDisplay: 'Administrator' }
@@ -187,6 +211,7 @@ exports.getDashboardData = async (req, res) => {
             layout: './layouts/admin',
             stats: {},
             chartData: [],
+            platformChartData: [],
             user: req.session.user || { name: 'Admin', role: 'admin', roleDisplay: 'Administrator' }
         });
     }

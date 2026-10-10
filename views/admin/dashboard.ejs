@@ -250,7 +250,7 @@
 <!-- CHART -->
 <div class="bio-card dash-performance" style="padding: 24px; margin-top: 24px;">
     <div style="font-size: 11px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-        <span><i class="fas fa-chart-line" style="color:#3b82f6;"></i> PERFORMA TOKO
+        <span><i class="fas fa-chart-line" style="color:#3b82f6;"></i> PERFORMA PENJUALAN
         <% if (locals.filterMonth) { %>
             (<%= new Date(filterMonth + '-01').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase() %>)
         <% } else if (locals.filterDate) { %>
@@ -259,11 +259,17 @@
             (30 HARI TERAKHIR)
         <% } %>
         </span>
-        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #64748b;">
-            <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> Revenue
+        <span style="display:inline-flex;background:#f1f5f9;border-radius:9px;padding:3px;gap:3px;">
+            <button type="button" id="chartProductTab" onclick="switchChart('product')" style="border:0;padding:6px 10px;border-radius:7px;background:#fff;color:#1e293b;font-size:10px;font-weight:800;cursor:pointer;box-shadow:0 1px 3px rgba(15,23,42,.08);">Penjualan Produk</button>
+            <% if (user && user.role === 'admin') { %>
+                <button type="button" id="chartPlatformTab" onclick="switchChart('platform')" style="border:0;padding:6px 10px;border-radius:7px;background:transparent;color:#64748b;font-size:10px;font-weight:800;cursor:pointer;">Penjualan Platform</button>
+            <% } %>
         </span>
         <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #64748b;">
-            <span style="width: 10px; height: 10px; border-radius: 50%; background: #f97316; display: inline-block;"></span> Visitor
+            <span id="primaryLegendDot" style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span> <span id="primaryLegendLabel">Revenue</span>
+        </span>
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; color: #64748b;">
+            <span id="secondaryLegendDot" style="width: 10px; height: 10px; border-radius: 50%; background: #f97316; display: inline-block;"></span> <span id="secondaryLegendLabel">Visitor</span>
         </span>
     </div>
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
@@ -271,7 +277,7 @@
             <div style="font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; margin-bottom: 4px;">TOTAL PENDAPATAN</div>
             <div style="display: flex; align-items: baseline; justify-content: center; gap: 3px;">
                 <span style="font-size: 12px; font-weight: 700; color: #3b82f6;">Rp</span>
-                <span style="font-size: 22px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px;"><%= (chartTotal || 0).toLocaleString('id-ID') %></span>
+                <span id="chartTotalValue" style="font-size: 22px; font-weight: 800; color: #3b82f6; letter-spacing: -0.5px;"><%= (chartTotal || 0).toLocaleString('id-ID') %></span>
             </div>
         </div>
         <div style="display: flex; align-items: center; gap: 4px;">
@@ -335,10 +341,18 @@
     const labels = [];
     const dataVals = [];
     const visitorVals = [];
+    const platformLabels = [];
+    const platformDataVals = [];
+    const platformRenewalVals = [];
     <% (chartData || []).forEach(function(d) { %>
         labels.push('<%= new Date(d.date).toLocaleDateString("id-ID", { day:"numeric", month:"short" }) %>');
         dataVals.push(<%= d.revenue || 0 %>);
         visitorVals.push(<%= d.visitors || 0 %>);
+    <% }); %>
+    <% (platformChartData || []).forEach(function(d) { %>
+        platformLabels.push('<%= new Date(d.date).toLocaleDateString("id-ID", { day:"numeric", month:"short" }) %>');
+        platformDataVals.push(<%= d.revenue || 0 %>);
+        platformRenewalVals.push(<%= d.renewal_revenue || 0 %>);
     <% }); %>
 
     const isFiltered = '<%= locals.filterDate || locals.filterMonth %>';
@@ -348,7 +362,7 @@
     grad.addColorStop(0.5, 'rgba(16,185,129,0.08)');
     grad.addColorStop(1, 'rgba(16,185,129,0.01)');
 
-    new Chart(document.getElementById('dashChart').getContext('2d'), {
+    let dashChart = new Chart(document.getElementById('dashChart').getContext('2d'), {
         type: chartType,
         data: {
             labels: labels,
@@ -468,6 +482,48 @@
             }
         }
     });
+
+    function switchChart(mode) {
+        const isPlatform = mode === 'platform';
+        dashChart.data.labels = isPlatform ? platformLabels : labels;
+        dashChart.data.datasets[0].data = isPlatform ? platformDataVals : dataVals;
+        dashChart.data.datasets[0].label = isPlatform ? 'Penjualan Platform' : 'Revenue';
+        dashChart.data.datasets[0].borderColor = isPlatform ? '#7c3aed' : '#10b981';
+        dashChart.data.datasets[0].pointBorderColor = isPlatform ? '#7c3aed' : '#10b981';
+        dashChart.data.datasets[0].hoverBackgroundColor = isPlatform ? '#7c3aed' : '#10b981';
+        dashChart.data.datasets[0].backgroundColor = isPlatform ? 'rgba(124,58,237,0.16)' : grad;
+        dashChart.data.datasets[1].data = isPlatform ? platformRenewalVals : visitorVals;
+        dashChart.data.datasets[1].label = isPlatform ? 'Renewal PRO' : 'Visitor';
+        dashChart.data.datasets[1].borderColor = isPlatform ? '#ec4899' : '#f97316';
+        dashChart.data.datasets[1].pointBorderColor = isPlatform ? '#ec4899' : '#f97316';
+        dashChart.data.datasets[1].hoverBackgroundColor = isPlatform ? '#ec4899' : '#f97316';
+        dashChart.data.datasets[1].backgroundColor = isPlatform ? 'rgba(236,72,153,0.14)' : (chartType === 'bar' ? '#fdba74' : 'rgba(249,115,22,0.12)');
+        dashChart.data.datasets[1].yAxisID = isPlatform ? 'y' : 'y1';
+        dashChart.options.scales.y1.display = !isPlatform;
+        dashChart.update();
+
+        document.getElementById('chartTotalValue').textContent = (isPlatform ? <%= platformChartTotal || 0 %> : <%= chartTotal || 0 %>).toLocaleString('id-ID');
+        const productTab = document.getElementById('chartProductTab');
+        const platformTab = document.getElementById('chartPlatformTab');
+        if (productTab) {
+            productTab.style.background = isPlatform ? 'transparent' : '#fff';
+            productTab.style.color = isPlatform ? '#64748b' : '#1e293b';
+            productTab.style.boxShadow = isPlatform ? 'none' : '0 1px 3px rgba(15,23,42,.08)';
+        }
+        if (platformTab) {
+            platformTab.style.background = isPlatform ? '#fff' : 'transparent';
+            platformTab.style.color = isPlatform ? '#1e293b' : '#64748b';
+            platformTab.style.boxShadow = isPlatform ? '0 1px 3px rgba(15,23,42,.08)' : 'none';
+        }
+        const primaryLegendDot = document.getElementById('primaryLegendDot');
+        const secondaryLegendDot = document.getElementById('secondaryLegendDot');
+        const primaryLegendLabel = document.getElementById('primaryLegendLabel');
+        const secondaryLegendLabel = document.getElementById('secondaryLegendLabel');
+        if (primaryLegendDot) primaryLegendDot.style.background = isPlatform ? '#7c3aed' : '#10b981';
+        if (secondaryLegendDot) secondaryLegendDot.style.background = isPlatform ? '#ec4899' : '#f97316';
+        if (primaryLegendLabel) primaryLegendLabel.textContent = isPlatform ? 'Penjualan Platform' : 'Revenue';
+        if (secondaryLegendLabel) secondaryLegendLabel.textContent = isPlatform ? 'Renewal PRO' : 'Visitor';
+    }
 
     function copyLink() {
         const slug = document.getElementById('slugInput').value;
