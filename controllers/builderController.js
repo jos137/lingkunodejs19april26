@@ -311,11 +311,14 @@ exports.updatePageInfo = async (req, res) => {
 
 exports.renderUserPage = async (req, res) => {
     try {
+        // Pastikan tabel dan halaman home tersedia meskipun link publik dibuka
+        // sebelum pemilik masuk ke menu Builder.
+        await ensureTables();
         const { username, pageSlug } = req.params;
         const targetSlug = pageSlug || 'home';
 
         // Find User by Slug
-        const [users] = await db.execute('SELECT * FROM users WHERE slug = ?', [username]);
+        const [users] = await db.execute('SELECT * FROM users WHERE LOWER(slug) = LOWER(?)', [username]);
         if (users.length === 0) {
             // Fallback to searching by fullname or id if needed, but slug is primary
             const [users2] = await db.execute('SELECT * FROM users WHERE id = ?', [username]).catch(() => [[]]);
@@ -326,7 +329,11 @@ exports.renderUserPage = async (req, res) => {
         }
 
         // Find Page
-        const [pages] = await db.execute('SELECT * FROM pages WHERE user_id = ? AND slug = ?', [user.id, targetSlug]);
+        let [pages] = await db.execute('SELECT * FROM pages WHERE user_id = ? AND LOWER(slug) = LOWER(?)', [user.id, targetSlug]);
+        if (pages.length === 0 && targetSlug.toLowerCase() === 'home') {
+            await db.execute('INSERT IGNORE INTO pages (user_id, slug, title) VALUES (?, ?, ?)', [user.id, 'home', 'Home']);
+            [pages] = await db.execute('SELECT * FROM pages WHERE user_id = ? AND LOWER(slug) = LOWER(?)', [user.id, targetSlug]);
+        }
         if (pages.length === 0) return res.status(404).send('Page not found');
         const page = pages[0];
 
