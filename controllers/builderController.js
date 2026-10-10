@@ -9,10 +9,19 @@ async function syncPricingTier(product) {
     let stage = Number(product.pricing_stage || 1);
     if (!product.price_stage_1 || stage < 1 || stage > 3) return product;
     while (stage < 3 && Number(product.stock || 0) <= 0) {
-        const nextStock = Number(product[`stock_stage_${stage + 1}`] || 0);
-        const nextPrice = Number(product[`price_stage_${stage + 1}`] || 0);
-        if (nextStock <= 0 || nextPrice <= 0) break;
-        stage += 1;
+        // Lewati tahap yang stoknya kosong agar langsung memilih tahap
+        // berikutnya yang masih tersedia (contoh: stok 0, 0, 2 -> tahap 3).
+        let nextStage = stage + 1;
+        let nextStock = 0;
+        let nextPrice = 0;
+        while (nextStage <= 3) {
+            nextStock = Number(product[`stock_stage_${nextStage}`] || 0);
+            nextPrice = Number(product[`price_stage_${nextStage}`] || 0);
+            if (nextStock > 0 && nextPrice > 0) break;
+            nextStage += 1;
+        }
+        if (nextStage > 3) break;
+        stage = nextStage;
         product.price = nextPrice;
         product.stock = nextStock;
         product.pricing_stage = stage;

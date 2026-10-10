@@ -64,7 +64,7 @@ exports.getDashboardData = async (req, res) => {
         let todaySales = 0;
         try {
             const [todayRow] = await db.execute(
-                "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND status = 'completed' AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))",
+                "SELECT COALESCE(SUM(total_price), 0) as total FROM orders WHERE user_id = ? AND product_id > 0 AND status = 'completed' AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))",
                 [userId]
             );
             todaySales = todayRow[0].total;
