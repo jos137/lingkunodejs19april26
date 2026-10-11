@@ -144,6 +144,9 @@
 .bio-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
 .bio-btn.primary { background: #3b82f6; color: #fff; border: none; }
 .bio-btn.primary:hover { background: #2563eb; }
+.dash-visibility-toggle { margin-left:auto; border:0; background:transparent; color:inherit; opacity:.7; cursor:pointer; padding:5px; border-radius:7px; }
+.dash-visibility-toggle:hover { opacity:1; background:rgba(255,255,255,.14); }
+.dash-stat-card .dash-visibility-toggle:hover { background:#f1f5f9; }
 </style>
 
 <!-- YOUR BIO LINK RE-WORKED FOR RESPONSIVE -->
@@ -160,10 +163,10 @@
                         <i class="fas fa-coins"></i>
                     </div>
                     <div style="font-size: 10px; font-weight: 800; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase;">PENJUALAN HARI INI</div>
+                    <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="todaySalesValue" aria-label="Sembunyikan penjualan hari ini"><i class="fas fa-eye"></i></button>
                 </div>
-                <div style="font-size: 26px; font-weight: 500; color: white; display: flex; align-items: baseline; gap: 4px;">
-                    <small style="font-size: 14px; opacity: 0.8; font-weight: 500;">Rp</small>
-                    <%= todaySales.toLocaleString('id-ID') %>
+                <div id="todaySalesValue" data-sensitive-value data-value="Rp <%= todaySales.toLocaleString('id-ID') %>" style="font-size: 26px; font-weight: 500; color: white; display: flex; align-items: baseline; gap: 4px;">
+                    Rp <%= todaySales.toLocaleString('id-ID') %>
                 </div>
 
             </div>
@@ -175,8 +178,9 @@
                     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
                         <div style="width:32px;height:32px;background:rgba(37,99,235,0.14);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#1d4ed8;"><i class="fas fa-chart-line"></i></div>
                         <div style="font-size:10px;font-weight:800;color:#1e40af;letter-spacing:1px;text-transform:uppercase;">PENJUALAN PLATFORM HARI INI</div>
+                        <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="platformTodaySalesValue" aria-label="Sembunyikan penjualan platform"><i class="fas fa-eye"></i></button>
                     </div>
-                    <div style="font-size:26px;font-weight:600;color:#1e3a8a;display:flex;align-items:baseline;gap:4px;"><small style="font-size:14px;opacity:.75;font-weight:600;">Rp</small><%= platformTodaySales.toLocaleString('id-ID') %></div>
+                    <div id="platformTodaySalesValue" data-sensitive-value data-value="Rp <%= platformTodaySales.toLocaleString('id-ID') %>" style="font-size:26px;font-weight:600;color:#1e3a8a;display:flex;align-items:baseline;gap:4px;">Rp <%= platformTodaySales.toLocaleString('id-ID') %></div>
                 </div>
             </div>
         <% } %>
@@ -219,15 +223,15 @@
     <div class="dash-stat-card">
         <div class="dash-stat-icon green"><i class="fas fa-coins"></i></div>
         <div class="dash-stat-info">
-            <div class="dash-stat-label">Total Pendapatan</div>
-            <div class="dash-stat-value"><small>Rp</small><%= totalRevenue.toLocaleString('id-ID') %></div>
+            <div class="dash-stat-label">Total Pendapatan <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="totalRevenueValue" aria-label="Sembunyikan total pendapatan"><i class="fas fa-eye"></i></button></div>
+            <div class="dash-stat-value" id="totalRevenueValue" data-sensitive-value data-value="Rp <%= totalRevenue.toLocaleString('id-ID') %>">Rp <%= totalRevenue.toLocaleString('id-ID') %></div>
         </div>
     </div>
     <div class="dash-stat-card">
         <div class="dash-stat-icon blue"><i class="fas fa-wallet"></i></div>
         <div class="dash-stat-info">
-            <div class="dash-stat-label">Saldo Tersedia</div>
-            <div class="dash-stat-value"><small>Rp</small><%= balance.toLocaleString('id-ID') %></div>
+            <div class="dash-stat-label">Saldo Tersedia <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="balanceValue" aria-label="Sembunyikan saldo tersedia"><i class="fas fa-eye"></i></button></div>
+            <div class="dash-stat-value" id="balanceValue" data-sensitive-value data-value="Rp <%= balance.toLocaleString('id-ID') %>">Rp <%= balance.toLocaleString('id-ID') %></div>
         </div>
     </div>
     <div class="dash-stat-card">
@@ -551,6 +555,17 @@
         } catch(e) {
             alert('Terjadi kesalahan sistem.');
         }
+    }
+
+    function toggleDashboardValue(button) {
+        const target = document.getElementById(button.dataset.target);
+        if (!target) return;
+        const hidden = target.dataset.hidden === '1';
+        target.textContent = hidden ? target.dataset.value : '••••••';
+        target.dataset.hidden = hidden ? '0' : '1';
+        const icon = button.querySelector('i');
+        if (icon) icon.className = hidden ? 'fas fa-eye' : 'fas fa-eye-slash';
+        button.setAttribute('aria-label', hidden ? 'Sembunyikan nilai' : 'Tampilkan nilai');
     }
 </script>
 
