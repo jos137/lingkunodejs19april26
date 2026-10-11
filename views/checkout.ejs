@@ -71,7 +71,7 @@
         <% const availableUpsells = Array.isArray(locals.upsellProducts) ? locals.upsellProducts : []; %>
         <% if (availableUpsells.length) { %>
             <div class="upsell-box">
-                <div class="upsell-title"><i class="fas fa-bolt"></i> Tambahkan juga produk ini</div>
+                <div class="upsell-title"><i class="fas fa-bolt"></i> Tambahkan produk FLASH SALE ini</div>
                 <% availableUpsells.forEach(item => { %>
                     <label class="upsell-choice">
                         <input type="checkbox" class="upsell-check" value="<%= item.id %>" data-price="<%= Number(item.price || 0) %>">
