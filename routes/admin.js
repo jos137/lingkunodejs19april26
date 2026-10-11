@@ -99,6 +99,7 @@ router.post('/products/:id/delete', adminController.deleteProduct);
 
 // ===== ORDERS =====
 router.get('/orders', adminController.getOrders);
+router.post('/orders/delete/:id', isAdmin, adminController.deleteOrder);
 router.post('/orders/send-followup/:id', isAuth, adminController.sendFollowUpAction);
 router.post('/orders/send-access/:id', isAuth, adminController.sendAccessAction);
 

@@ -838,6 +838,43 @@ exports.getOrders = async (req, res) => {
     }
 };
 
+// Admin-only cleanup for test or unwanted transactions.
+exports.deleteOrder = async (req, res) => {
+    try {
+        const orderId = Number(req.params.id);
+        if (!orderId) return res.status(400).json({ success: false, message: 'ID pesanan tidak valid.' });
+
+        const [rows] = await db.execute(
+            'SELECT id, product_id, user_id, status, upsell_product_ids FROM orders WHERE id = ? LIMIT 1',
+            [orderId]
+        );
+        if (!rows.length) return res.status(404).json({ success: false, message: 'Pesanan tidak ditemukan.' });
+        const order = rows[0];
+
+        // A pending order reserved stock during checkout. Return that stock
+        // when it is removed; completed orders keep their sold stock intact.
+        if (order.status === 'pending') {
+            await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ? AND stock >= 0', [order.product_id]);
+            let upsellIds = [];
+            try { upsellIds = JSON.parse(order.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+            for (const upsellId of upsellIds) {
+                await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ? AND stock >= 0', [upsellId]);
+            }
+        }
+
+        try { await db.execute('DELETE FROM email_logs WHERE order_id = ?', [orderId]); } catch (e) {}
+        await db.execute('DELETE FROM orders WHERE id = ?', [orderId]);
+
+        if (req.headers.accept && req.headers.accept.includes('application/json')) {
+            return res.json({ success: true, message: 'Pesanan berhasil dihapus.' });
+        }
+        res.redirect('/admin/orders?deleted=1');
+    } catch (err) {
+        console.error('Delete Order Error:', err.message);
+        res.status(500).json({ success: false, message: 'Pesanan gagal dihapus.' });
+    }
+};
+
 exports.sendFollowUpAction = async (req, res) => {
     try {
         const orderId = req.params.id;
