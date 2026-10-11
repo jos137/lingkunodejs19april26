@@ -91,12 +91,29 @@
     .access-link-remove { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border: 1px solid #f3c7c7; border-radius: 10px; background: #fff1f2; color: #b42332; font-weight: 700; cursor: pointer; transition: background 0.2s; }
     .access-link-remove:hover { background: #ffe4e6; }
     .access-link-remove:focus-visible { outline: 2px solid #b42332; outline-offset: 3px; }
+    .upsell-card { margin-top:24px; padding:18px; border:1px solid #dbeafe; border-radius:14px; background:linear-gradient(135deg,#eff6ff,#fff); }
+    .upsell-selected { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+    .upsell-chip { display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px; background:#dbeafe; color:#1e40af; font-size:12px; font-weight:800; }
+    .upsell-chip button { border:0; background:transparent; color:#1e40af; cursor:pointer; font-weight:900; padding:0; }
+    .upsell-modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(15,23,42,.45); align-items:center; justify-content:center; padding:20px; }
+    .upsell-modal.open { display:flex; }
+    .upsell-modal-box { width:min(560px,100%); max-height:80vh; overflow:auto; background:#fff; border-radius:18px; padding:22px; box-shadow:0 24px 70px rgba(15,23,42,.25); }
+    .upsell-option { display:flex; align-items:center; gap:12px; padding:12px; border:1px solid #e5e7eb; border-radius:12px; margin-top:10px; cursor:pointer; }
+    .upsell-option:hover { background:#f8fafc; border-color:#93c5fd; }
+    .upsell-thumb { width:46px; height:46px; flex:0 0 46px; border-radius:10px; object-fit:cover; background:#eff6ff; border:1px solid #dbeafe; }
+    .upsell-finish { position:sticky; bottom:-22px; z-index:3; width:100%; margin-top:18px; padding:15px; border:0; border-radius:13px; background:linear-gradient(135deg,#5850ec,#4338ca); color:#fff; font-weight:850; font-size:14px; cursor:pointer; box-shadow:0 -8px 22px rgba(15,23,42,.12),0 8px 18px rgba(67,56,202,.28); }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88, 80, 236, 0.3); }
 
     /* Pricing Tabs */
     .pricing-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 20px; }
     .pt-item { flex: 1; text-align: center; padding: 8px; font-size: 12px; font-weight: 800; color: #64748b; cursor: pointer; border-radius: 8px; transition: 0.2s; }
     .pt-item.active { background: #fff; color: var(--stan-primary); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .pricing-toggle.price-active .pt-item.active { background:#eff6ff; color:#2563eb; }
+    .pricing-toggle.free-active .pt-item.active { background:#f0fdf4; color:#059669; }
+    .pricing-fields-box { border:1px solid #e2e8f0; border-radius:16px; padding:20px; background:#fbfdff; box-shadow:inset 0 1px 0 rgba(255,255,255,.8); }
+    .pricing-fields-box.price-mode { border-color:#bfdbfe; background:#eff6ff; }
+    .pricing-fields-box.free-mode { border-color:#a7f3d0; background:#f0fdf4; }
+    .pricing-fields-heading { display:flex; align-items:center; gap:8px; margin-bottom:18px; color:#334155; font-size:13px; font-weight:850; }
 
     /* Style Cards */
     .style-card { flex:1; padding:10px 5px; border:1px solid var(--stan-border); border-radius:12px; text-align:center; cursor:pointer; transition:0.2s; background:#fff; max-width: 100px; }
@@ -141,6 +158,9 @@ if (thumbUrl && thumbUrl.startsWith('[')) {
     try { thumbUrl = JSON.parse(thumbUrl)[0]; } catch(e) {}
 }
 const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsWith('/') ? '/uploads/products/' + thumbUrl : thumbUrl;
+const previewThumb = finalThumb || '/images/placeholder-neutral.svg';
+const upsellOptions = Array.isArray(locals.upsellProducts) ? locals.upsellProducts : [];
+const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellProductIds.map(Number) : [];
 %>
 
 <div class="stan-container">
@@ -196,7 +216,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 
                         <div class="stan-section-title"><div class="stan-step-num">3</div> Select Image</div>
                         <div id="image-upload-box" style="border: 2px dashed var(--stan-border); border-radius: 16px; padding: 15px; text-align: center; margin-bottom: 20px; position: relative;">
-                            <img id="editThumbPreview" src="<%= finalThumb %>" style="max-height: 80px; border-radius: 12px; margin-bottom: 10px; display: <%= finalThumb ? 'inline-block' : 'none' %>">
+                            <img id="editThumbPreview" src="<%= previewThumb %>" style="max-height: 80px; border-radius: 12px; margin-bottom: 10px; display: <%= finalThumb ? 'inline-block' : 'none' %>" onerror="this.onerror=null; this.style.display='none';">
                             <i class="fas fa-image" style="font-size: 30px; color: #d1d5db; display: <%= finalThumb ? 'none' : 'block' %>; margin-bottom: 8px;"></i>
                             <div style="font-size: 11px; color: #9ca3af; margin-bottom: 10px;">
                                 Resolution: 400x400 (1:1) <br>
@@ -245,11 +265,20 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                         </div>
 
                         <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Pricing Bertahap</div>
-                        <div class="pricing-toggle">
-                            <div class="pt-item <%= p.price > 0 ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Fixed Price</div>
-                            <div class="pt-item <%= p.price == 0 ? 'active' : '' %>" onclick="setPriceMode('free', this)">Free</div>
+                        <% const savedPricingMode = p.pricing_mode || (p.price > 0 ? 'fixed' : 'free'); %>
+                        <div class="pricing-toggle <%= savedPricingMode === 'free' ? 'free-active' : 'price-active' %>" id="pricingToggle">
+                            <div class="pt-item <%= savedPricingMode === 'fixed' ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Price</div>
+                            <div class="pt-item <%= savedPricingMode === 'free' ? 'active' : '' %>" onclick="setPriceMode('free', this)">Free</div>
                         </div>
-                        <div id="price-fields" style="display: <%= p.price == 0 ? 'none' : 'block' %>">
+                        <input type="hidden" name="pricing_mode" id="pricingMode" value="<%= savedPricingMode %>">
+                        <div id="free-price-fields" class="pricing-fields-box free-mode" style="display: <%= savedPricingMode === 'free' ? 'block' : 'none' %>;">
+                            <div class="pricing-fields-heading"><i class="fas fa-gift" style="color:#10b981;"></i> Pengaturan Harga Free</div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                                <div class="stan-group"><label class="stan-label">Harga Free (Rp)</label><input type="number" name="free_price" class="stan-input" min="0" value="<%= savedPricingMode === 'free' ? (p.price ?? 0) : 0 %>" oninput="updatePreview('price', this.value)"><small>Isi 0 untuk produk gratis atau masukkan nominal tertentu.</small></div>
+                                <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="free_stock" class="stan-input" min="0" value="<%= savedPricingMode === 'free' ? (p.stock ?? 0) : 0 %>"><small>Stok produk Free.</small></div>
+                            </div>
+                        </div>
+                        <div id="price-fields" class="pricing-fields-box price-mode" style="display: <%= savedPricingMode === 'fixed' ? 'block' : 'none' %>">
                             <input type="hidden" name="pricing_stage" value="<%= p.pricing_stage || 1 %>">
                             <input type="hidden" name="current_stock" value="<%= p.stock ?? 0 %>">
                             <input type="hidden" name="current_price" value="<%= p.price ?? 0 %>">
@@ -261,6 +290,39 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div class="stan-group"><label class="stan-label">Diskon (Rp)</label><input type="number" name="price_stage_3" class="stan-input" min="0" value="<%= p.price_stage_3 || '' %>"></div>
                                 <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_3" class="stan-input" min="0" value="<%= p.stock_stage_3 || '' %>"></div>
                                 <div class="stan-group" style="grid-column:1/-1"><label class="stan-label">Harga Normal (Rp) <span style="font-weight:400;color:#94a3b8">— tampil tercoret</span></label><input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>"><small>Harga pembanding yang tetap tampil.</small></div>
+                            </div>
+                        </div>
+                        <div class="upsell-card" id="upsellSection" style="display:<%= savedPricingMode === 'free' ? 'none' : 'block' %>">
+                            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                <div>
+                                    <div style="font-size:16px;font-weight:850;color:#1e3a8a;"><i class="fas fa-bolt" style="color:#2563eb;"></i> UpSell Produk</div>
+                                    <div style="font-size:12px;color:#64748b;margin-top:4px;">Tawarkan produk tambahan milikmu saat pembeli checkout.</div>
+                                </div>
+                                <button type="button" class="btn-primary" style="padding:10px 15px;white-space:nowrap;" onclick="openUpsellModal()"><i class="fas fa-plus"></i> UpSell</button>
+                            </div>
+                            <input type="hidden" name="upsell_product_ids" id="upsellProductIds" value="<%= JSON.stringify(selectedUpsells) %>">
+                            <div id="selectedUpsells" class="upsell-selected">
+                                <% if (!selectedUpsells.length) { %><span style="font-size:12px;color:#94a3b8;">Belum ada produk UpSell.</span><% } %>
+                                <% upsellOptions.filter(item => selectedUpsells.includes(Number(item.id))).forEach(item => { %>
+                                    <span class="upsell-chip" data-id="<%= item.id %>"><%= item.name %><button type="button" onclick="removeUpsell(<%= item.id %>)" aria-label="Hapus">×</button></span>
+                                <% }) %>
+                            </div>
+                        </div>
+                        <div class="upsell-modal" id="upsellModal" onclick="if(event.target===this)closeUpsellModal()">
+                            <div class="upsell-modal-box">
+                                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><strong style="font-size:18px;color:#111827;">Pilih Produk UpSell</strong><button type="button" onclick="closeUpsellModal()" style="border:0;background:none;font-size:24px;color:#64748b;cursor:pointer;">×</button></div>
+                                <div style="font-size:12px;color:#64748b;margin:6px 0 14px;">Pilih produk lain yang ingin ditawarkan bersama produk ini.</div>
+                                <div id="upsellOptionsList">
+                                    <% if (!upsellOptions.length) { %><div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">Belum ada produk lain yang bisa dipilih.</div><% } %>
+                                    <% upsellOptions.forEach(item => { const itemStock = Number(item.stock); const soldOut = itemStock === 0; let itemThumb = item.thumbnail || ''; if (itemThumb && itemThumb.startsWith('[')) { try { itemThumb = JSON.parse(itemThumb)[0] || ''; } catch (e) {} } if (itemThumb && !itemThumb.startsWith('http') && !itemThumb.startsWith('/')) itemThumb = '/uploads/products/' + itemThumb; %>
+                                        <label class="upsell-option" style="<%= soldOut ? 'opacity:.55;cursor:not-allowed;' : '' %>">
+                                            <input type="checkbox" value="<%= item.id %>" data-name="<%= item.name %>" <%= selectedUpsells.includes(Number(item.id)) ? 'checked' : '' %> <%= soldOut ? 'disabled' : '' %> onchange="toggleUpsell(this)">
+                                            <% if (itemThumb) { %><img class="upsell-thumb" src="<%= itemThumb %>" alt=""><% } else { %><span class="upsell-thumb" style="display:flex;align-items:center;justify-content:center;color:#2563eb;"><i class="fas fa-box"></i></span><% } %>
+                                            <span style="flex:1;"><strong style="display:block;color:#1e293b;font-size:13px;"><%= item.name %></strong><small style="color:#64748b;">Rp <%= Number(item.price || 0).toLocaleString('id-ID') %> · <%= itemStock === -1 ? 'Unlimited' : (itemStock + ' stok') %></small></span>
+                                        </label>
+                                    <% }) %>
+                                </div>
+                                <button type="button" class="upsell-finish" onclick="closeUpsellModal()"><i class="fas fa-check"></i> Selesai</button>
                             </div>
                         </div>
                         <% if (typeof priceHistory !== 'undefined' && priceHistory.length) { %>
@@ -466,7 +528,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <!-- PREVIEW STYLE: BUTTON -->
                                 <div id="v-style-button" class="v-style" style="display:none;">
                                     <div class="p-card-preview" style="padding:10px 15px; align-items:center; gap:12px;">
-                                        <img src="<%= finalThumb %>" class="p-card-img" id="pb-img" style="width:36px; height:36px; border-radius:8px;" onerror="this.src='/images/placeholder.png'">
+                                        <img src="<%= previewThumb %>" class="p-card-img" id="pb-img" style="width:36px; height:36px; border-radius:8px;" onerror="this.onerror=null; this.src='/images/placeholder-neutral.svg'">
                                         <div id="pb-title" style="flex:1; font-size:14px; font-weight:800; color:#111827;"><%= p.name || 'Product Title' %></div>
                                         <div id="pb-price" style="font-size:14px; font-weight:800; color:var(--stan-primary);">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
                                         <i class="fas fa-chevron-right" style="color:#e2e8f0; font-size:10px; margin-left:5px;"></i>
@@ -477,7 +539,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div id="v-style-callout" class="v-style" style="display:block;">
                                     <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:15px; padding:20px;">
                                         <div style="display:flex; gap:12px; width:100%;">
-                                            <img src="<%= finalThumb %>" class="p-card-img" id="pc-img" onerror="this.src='/images/placeholder.png'">
+                                            <img src="<%= previewThumb %>" class="p-card-img" id="pc-img" onerror="this.onerror=null; this.src='/images/placeholder-neutral.svg'">
                                             <div style="flex:1;">
                                                 <div class="p-card-title" id="pc-title"><%= p.name || 'Product Title' %></div>
                                                 <div class="p-card-sub" id="pc-sub"><%= p.subtitle || 'Subtitle / Hook text goes here' %></div>
@@ -492,7 +554,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <div id="v-style-preview" class="v-style" style="display:none;">
                                     <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:15px; padding:20px;">
                                         <div style="display:flex; gap:12px; width:100%;">
-                                            <img src="<%= finalThumb %>" class="p-card-img" id="pp-img" onerror="this.src='/images/placeholder.png'">
+                                            <img src="<%= previewThumb %>" class="p-card-img" id="pp-img" onerror="this.onerror=null; this.src='/images/placeholder-neutral.svg'">
                                             <div style="flex:1;">
                                                 <div class="p-card-title" id="pp-title"><%= p.name || 'Product Title' %></div>
                                                 <div class="p-card-sub" id="pp-sub"><%= p.subtitle || 'Subtitle / Hook text goes here' %></div>
@@ -513,7 +575,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
                                 <!-- PREVIEW STYLE: THUMBNAIL -->
                                 <div id="v-style-thumbnail" class="v-style" style="display:none;">
                                     <div class="p-card-preview" style="flex-direction:column; align-items:flex-start; gap:12px; padding:16px;">
-                                        <img src="<%= finalThumb %>" class="p-card-img" id="pt-img" style="width:100%; height:auto; border-radius:12px; max-height:160px;" onerror="this.src='/images/placeholder.png'">
+                                        <img src="<%= previewThumb %>" class="p-card-img" id="pt-img" style="width:100%; height:auto; border-radius:12px; max-height:160px;" onerror="this.onerror=null; this.src='/images/placeholder-neutral.svg'">
                                         <div style="width:100%;">
                                             <div class="p-card-title" id="pt-title" style="font-size:15px;"><%= p.name || 'Product Title' %></div>
                                             <div class="p-card-price" id="pt-price" style="color:#10b981; font-weight:800; font-size:14px; margin-top:4px;">Rp <%= parseFloat(p.price || 0).toLocaleString('id-ID') %></div>
@@ -526,7 +588,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 
                         <div id="preview-checkout" style="display:none;">
                             <div class="p-header">
-                                <img src="<%= finalThumb %>" id="prevMainImg" onerror="this.src='/images/placeholder.png'">
+                                <img src="<%= previewThumb %>" id="prevMainImg" onerror="this.onerror=null; this.src='/images/placeholder-neutral.svg'">
                             </div>
                             <div class="p-body">
                                 <div class="p-title" id="prevMainTitle"><%= p.name || 'Product Title' %></div>
@@ -824,14 +886,23 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
     function setPriceMode(mode, el) {
         document.querySelectorAll('.pt-item').forEach(function(i) { i.classList.remove('active'); });
         el.classList.add('active');
-        var priceField = document.querySelector('input[name="price"]');
+        document.getElementById('pricingMode').value = mode;
+        document.getElementById('pricingToggle').classList.toggle('free-active', mode === 'free');
+        document.getElementById('pricingToggle').classList.toggle('price-active', mode !== 'free');
+        var priceField = document.querySelector('input[name="' + (mode === 'free' ? 'free_price' : 'price_stage_1') + '"]');
         if (mode === 'free') {
-            priceField.value = 0;
+            if (priceField && !priceField.value) priceField.value = 0;
+            document.getElementById('free-price-fields').style.display = 'block';
             document.getElementById('price-fields').style.display = 'none';
-            updatePreview('price', 0);
+            document.getElementById('upsellSection').style.display = 'none';
+            document.getElementById('upsellProductIds').value = '[]';
+            renderSelectedUpsells();
+            updatePreview('price', priceField ? priceField.value : 0);
         } else {
+            document.getElementById('free-price-fields').style.display = 'none';
             document.getElementById('price-fields').style.display = 'block';
-            priceField.focus();
+            document.getElementById('upsellSection').style.display = 'block';
+            if (priceField) priceField.focus();
         }
     }
 
@@ -867,6 +938,56 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
         el.classList.add('active');
         updatePreview('theme', theme);
     }
+
+    function getSelectedUpsells() {
+        try { return JSON.parse(document.getElementById('upsellProductIds').value || '[]').map(Number); } catch (e) { return []; }
+    }
+
+    function syncUpsellInput(ids) {
+        document.getElementById('upsellProductIds').value = JSON.stringify([...new Set(ids.map(Number).filter(Boolean))]);
+        renderSelectedUpsells();
+    }
+
+    function toggleUpsell(input) {
+        const ids = getSelectedUpsells();
+        const id = Number(input.value);
+        if (input.checked && !ids.includes(id)) ids.push(id);
+        if (!input.checked) {
+            const index = ids.indexOf(id);
+            if (index >= 0) ids.splice(index, 1);
+        }
+        syncUpsellInput(ids);
+    }
+
+    function removeUpsell(id) {
+        const input = document.querySelector(`#upsellOptionsList input[value="${id}"]`);
+        if (input) input.checked = false;
+        syncUpsellInput(getSelectedUpsells().filter(item => Number(item) !== Number(id)));
+    }
+
+    function renderSelectedUpsells() {
+        const wrap = document.getElementById('selectedUpsells');
+        if (!wrap) return;
+        const ids = getSelectedUpsells();
+        wrap.innerHTML = '';
+        if (!ids.length) {
+            wrap.innerHTML = '<span style="font-size:12px;color:#94a3b8;">Belum ada produk UpSell.</span>';
+            return;
+        }
+        ids.forEach(id => {
+            const input = document.querySelector(`#upsellOptionsList input[value="${id}"]`);
+            if (!input) return;
+            const chip = document.createElement('span');
+            chip.className = 'upsell-chip';
+            chip.dataset.id = id;
+            chip.innerHTML = `${input.dataset.name.replace(/[&<>"']/g, '')}<button type="button" aria-label="Hapus">×</button>`;
+            chip.querySelector('button').addEventListener('click', () => removeUpsell(id));
+            wrap.appendChild(chip);
+        });
+    }
+
+    function openUpsellModal() { document.getElementById('upsellModal')?.classList.add('open'); }
+    function closeUpsellModal() { document.getElementById('upsellModal')?.classList.remove('open'); }
 
     document.getElementById('mainForm').onsubmit = function() {
         document.getElementById('hiddenDesc').value = document.getElementById('richEditor').innerHTML;

@@ -272,6 +272,14 @@ exports.getProductEdit = async (req, res) => {
     try {
         const [rows] = await db.execute('SELECT * FROM products WHERE id = ?', [req.params.id]);
         if (rows.length === 0) return res.redirect('/admin/products');
+        const ownerId = rows[0].user_id || req.session.userId || (req.session.user ? req.session.user.id : 1);
+        let upsellProducts = [];
+        try {
+            const [available] = await db.execute('SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id <> ? ORDER BY id DESC', [ownerId, req.params.id]);
+            upsellProducts = available;
+        } catch (upsellError) {}
+        let upsellProductIds = [];
+        try { upsellProductIds = JSON.parse(rows[0].upsell_product_ids || '[]'); } catch (e) {}
         let priceHistory = [];
         try {
             const [history] = await db.execute('SELECT * FROM product_price_history WHERE product_id = ? ORDER BY id DESC LIMIT 20', [req.params.id]);
@@ -282,6 +290,8 @@ exports.getProductEdit = async (req, res) => {
             layout: './layouts/admin',
             product: rows[0],
             priceHistory,
+            upsellProducts,
+            upsellProductIds: Array.isArray(upsellProductIds) ? upsellProductIds.map(Number).filter(Boolean) : [],
             getAccessLinks,
             user: req.session.user || res.locals.user
         });
@@ -298,6 +308,8 @@ exports.getProductCreate = async (req, res) => {
         title: 'Tambah Produk',
         layout: './layouts/admin',
         product: { type },
+        upsellProducts: [],
+        upsellProductIds: [],
         getAccessLinks,
         user: req.session.user || res.locals.user
     });
@@ -316,14 +328,24 @@ exports.updateProduct = async (req, res) => {
             await db.execute('ALTER TABLE products ADD event_location VARCHAR(255)');
         }
         
+        const pricingMode = req.body.pricing_mode === 'free' ? 'free' : 'fixed';
         let pricingStage = Math.min(3, Math.max(1, parseInt(req.body.pricing_stage) || 1));
-        const configuredStage1Price = parseFloat(req.body.price_stage_1 ?? req.body.price) || 0;
-        const configuredStage2Price = parseFloat(req.body.price_stage_2) || 0;
-        const configuredStage3Price = parseFloat(req.body.price_stage_3) || 0;
+        let configuredStage1Price = parseFloat(req.body.price_stage_1 ?? req.body.price) || 0;
+        let configuredStage2Price = parseFloat(req.body.price_stage_2) || 0;
+        let configuredStage3Price = parseFloat(req.body.price_stage_3) || 0;
         const stage1StockInput = String(req.body.stock_stage_1 ?? '').trim();
-        const configuredStage1Stock = stage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(stage1StockInput) || 0);
-        const configuredStage2Stock = parseInt(req.body.stock_stage_2) || 0;
-        const configuredStage3Stock = parseInt(req.body.stock_stage_3) || 0;
+        let configuredStage1Stock = stage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(stage1StockInput) || 0);
+        let configuredStage2Stock = parseInt(req.body.stock_stage_2) || 0;
+        let configuredStage3Stock = parseInt(req.body.stock_stage_3) || 0;
+        if (pricingMode === 'free') {
+            configuredStage1Price = Math.max(0, parseFloat(req.body.free_price) || 0);
+            configuredStage1Stock = Math.max(0, parseInt(req.body.free_stock) || 0);
+            configuredStage2Price = 0;
+            configuredStage3Price = 0;
+            configuredStage2Stock = 0;
+            configuredStage3Stock = 0;
+            pricingStage = 1;
+        }
         // Mengisi kembali stok Flash Sale memulai ulang siklus harga dari tahap 1.
         if (pricingStage > 1 && configuredStage1Stock > 0) pricingStage = 1;
         const activeStageStock = pricingStage === 3 ? configuredStage3Stock : (pricingStage === 2 ? configuredStage2Stock : configuredStage1Stock);
@@ -339,6 +361,7 @@ exports.updateProduct = async (req, res) => {
             stock_stage_2: configuredStage2Stock,
             stock_stage_3: configuredStage3Stock,
             pricing_stage: pricingStage,
+            pricing_mode: pricingMode,
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
@@ -361,6 +384,21 @@ exports.updateProduct = async (req, res) => {
             event_time: req.body.event_time || null,
             event_location: req.body.event_location || null
         };
+
+        // Store only products owned by the same seller as selectable UpSell items.
+        let requestedUpsells = [];
+        try { requestedUpsells = JSON.parse(req.body.upsell_product_ids || '[]'); } catch (e) {}
+        requestedUpsells = Array.isArray(requestedUpsells) ? [...new Set(requestedUpsells.map(Number).filter(Boolean))] : [];
+        if (pricingMode === 'free') requestedUpsells = [];
+        try {
+            const [validUpsells] = await db.execute(
+                'SELECT id FROM products WHERE user_id = (SELECT user_id FROM products WHERE id = ?) AND id IN (?)',
+                [id, requestedUpsells.length ? requestedUpsells : 0]
+            );
+            updates.upsell_product_ids = JSON.stringify(validUpsells.map(row => row.id));
+        } catch (e) {
+            updates.upsell_product_ids = '[]';
+        }
 
         if (req.file) {
             updates.thumbnail = '/uploads/products/' + req.file.filename;
@@ -406,7 +444,9 @@ exports.updateProduct = async (req, res) => {
                     'ALTER TABLE products ADD theme_style VARCHAR(20) DEFAULT "light"',
                     'ALTER TABLE products ADD event_date DATE',
                     'ALTER TABLE products ADD event_time TIME',
-                    'ALTER TABLE products ADD event_location VARCHAR(255)'
+                    'ALTER TABLE products ADD event_location VARCHAR(255)',
+                    'ALTER TABLE products ADD upsell_product_ids TEXT',
+                    'ALTER TABLE products ADD pricing_mode VARCHAR(20) DEFAULT "fixed"'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql); } catch(e) {}
@@ -435,19 +475,23 @@ exports.createProductPost = async (req, res) => {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
         const createStage1StockInput = String(req.body.stock_stage_1 ?? '').trim();
         const createStage1Stock = createStage1StockInput === '' && req.body.stock === '-1' ? -1 : (parseInt(createStage1StockInput) || 0);
+        const pricingMode = req.body.pricing_mode === 'free' ? 'free' : 'fixed';
+        const freePrice = Math.max(0, parseFloat(req.body.free_price) || 0);
+        const freeStock = Math.max(0, parseInt(req.body.free_stock) || 0);
         const data = {
             user_id: userId,
             name: req.body.name || '',
             description: req.body.description || '',
-            price: parseFloat(req.body.price_stage_1 ?? req.body.price) || 0,
-            stock: createStage1Stock === -1 ? -1 : createStage1Stock,
-            price_stage_1: parseFloat(req.body.price_stage_1) || parseFloat(req.body.price) || 0,
-            price_stage_2: parseFloat(req.body.price_stage_2) || null,
-            price_stage_3: parseFloat(req.body.price_stage_3) || null,
-            stock_stage_1: createStage1Stock >= 0 ? createStage1Stock : 0,
-            stock_stage_2: parseInt(req.body.stock_stage_2) || 0,
-            stock_stage_3: parseInt(req.body.stock_stage_3) || 0,
+            price: pricingMode === 'free' ? freePrice : (parseFloat(req.body.price_stage_1 ?? req.body.price) || 0),
+            stock: pricingMode === 'free' ? freeStock : (createStage1Stock === -1 ? -1 : createStage1Stock),
+            price_stage_1: pricingMode === 'free' ? freePrice : (parseFloat(req.body.price_stage_1) || parseFloat(req.body.price) || 0),
+            price_stage_2: pricingMode === 'free' ? null : (parseFloat(req.body.price_stage_2) || null),
+            price_stage_3: pricingMode === 'free' ? null : (parseFloat(req.body.price_stage_3) || null),
+            stock_stage_1: pricingMode === 'free' ? freeStock : (createStage1Stock >= 0 ? createStage1Stock : 0),
+            stock_stage_2: pricingMode === 'free' ? 0 : (parseInt(req.body.stock_stage_2) || 0),
+            stock_stage_3: pricingMode === 'free' ? 0 : (parseInt(req.body.stock_stage_3) || 0),
             pricing_stage: 1,
+            pricing_mode: pricingMode,
             product_type: req.body.type || 'digital',
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
@@ -512,7 +556,8 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS theme_style VARCHAR(20) DEFAULT "light"',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_date DATE',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_time TIME',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_location VARCHAR(255)'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_location VARCHAR(255)',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_mode VARCHAR(20) DEFAULT "fixed"'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
