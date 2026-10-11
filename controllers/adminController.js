@@ -1484,10 +1484,10 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key LIKE 'price_pro%' OR setting_key = 'enable_captcha'");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key LIKE 'price_pro%' OR setting_key IN ('enable_captcha', 'free_quota_limit')");
         const smtp = {};
         const affiliate = {};
-        let fee_free = '3', fee_pro = '1', price_pro = '99000', price_pro_monthly = '19000', price_pro_yearly = '190000', enable_captcha = '1';
+        let fee_free = '3', fee_pro = '1', price_pro = '99000', price_pro_monthly = '19000', price_pro_yearly = '190000', enable_captcha = '1', free_quota_limit = '100';
 
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
@@ -1498,7 +1498,12 @@ exports.getSettings = async (req, res) => {
             if (r.setting_key === 'price_pro_monthly') price_pro_monthly = r.setting_value;
             if (r.setting_key === 'price_pro_yearly') price_pro_yearly = r.setting_value;
             if (r.setting_key === 'enable_captcha') enable_captcha = r.setting_value;
+            if (r.setting_key === 'free_quota_limit') free_quota_limit = r.setting_value;
         });
+
+        const [freeCountRows] = await db.execute("SELECT COUNT(*) AS used FROM users WHERE role <> 'admin'");
+        const free_quota_used = Number(freeCountRows[0]?.used || 0);
+        const free_quota_remaining = Math.max(0, (parseInt(free_quota_limit, 10) || 0) - free_quota_used);
 
         res.render('admin/settings', { 
             title: 'Pengaturan', 
@@ -1512,7 +1517,11 @@ exports.getSettings = async (req, res) => {
             price_pro_monthly,
             price_pro_yearly,
             enable_captcha,
+            free_quota_limit,
+            free_quota_used,
+            free_quota_remaining,
             success: req.query.success,
+            error: req.query.error,
             tab: req.query.tab || 'profil',
             smtp_test: req.query.smtp_test === 'true',
             smtp_error: req.query.smtp_error,
@@ -1572,6 +1581,20 @@ exports.updateFeeSettings = async (req, res) => {
     } catch (err) {
         console.error('Fee update error:', err.message);
         res.redirect('/admin/settings?tab=fee&error=true');
+    }
+};
+
+exports.updateFreeQuotaSettings = async (req, res) => {
+    try {
+        const requested = Math.max(0, parseInt(req.body.free_quota_limit, 10) || 0);
+        await db.execute(
+            "INSERT INTO settings (setting_key, setting_value) VALUES ('free_quota_limit', ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+            [String(requested), String(requested)]
+        );
+        res.redirect('/admin/settings?tab=kuota&success=true');
+    } catch (err) {
+        console.error('Free quota update error:', err.message);
+        res.redirect('/admin/settings?tab=kuota&error=true');
     }
 };
 

@@ -13,6 +13,13 @@ async function isCaptchaEnabled() {
     } catch (e) { return true; }
 }
 
+async function getFreeQuota() {
+    const [settingRows] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'free_quota_limit' LIMIT 1");
+    const total = Math.max(0, parseInt(settingRows[0]?.setting_value || '100', 10) || 0);
+    const [countRows] = await db.execute("SELECT COUNT(*) AS used FROM users WHERE role <> 'admin'");
+    return { total, used: Number(countRows[0]?.used || 0), remaining: Math.max(0, total - Number(countRows[0]?.used || 0)) };
+}
+
 exports.showLogin = async (req, res) => {
     res.render('login', { title: 'Login - Lingku.xyz', layout: false, error: null, captchaEnabled: await isCaptchaEnabled() });
 };
@@ -106,6 +113,16 @@ exports.register = async (req, res) => {
         const [existing] = await db.execute('SELECT id FROM users WHERE email = ?', [email]);
         if (existing.length > 0) {
             return res.render('register', { error: 'Email sudah terdaftar', layout: false });
+        }
+
+        // Free registrations are limited by the quota configured by the admin.
+        const freeQuota = await getFreeQuota();
+        if (freeQuota.remaining <= 0) {
+            return res.render('register', {
+                error: 'Kuota gratis sudah habis. Silakan hubungi admin untuk melanjutkan dengan paket PRO.',
+                layout: false,
+                captchaEnabled: await isCaptchaEnabled()
+            });
         }
 
         // Check for referral cookie

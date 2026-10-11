@@ -3,14 +3,28 @@ const router = express.Router();
 
 const indexController = require('../controllers/builderController');
 const ticketController = require('../controllers/ticketController');
+const db = require('../config/db');
 
 // Landing Page
-router.get('/', (req, res) => {
+router.get('/', async (req, res) => {
     // If user is logged in, redirect to dashboard
     if (req.session && req.session.user) {
         return res.redirect('/admin');
     }
-    res.render('index', { layout: false });
+    try {
+        const [settingRows] = await db.execute("SELECT setting_value FROM settings WHERE setting_key = 'free_quota_limit' LIMIT 1");
+        const quotaTotal = Math.max(0, parseInt(settingRows[0]?.setting_value || '100', 10) || 0);
+        const [countRows] = await db.execute("SELECT COUNT(*) AS used FROM users WHERE role <> 'admin'");
+        const quotaUsed = Number(countRows[0]?.used || 0);
+        res.render('index', {
+            layout: false,
+            freeQuotaTotal: quotaTotal,
+            freeQuotaRemaining: Math.max(0, quotaTotal - quotaUsed)
+        });
+    } catch (err) {
+        console.error('Landing quota error:', err.message);
+        res.render('index', { layout: false, freeQuotaTotal: 100, freeQuotaRemaining: null });
+    }
 });
 
 // Legal & Contact Pages

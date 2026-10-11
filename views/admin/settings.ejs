@@ -46,6 +46,7 @@
             <div class="settings-nav-item" onclick="showSection('smtp', this)"><i class="fas fa-server"></i> SMTP Server</div>
             <div class="settings-nav-item" onclick="showSection('pengumuman', this)"><i class="fas fa-bullhorn"></i> Pengumuman Global</div>
             <div class="settings-nav-item" onclick="showSection('fee', this)"><i class="fas fa-crown"></i> Fitur Pro</div>
+            <div class="settings-nav-item" onclick="showSection('kuota', this)"><i class="fas fa-users"></i> Kuota Gratis</div>
         <% } %>
 
         <div class="settings-nav-item" onclick="showSection('affiliate', this)"><i class="fas fa-handshake"></i> Pengaturan Affiliate</div>
@@ -610,6 +611,42 @@
                 <button type="submit" class="s-save" style="background:linear-gradient(135deg, #10b981, #059669);">Simpan Pengaturan Pro</button>
             </form>
         </div>
+
+        <!-- FREE REGISTRATION QUOTA -->
+        <% if (user.role === 'admin') { %>
+        <div class="settings-panel s-section" id="sec-kuota">
+            <div class="settings-title">Kuota Gratis</div>
+            <div class="settings-desc">Atur jumlah akun gratis yang dapat mendaftar. Sisa kuota akan ditampilkan di landing page dan pendaftaran gratis berhenti saat kuota habis.</div>
+
+            <% if (locals.success && locals.tab === 'kuota') { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-check-circle"></i> Berhasil menyimpan kuota gratis
+                </div>
+            <% } %>
+            <% if (locals.error && locals.tab === 'kuota') { %>
+                <div style="padding:14px; background:#fff1f2; border:1px solid #fb7185; border-radius:12px; color:#9f1239; font-size:13px; font-weight:700; margin-bottom:24px;">
+                    <i class="fas fa-exclamation-circle"></i> Gagal menyimpan kuota gratis
+                </div>
+            <% } %>
+
+            <div class="s-row" style="margin-bottom:8px;">
+                <div class="s-group">
+                    <label class="s-label">Total Kuota Gratis</label>
+                    <input class="s-input" type="number" min="0" step="1" name="free_quota_limit" form="freeQuotaForm" value="<%= locals.free_quota_limit || '100' %>" required>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:8px;">Jumlah maksimal akun FREE yang boleh dibuat.</div>
+                </div>
+                <div class="s-group">
+                    <label class="s-label">Penggunaan Saat Ini</label>
+                    <div class="s-input" style="background:#f8fafc; color:#475569;"><%= locals.free_quota_used || 0 %> terpakai · <strong style="color:#2563eb;"><%= locals.free_quota_remaining || 0 %> tersisa</strong></div>
+                    <div style="font-size:11px; color:#94a3b8; margin-top:8px;">Dihitung dari seluruh user yang tercatat di Manajemen User. Upgrade PRO tetap memakai kuota pendaftaran.</div>
+                </div>
+            </div>
+            <form id="freeQuotaForm" action="/admin/settings/update-free-quota" method="POST">
+                <hr class="s-divider">
+                <button type="submit" class="s-save" style="background:linear-gradient(135deg, #2563eb, #1d4ed8);"><i class="fas fa-save"></i> Simpan Kuota Gratis</button>
+            </form>
+        </div>
+        <% } %>
 
         <!-- AFFILIATE -->
         <div class="settings-panel s-section" id="sec-affiliate">
