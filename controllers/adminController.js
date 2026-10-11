@@ -391,10 +391,15 @@ exports.updateProduct = async (req, res) => {
         requestedUpsells = Array.isArray(requestedUpsells) ? [...new Set(requestedUpsells.map(Number).filter(Boolean))] : [];
         if (pricingMode === 'free') requestedUpsells = [];
         try {
-            const [validUpsells] = await db.execute(
-                'SELECT id FROM products WHERE user_id = (SELECT user_id FROM products WHERE id = ?) AND id IN (?)',
-                [id, requestedUpsells.length ? requestedUpsells : 0]
-            );
+            let validUpsells = [];
+            if (requestedUpsells.length) {
+                const placeholders = requestedUpsells.map(() => '?').join(',');
+                const [rows] = await db.execute(
+                    `SELECT id FROM products WHERE user_id = (SELECT user_id FROM products WHERE id = ?) AND id IN (${placeholders})`,
+                    [id, ...requestedUpsells]
+                );
+                validUpsells = rows;
+            }
             updates.upsell_product_ids = JSON.stringify(validUpsells.map(row => row.id));
         } catch (e) {
             updates.upsell_product_ids = '[]';
