@@ -506,6 +506,17 @@ exports.renderProductPage = async (req, res) => {
 
         if (products.length === 0) return res.status(404).send('Product not found');
         const product = await syncPricingTier(products[0]);
+        let upsellProducts = [];
+        let configuredUpsells = [];
+        try { configuredUpsells = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+        if (configuredUpsells.length) {
+            const placeholders = configuredUpsells.map(() => '?').join(',');
+            const [rows] = await db.execute(
+                `SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                [product.user_id, ...configuredUpsells]
+            );
+            upsellProducts = rows.filter(item => Number(item.stock) === -1 || Number(item.stock) > 0);
+        }
 
         // Process image (Robust detection)
         const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
@@ -565,7 +576,7 @@ exports.renderCheckoutPage = async (req, res) => {
         }
         product.processed_thumb = thumb;
 
-        res.render('checkout', { title: 'Checkout', product, layout: false });
+        res.render('checkout', { title: 'Checkout', product, upsellProducts, layout: false });
     } catch (err) {
         console.error(err);
         res.status(500).send('Error loading checkout');
@@ -575,6 +586,8 @@ exports.renderCheckoutPage = async (req, res) => {
 exports.processCheckout = async (req, res) => {
     try {
         const { product_id, name, email, phone, payment_method, payment_channel } = req.body;
+        let selectedUpsellIds = [];
+        try { selectedUpsellIds = JSON.parse(req.body.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
         const clientIp = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '0.0.0.0';
 
         // 0. Ensure Users Table has iPaymu columns
@@ -599,6 +612,23 @@ exports.processCheckout = async (req, res) => {
         if (products.length === 0) return res.status(404).json({ success: false, message: 'Produk tidak ditemukan.' });
         const product = products[0];
 
+        // Validate selected UpSell items against the seller's saved configuration.
+        let upsellItems = [];
+        let configuredUpsells = [];
+        try { configuredUpsells = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+        selectedUpsellIds = [...new Set(selectedUpsellIds)].filter(id => configuredUpsells.includes(id));
+        if (selectedUpsellIds.length) {
+            const placeholders = selectedUpsellIds.map(() => '?').join(',');
+            const [rows] = await db.execute(
+                `SELECT id, name, price, stock FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                [product.user_id, ...selectedUpsellIds]
+            );
+            upsellItems = rows;
+            if (upsellItems.length !== selectedUpsellIds.length || upsellItems.some(item => Number(item.stock) === 0)) {
+                return res.status(400).send('Salah satu produk UpSell sudah habis. Silakan muat ulang halaman.');
+            }
+        }
+
         // SMART RECOVERY: Check for existing pending order to prevent duplicates
         const [existingOrders] = await db.execute(
             'SELECT * FROM orders WHERE customer_email = ? AND product_id = ? AND status = "pending" AND created_at > DATE_SUB(NOW(), INTERVAL 30 MINUTE) LIMIT 1',
@@ -615,6 +645,8 @@ exports.processCheckout = async (req, res) => {
         await syncPricingTier(product);
         if (product.stock !== -1 && product.stock <= 0) return res.status(400).send('Stok produk habis.');
         const salePrice = parseFloat(product.price || 0);
+        const upsellTotal = upsellItems.reduce((sum, item) => sum + parseFloat(item.price || 0), 0);
+        const totalPrice = salePrice + upsellTotal;
 
         // 3. AFFILIATE TRACKING LOGIC
         let affiliateId = null;
@@ -660,17 +692,23 @@ exports.processCheckout = async (req, res) => {
             await syncPricingTier(product);
         }
 
+        for (const upsell of upsellItems) {
+            if (Number(upsell.stock) === -1) continue;
+            const [stockUpdate] = await db.execute('UPDATE products SET stock = stock - 1 WHERE id = ? AND stock > 0', [upsell.id]);
+            if (!stockUpdate.affectedRows) return res.status(400).send('Stok produk UpSell baru saja habis.');
+        }
+
         // 2. Generate Reference ID
         const refId = 'INV-' + Date.now();
 
         // 4. Create Order (With Auto-Fix for Columns)
         const orderParams = [
             product.user_id, product.id, affiliateId, refId, 
-            name, email, phone, salePrice, commissionAmount, payment_channel, clientIp
+            name, email, phone, totalPrice, commissionAmount, payment_channel, clientIp, JSON.stringify(selectedUpsellIds)
         ];
         const insertQuery = `
-            INSERT INTO orders (user_id, product_id, affiliate_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, commission_amount, payment_channel, status, customer_ip)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+            INSERT INTO orders (user_id, product_id, affiliate_id, reference_id, customer_name, customer_email, customer_whatsapp, total_price, commission_amount, payment_channel, status, customer_ip, upsell_product_ids)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
         `;
         try {
             const [createdOrder] = await db.execute(insertQuery, orderParams);
@@ -691,6 +729,7 @@ exports.processCheckout = async (req, res) => {
                 await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS commission_amount DECIMAL(15,2) DEFAULT 0');
                 await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ip VARCHAR(50) DEFAULT NULL');
                 await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_channel VARCHAR(50) DEFAULT NULL');
+                await db.execute('ALTER TABLE orders ADD COLUMN IF NOT EXISTS upsell_product_ids TEXT');
                 await db.execute(insertQuery, orderParams);
             } catch (healErr) {
                 console.error('Healing Error:', healErr.message);
@@ -730,7 +769,7 @@ exports.processCheckout = async (req, res) => {
         }
 
         const timestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0];
-        const finalAmount = Math.floor(salePrice);
+        const finalAmount = Math.floor(totalPrice);
 
         // Fixed: iPaymu anti-fraud often flags '6281234567890' or numbers starting with 0. 
         // We ensure it starts with 62 and is realistic.
@@ -754,7 +793,7 @@ exports.processCheckout = async (req, res) => {
             referenceId: refId,
             paymentMethod: method,
             paymentChannel: chan,
-            comments: `Order ${product.name}`,
+            comments: `Order ${product.name}${upsellItems.length ? ' + UpSell' : ''}`,
             expired: expiryMins,
             expiredType: 'minutes'
         };
@@ -812,7 +851,7 @@ exports.processCheckout = async (req, res) => {
                     customerEmail: email,
                     customerName: name,
                     productName: product.name,
-                    totalPrice: salePrice,
+                    totalPrice,
                     channel: chan,
                     paymentNo: paymentNo,
                     qrUrl: qrUrl

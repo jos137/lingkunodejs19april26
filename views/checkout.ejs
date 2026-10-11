@@ -24,6 +24,12 @@
         .product-info { flex: 1; }
         .product-name { font-size: 13px; font-weight: 800; color: #1e293b; margin-bottom: 2px; }
         .product-price { font-size: 14px; font-weight: 700; color: #10b981; }
+        .upsell-box { margin: -12px 0 28px; padding:14px; border:1px solid #dbeafe; border-radius:16px; background:#eff6ff; }
+        .upsell-title { font-size:12px; font-weight:850; color:#1e40af; margin-bottom:10px; }
+        .upsell-choice { display:flex; align-items:center; gap:9px; padding:9px 0; border-top:1px solid #dbeafe; cursor:pointer; }
+        .upsell-choice:first-of-type { border-top:0; }
+        .upsell-choice-info { flex:1; font-size:12px; font-weight:700; color:#1e293b; }
+        .upsell-choice-price { display:block; color:#2563eb; font-size:11px; margin-top:2px; }
 
         .form-group { margin-bottom: 20px; }
         .label { display: block; font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -58,12 +64,26 @@
             </div>
             <div class="product-info">
                 <div class="product-name"><%= product.name %></div>
-                <div class="product-price">Rp <%= parseFloat(product.price || 0).toLocaleString('id-ID') %></div>
+                <div class="product-price" id="checkoutTotal">Rp <%= parseFloat(product.price || 0).toLocaleString('id-ID') %></div>
             </div>
         </div>
 
+        <% const availableUpsells = Array.isArray(locals.upsellProducts) ? locals.upsellProducts : []; %>
+        <% if (availableUpsells.length) { %>
+            <div class="upsell-box">
+                <div class="upsell-title"><i class="fas fa-bolt"></i> Tambahkan juga produk ini</div>
+                <% availableUpsells.forEach(item => { %>
+                    <label class="upsell-choice">
+                        <input type="checkbox" class="upsell-check" value="<%= item.id %>" data-price="<%= Number(item.price || 0) %>">
+                        <span class="upsell-choice-info"><%= item.name %><span class="upsell-choice-price">+ Rp <%= Number(item.price || 0).toLocaleString('id-ID') %></span></span>
+                    </label>
+                <% }) %>
+            </div>
+        <% } %>
+
         <form action="/checkout/process" method="POST" id="checkoutForm">
             <input type="hidden" name="product_id" value="<%= product.id %>">
+            <input type="hidden" name="upsell_product_ids" id="upsellProductIds" value="[]">
             <input type="hidden" name="payment_method" id="payMethod" value="qr">
             <input type="hidden" name="payment_channel" id="payChannel" value="qris">
             
@@ -142,6 +162,16 @@
                 document.getElementById('payMethod').value = el.dataset.method;
                 document.getElementById('payChannel').value = el.dataset.channel;
             }
+
+            const basePrice = <%= Number(product.price || 0) %>;
+            function syncUpsells() {
+                const selected = Array.from(document.querySelectorAll('.upsell-check:checked'));
+                const ids = selected.map(input => Number(input.value));
+                const total = basePrice + selected.reduce((sum, input) => sum + Number(input.dataset.price || 0), 0);
+                document.getElementById('upsellProductIds').value = JSON.stringify(ids);
+                document.getElementById('checkoutTotal').innerText = 'Rp ' + total.toLocaleString('id-ID');
+            }
+            document.querySelectorAll('.upsell-check').forEach(input => input.addEventListener('change', syncUpsells));
 
             // Anti-Spam Submit
             document.querySelector('form').addEventListener('submit', function(e) {
