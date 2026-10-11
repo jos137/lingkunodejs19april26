@@ -510,12 +510,17 @@ exports.renderProductPage = async (req, res) => {
         let configuredUpsells = [];
         try { configuredUpsells = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
         if (configuredUpsells.length) {
-            const placeholders = configuredUpsells.map(() => '?').join(',');
-            const [rows] = await db.execute(
-                `SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id IN (${placeholders})`,
-                [product.user_id, ...configuredUpsells]
-            );
-            upsellProducts = rows.filter(item => Number(item.stock) === -1 || Number(item.stock) > 0);
+            try {
+                const placeholders = configuredUpsells.map(() => '?').join(',');
+                const [rows] = await db.execute(
+                    `SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                    [product.user_id, ...configuredUpsells]
+                );
+                upsellProducts = rows.filter(item => Number(item.stock) === -1 || Number(item.stock) > 0);
+            } catch (upsellError) {
+                console.error('Checkout UpSell lookup error:', upsellError.message);
+                upsellProducts = [];
+            }
         }
 
         // Process image (Robust detection)
@@ -557,6 +562,34 @@ exports.renderCheckoutPage = async (req, res) => {
         
         const product = await syncPricingTier(products[0]);
 
+        // Load the seller's configured UpSell products for the checkout.
+        // Keep this lookup isolated so an older database schema cannot break
+        // the entire checkout page.
+        let upsellProducts = [];
+        let configuredUpsells = [];
+        try { configuredUpsells = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+        if (configuredUpsells.length) {
+            try {
+                const placeholders = configuredUpsells.map(() => '?').join(',');
+                let rows;
+                try {
+                    [rows] = await db.execute(
+                        `SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                        [product.user_id, ...configuredUpsells]
+                    );
+                } catch (thumbnailError) {
+                    // Some older installations do not have thumbnail yet.
+                    [rows] = await db.execute(
+                        `SELECT id, name, price, stock FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                        [product.user_id, ...configuredUpsells]
+                    );
+                }
+                upsellProducts = rows.filter(item => Number(item.stock) === -1 || Number(item.stock) > 0);
+            } catch (upsellError) {
+                console.error('Checkout UpSell lookup error:', upsellError.message);
+            }
+        }
+
         // Process image (Robust detection)
         const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
         const candidates = [product.thumbnail, product.image_url, product.image_small, product.cover_image, product.photo];
@@ -578,7 +611,7 @@ exports.renderCheckoutPage = async (req, res) => {
 
         res.render('checkout', { title: 'Checkout', product, upsellProducts, layout: false });
     } catch (err) {
-        console.error(err);
+        console.error('Render Checkout Error:', err.message, err.stack);
         res.status(500).send('Error loading checkout');
     }
 };
