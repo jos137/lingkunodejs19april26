@@ -95,6 +95,19 @@
     padding: 35px; position: sticky; top: 25px; box-shadow: 0 10px 40px rgba(0,0,0,0.04);
 }
 
+/* Admin delete confirmation */
+.delete-modal { display:none; position:fixed; inset:0; z-index:2000; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.48); backdrop-filter:blur(4px); }
+.delete-modal.open { display:flex; animation:fadeIn .16s ease-out; }
+.delete-modal-card { width:min(410px,100%); padding:28px; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(15,23,42,.24); text-align:center; }
+.delete-modal-icon { width:54px; height:54px; margin:0 auto 16px; display:grid; place-items:center; border-radius:16px; color:#e11d48; background:#fff1f2; font-size:22px; }
+.delete-modal-card h3 { margin:0 0 8px; color:#172033; font-size:18px; font-weight:900; }
+.delete-modal-card p { margin:0; color:#64748b; font-size:13px; line-height:1.6; }
+.delete-modal-actions { display:flex; gap:10px; margin-top:22px; }
+.delete-modal-actions button { flex:1; border:0; border-radius:11px; padding:12px 14px; font:inherit; font-size:13px; font-weight:800; cursor:pointer; }
+.delete-modal-cancel { color:#475569; background:#f1f5f9; }
+.delete-modal-confirm { color:#fff; background:#e11d48; box-shadow:0 5px 14px rgba(225,29,72,.22); }
+.delete-modal-actions button:focus-visible { outline:3px solid #93c5fd; outline-offset:2px; }
+
 /* Mobile */
 .order-detail-mobile { display: none; width: 100%; border-top: 1.5px solid #f1f5f9; margin-top: 20px; padding-top: 25px; }
 
@@ -255,9 +268,23 @@
         <% } %>
     </div>
 
-    <!-- RIGHT: DETAIL PANEL -->
+<!-- RIGHT: DETAIL PANEL -->
     <div class="detail-panel" id="detailPanel"></div>
 </div>
+
+<% if (locals.isAdmin) { %>
+<div class="delete-modal" id="deleteModal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" onclick="if(event.target===this) closeDeleteModal()">
+    <div class="delete-modal-card">
+        <div class="delete-modal-icon"><i class="fas fa-trash-alt"></i></div>
+        <h3 id="deleteModalTitle">Hapus Pesanan?</h3>
+        <p>Data transaksi dan catatan email pesanan ini akan dihapus dari dashboard.</p>
+        <div class="delete-modal-actions">
+            <button type="button" class="delete-modal-cancel" onclick="closeDeleteModal()">Batal</button>
+            <button type="button" class="delete-modal-confirm" onclick="confirmDeleteOrder()">Hapus Pesanan</button>
+        </div>
+    </div>
+</div>
+<% } %>
 
 <script>
 const ordersData = <%- JSON.stringify(orders || []) %>;
@@ -351,7 +378,7 @@ function renderOrderDetail(o, idx) {
                         <i class="fas fa-paper-plane" style="margin-right:6px;"></i> ${btnLabel}
                     </div>
                     <% if (locals.isAdmin) { %>
-                        <div onclick="deleteOrder(event, ${o.id})" style="padding:10px 14px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">
+                        <div onclick="openDeleteModal(event, ${o.id})" style="padding:10px 14px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">
                             <i class="fas fa-trash" style="margin-right:5px;"></i> Hapus
                         </div>
                     <% } %>
@@ -447,18 +474,36 @@ async function sendOrderEmail(id, status) {
     }
 }
 
-async function deleteOrder(event, id) {
+let pendingDeleteOrderId = null;
+function openDeleteModal(event, id) {
     event.stopPropagation();
-    if (!confirm('Hapus pesanan ini? Data transaksi dan catatan email akan dihapus.')) return;
+    pendingDeleteOrderId = id;
+    document.getElementById('deleteModal')?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeDeleteModal() {
+    pendingDeleteOrderId = null;
+    document.getElementById('deleteModal')?.classList.remove('open');
+    document.body.style.overflow = '';
+}
+async function confirmDeleteOrder() {
+    const id = pendingDeleteOrderId;
+    if (!id) return;
+    const button = document.querySelector('.delete-modal-confirm');
+    if (button) { button.disabled = true; button.textContent = 'Menghapus...'; }
     try {
         const res = await fetch(`/admin/orders/delete/${id}`, {
             method: 'POST',
             headers: { 'Accept': 'application/json' }
         });
         const data = await res.json();
-        if (!data.success) return alert(data.message || 'Pesanan gagal dihapus.');
+        if (!data.success) {
+            closeDeleteModal();
+            return alert(data.message || 'Pesanan gagal dihapus.');
+        }
         window.location.reload();
     } catch (err) {
+        closeDeleteModal();
         alert('Terjadi kesalahan saat menghapus pesanan.');
     }
 }
