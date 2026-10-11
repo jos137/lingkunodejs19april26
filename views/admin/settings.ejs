@@ -702,6 +702,32 @@
     </div>
 </div>
 
+<style>
+.photo-crop-modal { display:none; position:fixed; inset:0; z-index:3000; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.72); backdrop-filter:blur(5px); }
+.photo-crop-modal.open { display:flex; }
+.photo-crop-card { width:min(520px,100%); padding:22px; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(0,0,0,.3); }
+.photo-crop-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+.photo-crop-head strong { color:#172033; font-size:17px; }
+.photo-crop-close { border:0; background:#f1f5f9; color:#64748b; width:32px; height:32px; border-radius:9px; cursor:pointer; }
+.photo-crop-stage { display:flex; justify-content:center; padding:12px; border-radius:14px; background:#0f172a; }
+#photoCropCanvas { width:min(100%,420px); height:auto; aspect-ratio:1; touch-action:none; cursor:grab; border-radius:50%; }
+.photo-crop-help { margin:12px 0 8px; color:#64748b; font-size:12px; text-align:center; }
+.photo-crop-zoom { width:100%; accent-color:#2563eb; }
+.photo-crop-actions { display:flex; gap:10px; margin-top:16px; }
+.photo-crop-actions button { flex:1; border:0; border-radius:11px; padding:12px; font:inherit; font-weight:800; cursor:pointer; }
+.photo-crop-cancel { color:#475569; background:#f1f5f9; }
+.photo-crop-save { color:#fff; background:linear-gradient(135deg,#2563eb,#1d4ed8); }
+</style>
+<div class="photo-crop-modal" id="photoCropModal" role="dialog" aria-modal="true" aria-labelledby="photoCropTitle">
+    <div class="photo-crop-card">
+        <div class="photo-crop-head"><strong id="photoCropTitle">Atur Foto Profil</strong><button type="button" class="photo-crop-close" onclick="closePhotoCrop()" aria-label="Tutup">×</button></div>
+        <div class="photo-crop-stage"><canvas id="photoCropCanvas" width="720" height="720"></canvas></div>
+        <div class="photo-crop-help">Geser foto untuk mengatur posisi, lalu gunakan slider untuk memperbesar.</div>
+        <input class="photo-crop-zoom" id="photoCropZoom" type="range" min="1" max="3" step="0.01" value="1" aria-label="Zoom foto">
+        <div class="photo-crop-actions"><button type="button" class="photo-crop-cancel" onclick="closePhotoCrop()">Batal</button><button type="button" class="photo-crop-save" onclick="applyPhotoCrop()">Potong & Kompres</button></div>
+    </div>
+</div>
+
 <script>
 function showSection(id, el) {
     document.querySelectorAll('.s-section').forEach(s => s.classList.remove('active'));
@@ -715,18 +741,50 @@ function showSection(id, el) {
 
 function previewPhoto(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
+        if (!file.type.startsWith('image/')) { input.value = ''; return; }
         const reader = new FileReader();
         reader.onload = function(e) {
-            const previewImg = document.getElementById('previewImg');
-            const previewInitial = document.getElementById('previewInitial');
-            if (previewImg) {
-                previewImg.src = e.target.result;
-                previewImg.style.display = 'block';
-                if (previewInitial) previewInitial.style.display = 'none';
-            }
-        }
-        reader.readAsDataURL(input.files[0]);
+            cropImage = new Image();
+            cropImage.onload = function() { cropScale = 1; cropX = 0; cropY = 0; document.getElementById('photoCropZoom').value = '1'; drawPhotoCrop(); document.getElementById('photoCropModal').classList.add('open'); };
+            cropImage.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
     }
+}
+
+let cropImage = null, cropScale = 1, cropX = 0, cropY = 0, cropDragging = false, cropStartX = 0, cropStartY = 0;
+const cropCanvas = document.getElementById('photoCropCanvas');
+const cropCtx = cropCanvas ? cropCanvas.getContext('2d') : null;
+function drawPhotoCrop() {
+    if (!cropCtx || !cropImage) return;
+    const size = cropCanvas.width;
+    cropCtx.clearRect(0, 0, size, size);
+    cropCtx.fillStyle = '#0f172a'; cropCtx.fillRect(0, 0, size, size);
+    const base = Math.max(size / cropImage.width, size / cropImage.height);
+    const scale = base * cropScale;
+    const width = cropImage.width * scale, height = cropImage.height * scale;
+    cropCtx.drawImage(cropImage, (size - width) / 2 + cropX, (size - height) / 2 + cropY, width, height);
+}
+document.getElementById('photoCropZoom')?.addEventListener('input', function() { cropScale = Number(this.value); drawPhotoCrop(); });
+cropCanvas?.addEventListener('pointerdown', e => { cropDragging = true; cropStartX = e.clientX - cropX; cropStartY = e.clientY - cropY; cropCanvas.setPointerCapture(e.pointerId); });
+cropCanvas?.addEventListener('pointermove', e => { if (!cropDragging) return; cropX = e.clientX - cropStartX; cropY = e.clientY - cropStartY; drawPhotoCrop(); });
+cropCanvas?.addEventListener('pointerup', () => { cropDragging = false; });
+function closePhotoCrop() { document.getElementById('photoCropModal')?.classList.remove('open'); const input = document.getElementById('photoInput'); if (input) input.value = ''; }
+function applyPhotoCrop() {
+    if (!cropImage || !cropCtx) return;
+    const out = document.createElement('canvas'); out.width = 900; out.height = 900;
+    const ctx = out.getContext('2d'); ctx.drawImage(cropCanvas, 0, 0, 900, 900);
+    out.toBlob(blob => {
+        if (!blob) return;
+        const file = new File([blob], 'profile-compressed.jpg', { type:'image/jpeg' });
+        const input = document.getElementById('photoInput');
+        const transfer = new DataTransfer(); transfer.items.add(file); input.files = transfer.files;
+        const previewImg = document.getElementById('previewImg'), previewInitial = document.getElementById('previewInitial');
+        if (previewImg) { previewImg.src = URL.createObjectURL(blob); previewImg.style.display = 'block'; }
+        if (previewInitial) previewInitial.style.display = 'none';
+        closePhotoCrop();
+    }, 'image/jpeg', 0.82);
 }
 
 window.onload = function() {
