@@ -1318,7 +1318,7 @@ exports.ipaymuCallback = async (req, res) => {
                     }
 
                     // 4. Send Access Email Automatically (for non-ticket products)
-                    if (!isTicketProduct && order.customer_email && (order.download_url || order.access_link)) {
+                    if (!isTicketProduct && order.customer_email && (order.download_url || order.access_link || order.upsell_product_ids)) {
                         const baseUrl = `https://${req.get('host')}`;
                         const { sendAccessEmail } = require('../utils/mailer');
                         sendAccessEmail(
@@ -1410,9 +1410,9 @@ exports.handleAccessLink = async (req, res) => {
     try {
         const orderId = req.params.orderId;
         
-        // Fetch product access link
+        // Fetch the main product and the purchased UpSell IDs from this order.
         const [rows] = await db.execute(`
-            SELECT p.*, o.status AS order_status
+            SELECT p.*, o.status AS order_status, o.upsell_product_ids
             FROM orders o 
             LEFT JOIN products p ON o.product_id = p.id 
             WHERE o.id = ?
@@ -1421,14 +1421,35 @@ exports.handleAccessLink = async (req, res) => {
         if (rows.length === 0) return res.redirect('/');
 
         if (rows[0].order_status !== 'completed') return res.status(403).send('Selesaikan pembayaran untuk mengakses produk.');
-        const links = getAccessLinks(rows[0]);
+        const product = rows[0];
+        let links = getAccessLinks(product).map(link => ({
+            ...link,
+            name: `${product.name || 'Produk utama'} — ${link.name || 'Akses Produk'}`
+        }));
+
+        // Add access links for every UpSell included in the completed order.
+        let upsellIds = [];
+        try { upsellIds = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+        if (upsellIds.length && product.user_id) {
+            const placeholders = upsellIds.map(() => '?').join(',');
+            const [upsells] = await db.execute(
+                `SELECT * FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                [product.user_id, ...upsellIds]
+            );
+            for (const upsell of upsells) {
+                links.push(...getAccessLinks(upsell).map(link => ({
+                    ...link,
+                    name: `${upsell.name || 'Produk tambahan'} — ${link.name || 'Akses Produk'}`
+                })));
+            }
+        }
 
         // Log the click
         await db.execute("INSERT INTO email_logs (order_id, event_name, created_at) VALUES (?, 'Clicked', NOW())", [orderId]);
 
         // Redirect to actual access link
         if (links.length === 1) return res.redirect(links[0].url);
-        res.render('product-access', { layout: false, product: rows[0], links });
+        res.render('product-access', { layout: false, product, links });
     } catch (err) {
         console.error('Handle Access Link Error:', err);
         res.redirect('/');
