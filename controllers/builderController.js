@@ -4,6 +4,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { sendPaymentInstructionEmail, sendAccessEmail } = require('../utils/mailer');
 const { cleanHtml, safeUrl } = require('../utils/sanitize');
+const { notifyTelegram, escapeHtml } = require('../utils/telegram');
 
 async function syncPricingTier(product) {
     let stage = Number(product.pricing_stage || 1);
@@ -652,6 +653,7 @@ exports.processCheckout = async (req, res) => {
                             'INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)',
                             [product.user_id, 'Stok tahap hampir habis', `${product.name} tersisa ${product.stock} stok pada tahap ${product.pricing_stage}. Tahap ${nextStage} akan aktif berikutnya.`, 'warning', `/admin/products/${product.id}/edit`]
                         );
+                        void notifyTelegram(`⚠️ <b>Stok hampir habis</b>\nProduk: ${escapeHtml(product.name)}\nSisa: ${product.stock}\nTahap aktif: ${product.pricing_stage}`);
                     }
                 } catch (notificationError) {}
             }
@@ -674,8 +676,8 @@ exports.processCheckout = async (req, res) => {
             const [createdOrder] = await db.execute(insertQuery, orderParams);
             
             // Notify Merchant about NEW PENDING ORDER
-            try {
-                await db.execute(
+                    try {
+                        await db.execute(
                     "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
                     [product.user_id, '🛒 Pesanan Baru Masuk', `${name} sedang memesan ${product.name}`, 'info', `/admin/orders?search=${encodeURIComponent(refId)}`]
                 );
@@ -1135,6 +1137,7 @@ exports.ipaymuCallback = async (req, res) => {
                                 "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
                                 [1, '👑 Member PRO Baru!', `User ID ${targetUserId} baru saja upgrade ke paket PRO via iPaymu.`, 'system', '/admin/upgrade-orders']
                             );
+                            void notifyTelegram(`👑 <b>Upgrade PRO berhasil</b>\nUser: ${escapeHtml(userData[0].fullname || userData[0].name || 'User')}\nEmail: ${escapeHtml(userData[0].email)}\nMasa aktif: ${pkgCode === 'M' ? 'Bulanan' : 'Tahunan'}`);
                         } catch (bgErr) {
                             console.error('Secondary Upgrade Task Error:', bgErr.message);
                         }
@@ -1267,6 +1270,8 @@ exports.ipaymuCallback = async (req, res) => {
                         console.error('Notification Error:', e.message);
                     }
 
+                    void notifyTelegram(`💰 <b>Pembayaran berhasil</b>\nProduk: ${escapeHtml(order.product_name || 'Produk digital')}\nPembeli: ${escapeHtml(order.customer_name || order.customer_email)}\nNilai: Rp ${parseFloat(order.total_price || 0).toLocaleString('id-ID')}\nRef: ${escapeHtml(order.reference_id || sid)}`);
+
                     console.log(`[SUCCESS] Order ${sid} completed & Email/Notif sent.`);
                 }
             }
@@ -1279,6 +1284,7 @@ exports.ipaymuCallback = async (req, res) => {
                     await db.execute('UPDATE orders SET status = ? WHERE id = ?', ['expired', order.id]);
                     // Return stock (Only if NOT unlimited)
                     await db.execute('UPDATE products SET stock = stock + 1 WHERE id = ? AND stock >= 0', [order.product_id]);
+                    void notifyTelegram(`⏳ <b>Pembayaran kedaluwarsa</b>\nReferensi: ${escapeHtml(sid)}\nStok dikembalikan ke produk.`);
                     console.log(`[EXPIRED] Order ${sid} expired. Stock returned.`);
                 }
             }

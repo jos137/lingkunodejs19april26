@@ -216,6 +216,7 @@ router.post('/settings/update-admin-theme', adminController.updateAdminTheme);
 router.post('/settings/update-announcement', adminController.updateAnnouncement);
 router.post('/settings/update-smtp', adminController.updateSMTPSettings);
 router.post('/settings/test-smtp', isAdmin, adminController.testSMTPSettings);
+router.post('/settings/test-telegram', isAdmin, adminController.testTelegramSettings);
 router.post('/settings/update-fee', adminController.updateFeeSettings);
 router.post('/settings/update-free-quota', isAdmin, adminController.updateFreeQuotaSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);

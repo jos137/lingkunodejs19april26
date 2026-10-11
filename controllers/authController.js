@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const mailer = require('../utils/mailer');
 const svgCaptcha = require('svg-captcha');
+const { notifyTelegram, escapeHtml } = require('../utils/telegram');
 
 // Saklar CAPTCHA (Pengaturan admin -> Keamanan). Default ON agar aman di produksi.
 async function isCaptchaEnabled() {
@@ -165,6 +166,13 @@ exports.register = async (req, res) => {
             );
         } catch (e) {
             console.error('Notification Error:', e.message);
+        }
+
+        // Admin-only Telegram alert. It never blocks registration if Telegram is unavailable.
+        void notifyTelegram(`👤 <b>User baru mendaftar</b>\nNama: ${escapeHtml(fullname)}\nEmail: ${escapeHtml(email)}\nKuota terpakai: user baru ditambahkan ke Manajemen User.`);
+        const remainingAfterRegistration = Math.max(0, freeQuota.remaining - 1);
+        if (remainingAfterRegistration <= 10) {
+            void notifyTelegram(`🚨 <b>Kuota gratis menipis</b>\nSisa kuota: ${remainingAfterRegistration}\nAtur kembali melalui Admin &gt; Pengaturan &gt; Kuota Gratis.`);
         }
 
         res.redirect('/admin');

@@ -44,6 +44,7 @@
         <% if (user.role === 'admin') { %>
             <div class="settings-nav-item" onclick="showSection('ipaymu', this)"><i class="fas fa-credit-card"></i> iPaymu Gateway</div>
             <div class="settings-nav-item" onclick="showSection('smtp', this)"><i class="fas fa-server"></i> SMTP Server</div>
+            <div class="settings-nav-item" onclick="showSection('telegram', this)"><i class="fab fa-telegram-plane"></i> Telegram Admin</div>
             <div class="settings-nav-item" onclick="showSection('pengumuman', this)"><i class="fas fa-bullhorn"></i> Pengumuman Global</div>
             <div class="settings-nav-item" onclick="showSection('fee', this)"><i class="fas fa-crown"></i> Fitur Pro</div>
             <div class="settings-nav-item" onclick="showSection('kuota', this)"><i class="fas fa-users"></i> Kuota Gratis</div>
@@ -53,6 +54,25 @@
     </div>
 
     <div>
+        <% if (user.role === 'admin') { %>
+        <div class="settings-panel s-section" id="sec-telegram">
+            <div class="settings-title">Notifikasi Telegram Admin</div>
+            <div class="settings-desc">Notifikasi dikirim ke Chat ID admin melalui token yang tersimpan di environment hosting.</div>
+            <% if (locals.telegram_test === 'true') { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px;"><i class="fas fa-check-circle"></i> Pesan pengujian Telegram berhasil dikirim.</div>
+            <% } else if (locals.telegram_test === 'false') { %>
+                <div style="padding:14px; background:#fff1f2; border:1px solid #fb7185; border-radius:12px; color:#9f1239; font-size:13px; font-weight:700; margin-bottom:24px;"><i class="fas fa-exclamation-circle"></i> Pesan gagal dikirim. Periksa token bot dan Chat ID di hosting.</div>
+            <% } %>
+            <div style="display:flex;align-items:center;gap:12px;padding:16px 18px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;color:#1e40af;font-size:13px;line-height:1.6;">
+                <i class="fab fa-telegram-plane" style="font-size:24px;"></i>
+                <span>Event penting seperti user baru, pembayaran berhasil, upgrade PRO, WD, stok menipis, dan error pembayaran akan dikirim otomatis.</span>
+            </div>
+            <form action="/admin/settings/test-telegram" method="POST" style="margin-top:24px;">
+                <button type="submit" class="s-save" style="background:linear-gradient(135deg, #229ed9, #168ac0);"><i class="fab fa-telegram-plane"></i> Kirim Pesan Percobaan</button>
+            </form>
+        </div>
+        <% } %>
+
         <!-- PROFIL -->
         <div class="settings-panel s-section active" id="sec-profil">
             <div class="settings-title">Profil Akun</div>

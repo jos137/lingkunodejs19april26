@@ -4,6 +4,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const { exec } = require('child_process');
 const { sendAccessEmail, sendTicketEmail, sendFollowUpEmail, sendReplyNotificationEmail, sendPaymentInstructionEmail, sendProActivationEmail, sendWdOtpEmail, sendBankOtpEmail, sendBankChangedEmail, sendTestEmail } = require('../utils/mailer');
+const { notifyTelegram, escapeHtml } = require('../utils/telegram');
 
 // Mask email untuk ditampilkan di popup OTP (u***@gmail.com)
 function maskEmail(email) {
@@ -174,6 +175,8 @@ exports.confirmWdOtp = async (req, res) => {
                 [1, '🚀 WD ' + plan.toUpperCase() + ' Masuk', `${requesterName} meminta Rp ${requestedAmount.toLocaleString('id-ID')} (Potongan ${feePercent}%${fixedAdminFee ? ' + Rp 9.500 admin' : ''})`, 'withdrawal', '/admin/withdrawal-queue']
             );
         } catch(notifErr) {}
+
+        void notifyTelegram(`🏦 <b>Permintaan penarikan dana</b>\nUser: ${escapeHtml((uRows[0] && uRows[0].fullname) || 'User')}\nNominal: Rp ${requestedAmount.toLocaleString('id-ID')}\nPaket: ${String(plan).toUpperCase()}`);
 
         res.json({ success: true, amount: requestedAmount });
     } catch (err) {
@@ -1525,7 +1528,8 @@ exports.getSettings = async (req, res) => {
             tab: req.query.tab || 'profil',
             smtp_test: req.query.smtp_test === 'true',
             smtp_error: req.query.smtp_error,
-            smtp_recipient: req.query.smtp_recipient
+            smtp_recipient: req.query.smtp_recipient,
+            telegram_test: req.query.telegram_test
         });
     } catch (err) {
         console.error('Get Settings Error:', err);
@@ -1564,6 +1568,11 @@ exports.testSMTPSettings = async (req, res) => {
         console.error('SMTP test error:', err.message);
         res.redirect('/admin/settings?tab=smtp&smtp_error=' + encodeURIComponent('Email tes gagal dikirim. Periksa host, port, username, dan password SMTP.'));
     }
+};
+
+exports.testTelegramSettings = async (req, res) => {
+    const sent = await notifyTelegram('✅ <b>Telegram Lingku terhubung</b>\nPesan pengujian berhasil diterima oleh admin.');
+    res.redirect(`/admin/settings?tab=telegram&telegram_test=${sent ? 'true' : 'false'}`);
 };
 
 exports.updateFeeSettings = async (req, res) => {
@@ -2685,6 +2694,7 @@ exports.processUpgrade = async (req, res) => {
                     "INSERT INTO notifications (user_id, title, message, type, link) VALUES (?, ?, ?, ?, ?)",
                     [1, '👑 Niat Upgrade PRO', `${body.name} sedang memproses upgrade paket PRO.`, 'info', '/admin/upgrade-orders']
                 );
+                void notifyTelegram(`💳 <b>Pengajuan upgrade PRO</b>\nNama: ${escapeHtml(body.name)}\nEmail: ${escapeHtml(email || user.email)}\nPaket: ${pkg === 'monthly' ? 'Bulanan' : 'Tahunan'}\nNominal: Rp ${price.toLocaleString('id-ID')}`);
             } catch(orderErr) { console.error('Initial Order Log Error:', orderErr.message); }
 
             const { sendPaymentInstructionEmail } = require('../utils/mailer');
