@@ -968,6 +968,24 @@ exports.getPaymentPage = async (req, res) => {
         const qrImageUrl = order.qr_url;
         const expiryMins = 60; // Default
 
+        // Build the same item list shown in the order history and email.
+        let paymentItems = [{ name: order.product_name }];
+        let paymentUpsellIds = [];
+        try { paymentUpsellIds = JSON.parse(order.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
+        if (paymentUpsellIds.length) {
+            try {
+                const placeholders = paymentUpsellIds.map(() => '?').join(',');
+                const [upsellRows] = await db.execute(
+                    `SELECT name FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                    [order.user_id, ...paymentUpsellIds]
+                );
+                paymentItems.push(...upsellRows.map(item => ({ name: item.name })));
+            } catch (e) { console.error('Payment page UpSell lookup error:', e.message); }
+        }
+        const paymentItemsHtml = paymentItems.map((item, index) => `
+            <div class="item-row"><span><i class="fas fa-${index === 0 ? 'box' : 'bolt'}"></i> ${escapeHtml(item.name || 'Produk')}</span>${index > 0 ? '<b>UpSell</b>' : '<b>Produk utama</b>'}</div>
+        `).join('');
+
         // E-wallet payments (such as DANA) are completed on the URL returned by iPaymu.
         if (['dana', 'shopeepay'].includes(chan.toLowerCase()) && qrImageUrl) {
             return res.redirect(qrImageUrl);
@@ -998,6 +1016,12 @@ exports.getPaymentPage = async (req, res) => {
                     .download-qr { display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f0fdf4; color: #10b981; text-decoration: none; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid #10b98133; transition: 0.2s; margin-top: 5px; }
                     .download-qr:hover { background: #10b981; color: white; transform: translateY(-1px); }
                     .details { border-top: 1px solid #f1f5f9; padding-top: 25px; }
+                    .items-box { margin-bottom: 18px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px; }
+                    .items-title { margin-bottom: 8px; color: #64748b; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+                    .item-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; color: #334155; font-size: 12px; border-top: 1px solid #e2e8f055; }
+                    .item-row:first-of-type { border-top: 0; }
+                    .item-row i { width: 16px; color: #2563eb; }
+                    .item-row b { color: #64748b; font-size: 10px; white-space: nowrap; }
                     .detail-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; }
                     .detail-label { color: #64748b; font-weight: 600; }
                     .detail-val { font-weight: 800; color: #1e293b; }
@@ -1026,7 +1050,10 @@ exports.getPaymentPage = async (req, res) => {
                             ` : `<h1 class="pay-no">${payNo}</h1>`}
                         </div>
                         <div class="details">
-                            <div class="detail-row"><span class="detail-label">Produk</span><span class="detail-val">${order.product_name}</span></div>
+                            <div class="items-box">
+                                <div class="items-title">Rincian Pesanan</div>
+                                ${paymentItemsHtml}
+                            </div>
                             <div class="detail-row"><span class="detail-label">Total</span><span class="detail-val" style="color:#10b981; font-size:18px;">Rp ${Number(order.total_price).toLocaleString('id-ID')}</span></div>
                         </div>
                     </div>
