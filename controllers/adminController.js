@@ -745,6 +745,23 @@ exports.getOrders = async (req, res) => {
 
         const [orders] = await db.execute(orderSql, orderParams);
 
+        // Resolve the UpSell names once so each order can show exactly what
+        // the buyer selected without issuing a query for every card.
+        const allUpsellIds = [...new Set(orders.flatMap(order => {
+            try { return JSON.parse(order.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) { return []; }
+        }))];
+        const upsellById = new Map();
+        if (allUpsellIds.length) {
+            try {
+                const placeholders = allUpsellIds.map(() => '?').join(',');
+                const [upsellRows] = await db.execute(
+                    `SELECT id, name, price FROM products WHERE user_id = ? AND id IN (${placeholders})`,
+                    [userId, ...allUpsellIds]
+                );
+                upsellRows.forEach(item => upsellById.set(Number(item.id), item));
+            } catch (e) { console.error('Order UpSell lookup error:', e.message); }
+        }
+
         // Clean up data (handle multiple image columns and JSON prefixing)
         const cleanedOrders = orders.map(o => {
             // Find the first non-empty image column, skipping invalid legacy strings
@@ -786,9 +803,16 @@ exports.getOrders = async (req, res) => {
             // but Intl with 'id-ID' is cleaner.
             const formattedDate = new Date(o.created_at).toLocaleString('id-ID', dateOptions).replace(/\./g, ':');
 
+            let upsellItems = [];
+            try {
+                upsellItems = JSON.parse(o.upsell_product_ids || '[]').map(Number).filter(Boolean)
+                    .map(id => upsellById.get(id)).filter(Boolean);
+            } catch (e) {}
+
             return { 
                 ...o, 
                 product_thumbnail: thumb, 
+                upsell_items: upsellItems,
                 formatted_date: formattedDate,
                 time_left: timeLeft,
                 is_sent: !!o.delivered_at,

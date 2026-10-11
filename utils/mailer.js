@@ -128,6 +128,15 @@ exports.sendPaymentInstructionEmail = async (orderData) => {
     try {
         const { id, customerEmail, customerName, productName, totalPrice, channel, paymentNo, qrUrl } = orderData;
         const transporter = await getTransporter();
+        const orderItems = Array.isArray(orderData.items) && orderData.items.length
+            ? orderData.items
+            : [{ name: productName, price: totalPrice }];
+        const itemListHtml = orderItems.map(item => `
+            <tr>
+                <td style="padding:7px 0; color:#475569;">${item.name || 'Produk'}</td>
+                <td style="padding:7px 0; text-align:right; color:#1e293b; font-weight:700;">Rp ${parseFloat(item.price || 0).toLocaleString('id-ID')}</td>
+            </tr>
+        `).join('');
         
         let paymentInfoHtml = '';
         if (channel.toLowerCase() === 'qris' && paymentNo) {
@@ -162,6 +171,10 @@ exports.sendPaymentInstructionEmail = async (orderData) => {
                         ${paymentInfoHtml}
 
                         <table style="width: 100%; border-top: 1px solid #f1f5f9; padding-top: 24px; margin-top: 24px; font-size: 14px; border-collapse: collapse;">
+                            <tr>
+                                <td colspan="2" style="padding: 8px 0 4px; color: #64748b; font-weight: 800;">Rincian Pesanan</td>
+                            </tr>
+                            ${itemListHtml}
                             <tr>
                                 <td style="padding: 8px 0; color: #64748b; font-weight: 600;">Total Tagihan</td>
                                 <td style="padding: 8px 0; text-align: right; font-weight: 800; color: #1e293b; font-size: 18px;">Rp ${parseFloat(totalPrice).toLocaleString('id-ID')}</td>

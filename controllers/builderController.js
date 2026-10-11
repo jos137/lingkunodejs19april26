@@ -884,6 +884,10 @@ exports.processCheckout = async (req, res) => {
                     customerEmail: email,
                     customerName: name,
                     productName: product.name,
+                    items: [
+                        { name: product.name, price: salePrice },
+                        ...upsellItems.map(item => ({ name: item.name, price: parseFloat(item.price || 0) }))
+                    ],
                     totalPrice,
                     channel: chan,
                     paymentNo: paymentNo,

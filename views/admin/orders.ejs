@@ -191,6 +191,9 @@
                                     <span class="countdown-timer desktop-timer" style="font-size: 11px; font-weight: 850; color: #10b981; background: #f0fdf4; padding: 2px 8px; border-radius: 6px; margin-left: 10px; border: 1px solid #10b98133;" data-timeleft="<%= o.time_left %>" data-idx="<%= idx %>">00:00</span>
                                 <% } %>
                             </div>
+                            <% if (o.upsell_items && o.upsell_items.length) { %>
+                                <div style="margin-top:4px; color:#2563eb; font-size:10px; font-weight:800;"><i class="fas fa-bolt"></i> UpSell: <%= o.upsell_items.map(item => item.name).join(', ') %></div>
+                            <% } %>
                             <div class="order-price">Rp <%= parseFloat(o.total_price || 0).toLocaleString('id-ID') %></div>
                         </div>
                         <div class="order-thumb-wrap">
@@ -286,6 +289,12 @@ function renderOrderDetail(o, idx) {
     const statusColor = isCompleted ? '#10b981' : '#f59e0b';
     const btnColor = isCompleted ? '#3b82f6' : '#10b981';
     const btnLabel = isCompleted ? 'Kirim Akses' : 'Follow Up';
+    const upsellItems = Array.isArray(o.upsell_items) ? o.upsell_items : [];
+    const upsellHtml = upsellItems.length ? `
+        <div style="margin-top:10px; padding:10px 12px; background:#eff6ff; border:1px solid #dbeafe; border-radius:10px;">
+            <div style="font-size:10px; color:#1d4ed8; font-weight:850; text-transform:uppercase; margin-bottom:5px;"><i class="fas fa-bolt"></i> Produk UpSell yang dipilih</div>
+            ${upsellItems.map(item => `<div style="display:flex; justify-content:space-between; gap:12px; font-size:12px; color:#334155; padding:2px 0;"><span>${item.name}</span><strong>Rp ${parseFloat(item.price || 0).toLocaleString('id-ID')}</strong></div>`).join('')}
+        </div>` : '';
     
     return `
         <!-- Header -->
@@ -315,6 +324,7 @@ function renderOrderDetail(o, idx) {
                     <div style="font-size:11px; font-weight:800; color:#3b82f6; text-transform:uppercase;">${o.payment_channel || 'N/A'}</div>
                 </div>
                 <div style="font-size:13px; font-weight:800; color:#1e293b; margin-bottom:12px; line-height:1.4;">${o.product_name}</div>
+                ${upsellHtml}
                 
                 <div class="detail-total-wrap" style="padding-top:10px; border-top:1px dashed #e2e8f0; display:flex; justify-content:space-between; align-items:center;">
                     <div style="font-size:11px; color:#64748b;">Total Bayar</div>
