@@ -350,9 +350,11 @@ function renderOrderDetail(o, idx) {
                     <div onclick="sendOrderEmail(${o.id}, '${o.status}')" style="padding:10px 20px; background:${btnColor}; color:#fff; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; box-shadow:0 4px 12px ${btnColor}33; transition:0.2s; white-space:nowrap;">
                         <i class="fas fa-paper-plane" style="margin-right:6px;"></i> ${btnLabel}
                     </div>
-                    <div onclick="deleteOrder(event, ${o.id})" style="padding:10px 14px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">
-                        <i class="fas fa-trash" style="margin-right:5px;"></i> Hapus
-                    </div>
+                    <% if (locals.isAdmin) { %>
+                        <div onclick="deleteOrder(event, ${o.id})" style="padding:10px 14px; background:#fff1f2; color:#e11d48; border:1px solid #fecdd3; border-radius:10px; text-align:center; font-size:12px; font-weight:800; cursor:pointer; white-space:nowrap;">
+                            <i class="fas fa-trash" style="margin-right:5px;"></i> Hapus
+                        </div>
+                    <% } %>
                 </div>
             </div>
         </div>

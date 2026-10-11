@@ -830,7 +830,8 @@ exports.getOrders = async (req, res) => {
             merchantUsername: req.session.user ? req.session.user.username : "",
             expiryMins: expiryMins,
             searchQuery: searchQuery,
-            searchType: searchType
+            searchType: searchType,
+            isAdmin: !!(req.session.user && req.session.user.role === 'admin')
         });
     } catch (err) {
         console.error('Orders Error:', err.message);
