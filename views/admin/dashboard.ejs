@@ -221,28 +221,28 @@
 <!-- STAT CARDS -->
 <div class="dash-cards-row">
     <div class="dash-stat-card">
-        <div class="dash-stat-icon green"><i class="fas fa-coins"></i></div>
+        <div class="dash-stat-icon green"><i class="fas fa-eye"></i><i class="fas fa-coins" style="margin-left:8px;"></i></div>
         <div class="dash-stat-info">
             <div class="dash-stat-label">Total Pendapatan <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="totalRevenueValue" aria-label="Sembunyikan total pendapatan"><i class="fas fa-eye"></i></button></div>
             <div class="dash-stat-value" id="totalRevenueValue" data-sensitive-value data-value="Rp <%= totalRevenue.toLocaleString('id-ID') %>">Rp <%= totalRevenue.toLocaleString('id-ID') %></div>
         </div>
     </div>
     <div class="dash-stat-card">
-        <div class="dash-stat-icon blue"><i class="fas fa-wallet"></i></div>
+        <div class="dash-stat-icon blue"><i class="fas fa-eye"></i><i class="fas fa-wallet" style="margin-left:8px;"></i></div>
         <div class="dash-stat-info">
             <div class="dash-stat-label">Saldo Tersedia <button type="button" class="dash-visibility-toggle" onclick="toggleDashboardValue(this)" data-target="balanceValue" aria-label="Sembunyikan saldo tersedia"><i class="fas fa-eye"></i></button></div>
             <div class="dash-stat-value" id="balanceValue" data-sensitive-value data-value="Rp <%= balance.toLocaleString('id-ID') %>">Rp <%= balance.toLocaleString('id-ID') %></div>
         </div>
     </div>
     <div class="dash-stat-card">
-        <div class="dash-stat-icon amber"><i class="fas fa-shopping-bag"></i></div>
+        <div class="dash-stat-icon amber"><i class="fas fa-eye"></i><i class="fas fa-shopping-bag" style="margin-left:8px;"></i></div>
         <div class="dash-stat-info">
             <div class="dash-stat-label">Total Penjualan</div>
             <div class="dash-stat-value"><%= totalSales %></div>
         </div>
     </div>
     <div class="dash-stat-card">
-        <div class="dash-stat-icon purple"><i class="fas fa-box"></i></div>
+        <div class="dash-stat-icon purple"><i class="fas fa-eye"></i><i class="fas fa-box" style="margin-left:8px;"></i></div>
         <div class="dash-stat-info">
             <div class="dash-stat-label">Jumlah Produk</div>
             <div class="dash-stat-value"><%= totalProducts %></div>
