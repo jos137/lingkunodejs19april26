@@ -1279,7 +1279,10 @@ exports.getUsers = async (req, res) => {
         // Completed only: pending, failed, and refunded statuses are excluded.
         const [users] = await db.execute(`
             SELECT u.*, COALESCE(sales.digital_revenue, 0) AS digital_revenue,
-                   COALESCE(sales.digital_units, 0) AS digital_units
+                   COALESCE(sales.digital_units, 0) AS digital_units,
+                   (SELECT o.reference_id FROM orders o
+                    WHERE o.customer_email = u.email AND o.product_id = 0 AND o.status = 'completed'
+                    ORDER BY o.id DESC LIMIT 1) AS pro_order_ref
             FROM users u
             LEFT JOIN (
                 SELECT o.user_id, SUM(o.total_price) AS digital_revenue,

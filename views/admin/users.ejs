@@ -144,6 +144,9 @@
                             <td>
                                 <strong style="display:block;"><%= displayName %></strong>
                                 <span style="display:block;margin-top:3px;color:#94a3b8;font-size:11px;font-weight:500;white-space:nowrap;"><%= u.email || '-' %></span>
+                                <% if (u.pro_order_ref) { %>
+                                    <span style="display:block;margin-top:3px;color:#f59e0b;font-size:11px;font-weight:700;white-space:nowrap;"><i class="fas fa-crown" style="font-size:10px;"></i> Order PRO: #<%= u.pro_order_ref %></span>
+                                <% } %>
                             </td>
                             <td>
                                 <% if (u.role === 'admin') { %>
@@ -163,7 +166,7 @@
                                     <% } else { %>
                                         <button class="btn-action btn-detail" style="opacity: 0.6; cursor: not-allowed;" onclick="alert('User belum mengatur landing page')"><i class="fas fa-external-link-alt"></i> Landingpage</button>
                                     <% } %>
-                                    <a href="/admin/users/detail/<%= u.id %>" class="btn-action btn-view-buyers"><i class="fas fa-shopping-cart"></i> Daftar Pembeli</a>
+                                    <a href="/admin/users/detail/<%= u.id %>" class="btn-action btn-view-buyers"><i class="fas fa-shopping-cart"></i> Detail</a>
                                 </div>
                             </td>
                         </tr>
@@ -259,7 +262,7 @@ function showUser(idx) {
             </div>
 
             <a href="/admin/users/detail/${u.id}" class="modal-footer-btn">
-                <i class="fas fa-shopping-cart"></i> Daftar Pembeli User Ini
+                <i class="fas fa-shopping-cart"></i> Detail User Ini
             </a>
         </div>
     `;
