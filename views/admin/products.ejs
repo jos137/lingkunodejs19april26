@@ -1,4 +1,11 @@
+<% const currentRole = (locals.role === 'upsell') ? 'upsell' : 'main'; %>
 <style>
+/* ===== PRODUCT TABS ===== */
+.prod-tabs { display: flex; gap: 8px; margin-bottom: 18px; background: #f1f5f9; padding: 5px; border-radius: 12px; width: 100%; box-sizing: border-box; }
+.prod-tab { flex: 1; justify-content: center; display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-radius: 9px; font-size: 13px; font-weight: 800; color: #64748b; text-decoration: none; transition: 0.15s; background: #e2e8f0; }
+.prod-tab:hover { color: #111827; }
+.prod-tab.active { background: #fff; color: #111827; box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+.prod-tab.active i { color: #10b981; }
 /* ===== PRODUCTS HEADER ===== */
 .prod-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
 .prod-header h2 { font-size: 20px; font-weight: 900; color: #111827; }
@@ -316,8 +323,13 @@
 }
 </style>
 
+<div class="prod-tabs">
+    <a href="/admin/products" class="prod-tab <%= currentRole === 'main' ? 'active' : '' %>"><i class="fas fa-box"></i> Produk Utama</a>
+    <a href="/admin/products?role=upsell" class="prod-tab <%= currentRole === 'upsell' ? 'active' : '' %>"><i class="fas fa-bolt"></i> Upsell</a>
+</div>
+
 <div class="prod-header">
-    <h2>Daftar Produk</h2>
+    <h2><%= currentRole === 'upsell' ? 'Daftar Upsell' : 'Daftar Produk' %></h2>
     <div style="display: flex; align-items: center; gap: 12px;">
         <!-- Layout Switcher Toggle -->
         <div class="layout-switcher" style="display: flex; background: #f1f5f9; border-radius: 10px; padding: 3px; gap: 2px; border: 1px solid #e2e8f0;">
@@ -373,6 +385,7 @@
                 <div class="prod-actions">
                     <a href="/admin/products/<%= p.id %>/edit" class="edit-btn"><i class="fas fa-edit"></i> Ubah</a>
                     <form action="/admin/products/<%= p.id %>/delete" method="POST" onsubmit="return confirm('Hapus produk ini?')">
+                        <input type="hidden" name="role" value="<%= currentRole %>">
                         <button type="submit" class="del-btn"><i class="fas fa-trash"></i> Hapus</button>
                     </form>
                 </div>
@@ -380,9 +393,9 @@
         <% }); %>
     <% } else { %>
         <div class="prod-empty">
-            <i class="fas fa-box-open" style="font-size:40px;display:block;margin-bottom:10px;"></i>
-            <div style="font-size:14px;font-weight:600;">Belum ada produk</div>
-            <div style="font-size:12px;margin-top:4px;">Klik "Produk Baru" untuk mulai berjualan!</div>
+            <i class="fas fa-<%= currentRole === 'upsell' ? 'bolt' : 'box-open' %>" style="font-size:40px;display:block;margin-bottom:10px;"></i>
+            <div style="font-size:14px;font-weight:600;"><%= currentRole === 'upsell' ? 'Belum ada produk upsell' : 'Belum ada produk' %></div>
+            <div style="font-size:12px;margin-top:4px;"><%= currentRole === 'upsell' ? 'Klik "Upsell Baru" untuk membuat penawaran tambahan.' : 'Klik "Produk Baru" untuk mulai berjualan!' %></div>
         </div>
     <% } %>
 </div>
@@ -393,22 +406,22 @@
         <div class="cat-modal-title">Pilih Jenis Produk</div>
         <div class="cat-modal-desc">Pilih kategori produk yang ingin Anda buat.</div>
         <div class="cat-grid">
-            <a href="/admin/products/create?type=digital" class="cat-card" style="text-decoration:none;">
+            <a href="/admin/products/create?type=digital&role=<%= currentRole %>" class="cat-card" style="text-decoration:none;">
                 <span class="cat-card-icon">📦</span>
                 <div class="cat-card-name">Produk Digital</div>
                 <div class="cat-card-desc">E-book, template, preset, software, dll.</div>
             </a>
-            <a href="/admin/products/create?type=tiket" class="cat-card" style="text-decoration:none;">
+            <a href="/admin/products/create?type=tiket&role=<%= currentRole %>" class="cat-card" style="text-decoration:none;">
                 <span class="cat-card-icon">🎫</span>
                 <div class="cat-card-name">Tiket Online</div>
                 <div class="cat-card-desc">Tiket event, konser, gathering, dll.</div>
             </a>
-            <a href="/admin/products/create?type=webinar" class="cat-card" style="text-decoration:none;">
+            <a href="/admin/products/create?type=webinar&role=<%= currentRole %>" class="cat-card" style="text-decoration:none;">
                 <span class="cat-card-icon">🎥</span>
                 <div class="cat-card-name">Event Webinar</div>
                 <div class="cat-card-desc">Webinar, workshop, live class, dll.</div>
             </a>
-            <a href="/admin/products/create?type=mentoring" class="cat-card" style="text-decoration:none;">
+            <a href="/admin/products/create?type=mentoring&role=<%= currentRole %>" class="cat-card" style="text-decoration:none;">
                 <span class="cat-card-icon">🧑‍🏫</span>
                 <div class="cat-card-name">Mentoring 1on1</div>
                 <div class="cat-card-desc">Sesi mentoring pribadi, coaching, dll.</div>

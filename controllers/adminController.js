@@ -199,6 +199,7 @@ exports.getDashboard = async (req, res) => {
 exports.getProducts = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
+        const role = req.query.role === 'upsell' ? 'upsell' : 'main';
         let products = [];
         
         // Try JOIN with orders for sold count
@@ -207,14 +208,16 @@ exports.getProducts = async (req, res) => {
                 SELECT p.*, 
                     COALESCE((SELECT COUNT(*) FROM orders o WHERE o.product_id = p.id AND o.status = 'completed'), 0) as sold
                 FROM products p 
-                WHERE p.user_id = ? 
-                ORDER BY p.id DESC`, [userId]);
+                WHERE p.user_id = ? AND COALESCE(p.product_role, 'main') = ?
+                ORDER BY p.id DESC`, [userId, role]);
             products = rows;
         } catch(e) {
             // Fallback: simple query
             console.log('Products JOIN fallback:', e.message);
             const [rows] = await db.execute('SELECT * FROM products WHERE user_id = ? ORDER BY id DESC', [userId]);
-            products = rows.map(p => ({ ...p, sold: 0 }));
+            products = rows
+                .filter(p => (p.product_role || 'main') === role)
+                .map(p => ({ ...p, sold: 0 }));
         }
 
         // Detect thumbnail column name and handle JSON array format
@@ -260,11 +263,12 @@ exports.getProducts = async (req, res) => {
             title: 'Produk Digital',
             layout: './layouts/admin',
             products,
+            role,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
         console.error('Products Error:', err.message);
-        res.render('admin/products', { title: 'Produk Digital', layout: './layouts/admin', products: [], user: req.session.user || res.locals.user });
+        res.render('admin/products', { title: 'Produk Digital', layout: './layouts/admin', products: [], role: 'main', user: req.session.user || res.locals.user });
     }
 };
 
@@ -273,16 +277,24 @@ exports.getProductEdit = async (req, res) => {
         const [rows] = await db.execute('SELECT * FROM products WHERE id = ?', [req.params.id]);
         if (rows.length === 0) return res.redirect('/admin/products');
         const ownerId = rows[0].user_id || req.session.userId || (req.session.user ? req.session.user.id : 1);
-        let upsellProducts = [];
-        try {
-            const [available] = await db.execute('SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id <> ? ORDER BY id DESC', [ownerId, req.params.id]);
-            upsellProducts = available;
-        } catch (upsellError) {}
+        const productRole = rows[0].product_role === 'upsell' ? 'upsell' : 'main';
         let upsellProductIds = [];
         try { upsellProductIds = JSON.parse(rows[0].upsell_product_ids || '[]'); } catch (e) {}
+        upsellProductIds = Array.isArray(upsellProductIds) ? upsellProductIds.map(Number).filter(Boolean) : [];
+        let upsellProducts = [];
+        try {
+            // Library: products with role 'upsell', plus any legacy ones already attached.
+            const placeholders = upsellProductIds.map(() => '?').join(',');
+            const legacyCond = upsellProductIds.length ? ` OR id IN (${placeholders})` : '';
+            const [available] = await db.execute(
+                `SELECT id, name, price, stock, thumbnail FROM products WHERE user_id = ? AND id <> ? AND (product_role = 'upsell'${legacyCond}) ORDER BY id DESC`,
+                [ownerId, req.params.id, ...upsellProductIds]
+            );
+            upsellProducts = available;
+        } catch (upsellError) {}
         let priceHistory = [];
         try {
-            const [history] = await db.execute('SELECT * FROM product_price_history WHERE product_id = ? ORDER BY id DESC LIMIT 20', [req.params.id]);
+            const [history] = await db.execute('SELECT * FROM product_price_history WHERE product_id = ? ORDER BY id DESC LIMIT 3', [req.params.id]);
             priceHistory = history;
         } catch (historyError) {}
         res.render('admin/product-edit', {
@@ -291,7 +303,8 @@ exports.getProductEdit = async (req, res) => {
             product: rows[0],
             priceHistory,
             upsellProducts,
-            upsellProductIds: Array.isArray(upsellProductIds) ? upsellProductIds.map(Number).filter(Boolean) : [],
+            upsellProductIds,
+            productRole,
             getAccessLinks,
             user: req.session.user || res.locals.user
         });
@@ -304,12 +317,14 @@ exports.getProductEdit = async (req, res) => {
 // Render create page (empty editor)
 exports.getProductCreate = async (req, res) => {
     const type = req.query.type || 'digital';
+    const role = req.query.role === 'upsell' ? 'upsell' : 'main';
     res.render('admin/product-edit', {
-        title: 'Tambah Produk',
+        title: role === 'upsell' ? 'Tambah Upsell' : 'Tambah Produk',
         layout: './layouts/admin',
-        product: { type },
+        product: { type, product_role: role },
         upsellProducts: [],
         upsellProductIds: [],
+        productRole: role,
         getAccessLinks,
         user: req.session.user || res.locals.user
     });
@@ -375,6 +390,7 @@ exports.updateProduct = async (req, res) => {
             is_affiliate: req.body.is_affiliate === 'on' ? 1 : 0,
             commission_percent: parseFloat(req.body.commission_percent) || 20,
             product_type: req.body.type || 'digital',
+            product_role: req.body.product_role === 'upsell' ? 'upsell' : 'main',
             thumbnail_style: req.body.thumbnail_style || 'callout',
             subtitle: req.body.subtitle || '',
             button_text: req.body.button_text || 'Ambil Sekarang',
@@ -451,7 +467,8 @@ exports.updateProduct = async (req, res) => {
                     'ALTER TABLE products ADD event_time TIME',
                     'ALTER TABLE products ADD event_location VARCHAR(255)',
                     'ALTER TABLE products ADD upsell_product_ids TEXT',
-                    'ALTER TABLE products ADD pricing_mode VARCHAR(20) DEFAULT "fixed"'
+                    'ALTER TABLE products ADD pricing_mode VARCHAR(20) DEFAULT "fixed"',
+                    'ALTER TABLE products ADD product_role VARCHAR(20) DEFAULT "main"'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql); } catch(e) {}
@@ -468,7 +485,7 @@ exports.updateProduct = async (req, res) => {
             );
         } catch (historyError) {}
 
-        res.redirect('/admin/products');
+        res.redirect('/admin/products' + (req.body.product_role === 'upsell' ? '?role=upsell' : ''));
     } catch (err) {
         console.error('Update product error:', err.message);
         res.status(500).send('Gagal update produk: ' + err.message);
@@ -498,6 +515,7 @@ exports.createProductPost = async (req, res) => {
             pricing_stage: 1,
             pricing_mode: pricingMode,
             product_type: req.body.type || 'digital',
+            product_role: req.body.product_role === 'upsell' ? 'upsell' : 'main',
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
@@ -562,7 +580,8 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_date DATE',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_time TIME',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_location VARCHAR(255)',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_mode VARCHAR(20) DEFAULT "fixed"'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_mode VARCHAR(20) DEFAULT "fixed"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS product_role VARCHAR(20) DEFAULT "main"'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}
@@ -571,7 +590,7 @@ exports.createProductPost = async (req, res) => {
             } else throw dbErr;
         }
 
-        res.redirect('/admin/products');
+        res.redirect('/admin/products' + (req.body.product_role === 'upsell' ? '?role=upsell' : ''));
     } catch (err) {
         console.error('Create product error:', err.message);
         res.status(500).send('Gagal membuat produk: ' + err.message);
@@ -581,10 +600,10 @@ exports.createProductPost = async (req, res) => {
 exports.deleteProduct = async (req, res) => {
     try {
         await db.execute('DELETE FROM products WHERE id = ?', [req.params.id]);
-        res.redirect('/admin/products');
+        res.redirect('/admin/products' + (req.body.role === 'upsell' ? '?role=upsell' : ''));
     } catch (err) {
         console.error(err.message);
-        res.redirect('/admin/products');
+        res.redirect('/admin/products' + (req.body.role === 'upsell' ? '?role=upsell' : ''));
     }
 };
 
@@ -1761,7 +1780,7 @@ exports.getAffiliate = async (req, res) => {
 
         // 3. Get OWN Products (Affiliate Produk)
         let myProducts = [];
-        const myProductsQuery = "SELECT id, name, price, thumbnail, product_type, is_affiliate, commission_percent FROM products WHERE user_id = ? ORDER BY id DESC";
+        const myProductsQuery = "SELECT id, name, price, thumbnail, product_type, is_affiliate, commission_percent FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' ORDER BY id DESC";
         try {
             const [myProductsRaw] = await db.execute(myProductsQuery, [userId]);
             myProducts = myProductsRaw.map(p => {
@@ -2166,7 +2185,7 @@ exports.getMarketplace = async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
 
-        let whereClause = "WHERE is_affiliate = 1";
+        let whereClause = "WHERE is_affiliate = 1 AND COALESCE(product_role, 'main') = 'main'";
         let params = [];
 
         if (search) {

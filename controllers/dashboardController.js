@@ -56,7 +56,7 @@ exports.getDashboardData = async (req, res) => {
         // Total products
         let totalProducts = 0;
         try {
-            const [prodRow] = await db.execute('SELECT COUNT(*) as total FROM products WHERE user_id = ?', [userId]);
+            const [prodRow] = await db.execute("SELECT COUNT(*) as total FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main'", [userId]);
             totalProducts = prodRow[0].total;
         } catch(e) {}
 

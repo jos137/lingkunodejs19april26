@@ -38,7 +38,8 @@ async function runAutoHeal() {
             'pricing_stage TINYINT DEFAULT 1',
             'access_links TEXT',
             'is_affiliate TINYINT(1) DEFAULT 1',
-            'commission_percent DECIMAL(5,2) DEFAULT 20.00'
+            'commission_percent DECIMAL(5,2) DEFAULT 20.00',
+            "product_role VARCHAR(20) DEFAULT 'main'"
         ];
         for (const colDef of productCols) {
             const colName = colDef.split(' ')[0];

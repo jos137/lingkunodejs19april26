@@ -102,6 +102,16 @@
     .upsell-option:hover { background:#f8fafc; border-color:#93c5fd; }
     .upsell-thumb { width:46px; height:46px; flex:0 0 46px; border-radius:10px; object-fit:cover; background:#eff6ff; border:1px solid #dbeafe; }
     .upsell-finish { position:sticky; bottom:-22px; z-index:3; width:100%; margin-top:18px; padding:15px; border:0; border-radius:13px; background:linear-gradient(135deg,#5850ec,#4338ca); color:#fff; font-weight:850; font-size:14px; cursor:pointer; box-shadow:0 -8px 22px rgba(15,23,42,.12),0 8px 18px rgba(67,56,202,.28); }
+    .role-card { margin-bottom:18px; }
+    .role-switch { display:flex; background:#f1f5f9; border-radius:12px; padding:5px; gap:5px; }
+    .role-opt { border:0; background:#e2e8f0; padding:11px 22px; border-radius:9px; font-size:13px; font-weight:800; color:#64748b; cursor:pointer; display:flex; align-items:center; gap:8px; font-family:inherit; transition:0.15s; }
+    .role-opt.active { background:#fff; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+    .role-opt.active[data-role="main"] { color:#059669; }
+    .role-opt.active[data-role="upsell"] { color:#2563eb; }
+    .role-hint { margin-top:12px; font-size:12px; line-height:1.6; padding:11px 14px; border-radius:10px; display:none; }
+    .role-hint.show { display:block; }
+    .role-hint.hint-main { background:#f0fdf4; border:1px solid #bbf7d0; color:#065f46; }
+    .role-hint.hint-upsell { background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af; }
     .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(88, 80, 236, 0.3); }
 
     /* Pricing Tabs */
@@ -161,6 +171,7 @@ const finalThumb = thumbUrl && !thumbUrl.startsWith('http') && !thumbUrl.startsW
 const previewThumb = finalThumb || '/images/placeholder-neutral.svg';
 const upsellOptions = Array.isArray(locals.upsellProducts) ? locals.upsellProducts : [];
 const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellProductIds.map(Number) : [];
+const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'upsell');
 %>
 
 <div class="stan-container">
@@ -177,6 +188,17 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
     </div>
 
     <form action="/admin/products/<%= p.id ? p.id + '/update' : 'create' %>" method="POST" enctype="multipart/form-data" id="mainForm">
+        <input type="hidden" name="product_role" id="productRoleInput" value="<%= isUpsellRole ? 'upsell' : 'main' %>">
+        <div class="stan-card role-card">
+            <div class="stan-section-title"><div class="stan-step-num"><i class="fas fa-random"></i></div> Peran Produk</div>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div class="role-switch" id="roleSwitch">
+                    <button type="button" class="role-opt <%= !isUpsellRole ? 'active' : '' %>" data-role="main" onclick="setProductRole('main', this)"><i class="fas fa-box"></i> Produk Utama</button>
+                    <button type="button" class="role-opt <%= isUpsellRole ? 'active' : '' %>" data-role="upsell" onclick="setProductRole('upsell', this)"><i class="fas fa-bolt"></i> Upsell</button>
+                </div>
+            </div>
+            <div id="roleHint" class="role-hint"></div>
+        </div>
 
         <div class="stan-grid">
             <div class="stan-editor-side">
@@ -264,7 +286,7 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
                             </div>
                         </div>
 
-                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> Pricing Bertahap</div>
+                        <div class="stan-section-title" style="margin-top:30px;"><div class="stan-step-num">5</div> <%= isUpsellRole ? 'Harga & Stok' : 'Pricing Bertahap' %></div>
                         <% const savedPricingMode = p.pricing_mode || (p.price > 0 ? 'fixed' : 'free'); %>
                         <div class="pricing-toggle <%= savedPricingMode === 'free' ? 'free-active' : 'price-active' %>" id="pricingToggle">
                             <div class="pt-item <%= savedPricingMode === 'fixed' ? 'active' : '' %>" onclick="setPriceMode('fixed', this)">Price</div>
@@ -279,20 +301,22 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
                             </div>
                         </div>
                         <div id="price-fields" class="pricing-fields-box price-mode" style="display: <%= savedPricingMode === 'fixed' ? 'block' : 'none' %>">
-                            <input type="hidden" name="pricing_stage" value="<%= p.pricing_stage || 1 %>">
+                            <input type="hidden" name="pricing_stage" value="<%= isUpsellRole ? 1 : (p.pricing_stage || 1) %>">
                             <input type="hidden" name="current_stock" value="<%= p.stock ?? 0 %>">
                             <input type="hidden" name="current_price" value="<%= p.price ?? 0 %>">
                             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
-                                <div class="stan-group"><label class="stan-label">Flash Sale (Rp)</label><input type="number" name="price_stage_1" class="stan-input" value="<%= p.price_stage_1 || p.price || '' %>" oninput="updatePreview('price', this.value)"><small>Harga flash sale</small></div>
-                                <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_1" class="stan-input" min="0" value="<%= p.stock_stage_1 ?? (p.stock >= 0 ? p.stock : '') %>"><small>Jumlah stok flash sale</small></div>
+                                <div class="stan-group"><label class="stan-label"><%= isUpsellRole ? 'Harga (Rp)' : 'Flash Sale (Rp)' %></label><input type="number" name="price_stage_1" class="stan-input" value="<%= p.price_stage_1 || p.price || '' %>" oninput="updatePreview('price', this.value)"><small><%= isUpsellRole ? 'Harga jual produk upsell.' : 'Harga flash sale' %></small></div>
+                                <div class="stan-group"><label class="stan-label"><%= isUpsellRole ? 'Stok (batas unit)' : 'Jumlah Stok' %></label><input type="number" name="stock_stage_1" class="stan-input" min="0" value="<%= p.stock_stage_1 ?? (p.stock >= 0 ? p.stock : '') %>"><small><%= isUpsellRole ? 'Batasi stok untuk menciptakan kelangkaan (scarcity).' : 'Jumlah stok flash sale' %></small></div>
+                                <% if (!isUpsellRole) { %>
                                 <div class="stan-group"><label class="stan-label">Spesial Promo (Rp)</label><input type="number" name="price_stage_2" class="stan-input" min="0" value="<%= p.price_stage_2 || '' %>"></div>
                                 <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_2" class="stan-input" min="0" value="<%= p.stock_stage_2 || '' %>"></div>
                                 <div class="stan-group"><label class="stan-label">Diskon (Rp)</label><input type="number" name="price_stage_3" class="stan-input" min="0" value="<%= p.price_stage_3 || '' %>"></div>
                                 <div class="stan-group"><label class="stan-label">Jumlah Stok</label><input type="number" name="stock_stage_3" class="stan-input" min="0" value="<%= p.stock_stage_3 || '' %>"></div>
                                 <div class="stan-group" style="grid-column:1/-1"><label class="stan-label">Harga Normal (Rp) <span style="font-weight:400;color:#94a3b8">— tampil tercoret</span></label><input type="number" name="normal_price" class="stan-input" value="<%= p.normal_price || '' %>"><small>Harga pembanding yang tetap tampil.</small></div>
+                                <% } %>
                             </div>
                         </div>
-                        <div class="upsell-card" id="upsellSection" style="display:<%= savedPricingMode === 'free' ? 'none' : 'block' %>">
+                        <div class="upsell-card" id="upsellSection" style="display:<%= (savedPricingMode === 'free' || isUpsellRole) ? 'none' : 'block' %>">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                                 <div>
                                     <div style="font-size:16px;font-weight:850;color:#1e3a8a;"><i class="fas fa-bolt" style="color:#2563eb;"></i> UpSell Produk</div>
@@ -311,14 +335,14 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
                         <div class="upsell-modal" id="upsellModal" onclick="if(event.target===this)closeUpsellModal()">
                             <div class="upsell-modal-box">
                                 <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;"><strong style="font-size:18px;color:#111827;">Pilih Produk UpSell</strong><button type="button" onclick="closeUpsellModal()" style="border:0;background:none;font-size:24px;color:#64748b;cursor:pointer;">×</button></div>
-                                <div style="font-size:12px;color:#64748b;margin:6px 0 14px;">Pilih produk lain yang ingin ditawarkan bersama produk ini.</div>
+                                <div style="font-size:12px;color:#64748b;margin:6px 0 14px;">Pilih produk <b>Upsell</b> yang ingin ditawarkan bersama produk ini. Buat produk upsell di menu <b>Produk → Upsell</b>.</div>
                                 <div id="upsellOptionsList">
-                                    <% if (!upsellOptions.length) { %><div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">Belum ada produk lain yang bisa dipilih.</div><% } %>
+                                    <% if (!upsellOptions.length) { %><div style="padding:24px;text-align:center;color:#94a3b8;font-size:13px;">Belum ada produk upsell. Buat dulu di menu <b>Produk → Upsell</b>.</div><% } %>
                                     <% upsellOptions.forEach(item => { const itemStock = Number(item.stock); const soldOut = itemStock === 0; let itemThumb = item.thumbnail || ''; if (itemThumb && itemThumb.startsWith('[')) { try { itemThumb = JSON.parse(itemThumb)[0] || ''; } catch (e) {} } if (itemThumb && !itemThumb.startsWith('http') && !itemThumb.startsWith('/')) itemThumb = '/uploads/products/' + itemThumb; %>
-                                        <label class="upsell-option" style="<%= soldOut ? 'opacity:.55;cursor:not-allowed;' : '' %>">
-                                            <input type="checkbox" value="<%= item.id %>" data-name="<%= item.name %>" <%= selectedUpsells.includes(Number(item.id)) ? 'checked' : '' %> <%= soldOut ? 'disabled' : '' %> onchange="toggleUpsell(this)">
+                                        <label class="upsell-option">
+                                            <input type="checkbox" value="<%= item.id %>" data-name="<%= item.name %>" <%= selectedUpsells.includes(Number(item.id)) ? 'checked' : '' %> onchange="toggleUpsell(this)">
                                             <% if (itemThumb) { %><img class="upsell-thumb" src="<%= itemThumb %>" alt=""><% } else { %><span class="upsell-thumb" style="display:flex;align-items:center;justify-content:center;color:#2563eb;"><i class="fas fa-box"></i></span><% } %>
-                                            <span style="flex:1;"><strong style="display:block;color:#1e293b;font-size:13px;"><%= item.name %></strong><small style="color:#64748b;">Rp <%= Number(item.price || 0).toLocaleString('id-ID') %> · <%= itemStock === -1 ? 'Unlimited' : (itemStock + ' stok') %></small></span>
+                                            <span style="flex:1;"><strong style="display:block;color:#1e293b;font-size:13px;"><%= item.name %><% if (soldOut) { %> <span style="display:inline-block;padding:1px 7px;border-radius:6px;background:#fef3c7;color:#b45309;font-size:10px;font-weight:800;vertical-align:middle;">Stok habis</span><% } %></strong><small style="color:#64748b;">Rp <%= Number(item.price || 0).toLocaleString('id-ID') %> · <%= itemStock === -1 ? 'Unlimited' : (itemStock + ' stok') %></small></span>
                                         </label>
                                     <% }) %>
                                 </div>
@@ -329,7 +353,7 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
                         <div style="margin-top:18px;padding:14px 16px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;">
                             <div style="font-size:12px;font-weight:800;color:#334155;margin-bottom:9px;">Riwayat Harga & Stok</div>
                             <div style="display:grid;gap:6px;max-height:140px;overflow:auto;">
-                            <% priceHistory.slice(0, 8).forEach(h => { %>
+                            <% priceHistory.slice(0, 3).forEach(h => { %>
                                 <div style="display:flex;justify-content:space-between;gap:10px;font-size:11px;color:#64748b;"><span><%= h.note || h.event_type %></span><strong style="color:#334155;">Rp <%= Number(h.price || 0).toLocaleString('id-ID') %> · <%= h.stock ?? 0 %> stok</strong></div>
                             <% }); %>
                             </div>
@@ -901,10 +925,48 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
         } else {
             document.getElementById('free-price-fields').style.display = 'none';
             document.getElementById('price-fields').style.display = 'block';
-            document.getElementById('upsellSection').style.display = 'block';
+            document.getElementById('upsellSection').style.display = currentRoleIsUpsell() ? 'none' : 'block';
             if (priceField) priceField.focus();
         }
     }
+
+    function currentRoleIsUpsell() {
+        var inp = document.getElementById('productRoleInput');
+        return inp && inp.value === 'upsell';
+    }
+
+    function applyRoleUI() {
+        var upsell = currentRoleIsUpsell();
+        var section = document.getElementById('upsellSection');
+        var freeMode = document.getElementById('pricingMode') && document.getElementById('pricingMode').value === 'free';
+        if (section) section.style.display = (upsell || freeMode) ? 'none' : 'block';
+        if (upsell && document.getElementById('upsellProductIds')) {
+            document.getElementById('upsellProductIds').value = '[]';
+            if (typeof renderSelectedUpsells === 'function') renderSelectedUpsells();
+        }
+        var hint = document.getElementById('roleHint');
+        if (hint) {
+            hint.className = 'role-hint show ' + (upsell ? 'hint-upsell' : 'hint-main');
+            hint.innerHTML = upsell
+                ? '<i class="fas fa-bolt"></i> <b>Upsell</b> — produk ini hanya ditawarkan sebagai tambahan saat pembeli checkout. <b>Tidak tampil</b> di halaman toko publik (landing page).'
+                : '<i class="fas fa-box"></i> <b>Produk Utama</b> — produk ini tampil di halaman toko publik (landing page) dan bisa dijual berdiri sendiri.';
+        }
+    }
+
+    function setProductRole(role, el) {
+        var upsell = role === 'upsell';
+        if (upsell && PRODUCT_EXISTS && !currentRoleIsUpsell()) {
+            if (!confirm('Jadikan produk ini sebagai Upsell?\n\nProduk akan HILANG dari halaman toko publik (landing page) dan hanya muncul sebagai tawaran tambahan saat checkout.')) {
+                return;
+            }
+        }
+        document.getElementById('productRoleInput').value = upsell ? 'upsell' : 'main';
+        document.querySelectorAll('.role-opt').forEach(function(b) { b.classList.remove('active'); });
+        if (el) el.classList.add('active');
+        applyRoleUI();
+    }
+
+    const PRODUCT_EXISTS = <%= p.id ? 'true' : 'false' %>;
 
     function toggleStock(chk) {
         var inp = document.getElementById('stockInp');
@@ -996,6 +1058,7 @@ const selectedUpsells = Array.isArray(locals.upsellProductIds) ? locals.upsellPr
     window.onload = function() {
         var savedStyle = '<%= p.thumbnail_style || "callout" %>';
         setStyle(savedStyle);
+        applyRoleUI();
         
         updatePreview('title', '<%= (p.name || "").replace(/'/g, "\\'") %>');
         updatePreview('subtitle', '<%= (p.subtitle || "").replace(/'/g, "\\'") %>');

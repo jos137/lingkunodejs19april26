@@ -118,7 +118,7 @@ exports.getBuilder = async (req, res) => {
         // Get all user products for dropdown - safe query
         let products = [];
         try {
-            const [rows] = await db.execute('SELECT id, name, price, thumbnail, image_url, image_small, cover_image, photo FROM products WHERE user_id = ? ORDER BY name ASC', [userId]);
+            const [rows] = await db.execute("SELECT id, name, price, thumbnail, image_url, image_small, cover_image, photo FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' ORDER BY name ASC", [userId]);
             products = rows;
         } catch(e) {}
 
@@ -130,7 +130,7 @@ exports.getBuilder = async (req, res) => {
                        p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo
                 FROM products p 
                 JOIN users u ON p.user_id = u.id 
-                WHERE p.is_affiliate = 1 AND p.user_id != ?
+                WHERE p.is_affiliate = 1 AND p.user_id != ? AND COALESCE(p.product_role, 'main') = 'main'
                 ORDER BY p.id DESC
             `, [userId]);
             marketplaceProducts = rows;
@@ -391,7 +391,7 @@ exports.renderUserPage = async (req, res) => {
         let products = [];
         try {
             // 1. Get all products owned by the page owner (Baseline)
-            const [ownerRows] = await db.query('SELECT * FROM products WHERE user_id = ?', [user.id]);
+            const [ownerRows] = await db.query("SELECT * FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main'", [user.id]);
             
             // 2. Get all unique product IDs from blocks
             const pids = blocks

@@ -38,6 +38,13 @@ app.get('/ping', (req, res) => {
 console.log('--- LINGKU SERVER INITIALIZATION ---');
 const db = require('./config/db');
 
+// Auto-heal DB schema (create missing columns/tables) on startup
+try {
+    require('./utils/autoHeal').runAutoHeal();
+} catch (e) {
+    console.error('AutoHeal init error:', e.message);
+}
+
 // Database initialized in config/db.js
 
 // Security Hardening
