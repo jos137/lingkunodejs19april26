@@ -39,7 +39,8 @@ async function runAutoHeal() {
             'access_links TEXT',
             'is_affiliate TINYINT(1) DEFAULT 1',
             'commission_percent DECIMAL(5,2) DEFAULT 20.00',
-            "product_role VARCHAR(20) DEFAULT 'main'"
+            "product_role VARCHAR(20) DEFAULT 'main'",
+            'deleted_at DATETIME DEFAULT NULL'
         ];
         for (const colDef of productCols) {
             const colName = colDef.split(' ')[0];
@@ -115,6 +116,38 @@ async function runAutoHeal() {
             } catch (err) {}
         }
 
+        // 4b. TRACKING / ANALYTICS
+        try { await db.execute("ALTER TABLE users ADD COLUMN fb_pixel_id VARCHAR(32) DEFAULT NULL"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN fb_capi_token VARCHAR(255) DEFAULT NULL"); } catch(e){}
+        await db.execute(`
+            CREATE TABLE IF NOT EXISTS analytics_events (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                seller_id INT NOT NULL,
+                visitor_id VARCHAR(64),
+                session_id VARCHAR(128),
+                event_name VARCHAR(64) NOT NULL,
+                page_url VARCHAR(512),
+                product_id INT DEFAULT NULL,
+                order_id INT DEFAULT NULL,
+                value DECIMAL(15,2) DEFAULT 0,
+                currency VARCHAR(10) DEFAULT 'IDR',
+                utm_source VARCHAR(120) DEFAULT NULL,
+                utm_medium VARCHAR(120) DEFAULT NULL,
+                utm_campaign VARCHAR(120) DEFAULT NULL,
+                fbclid VARCHAR(255) DEFAULT NULL,
+                referrer VARCHAR(512) DEFAULT NULL,
+                ip VARCHAR(64) DEFAULT NULL,
+                user_agent VARCHAR(512) DEFAULT NULL,
+                metadata TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_ae_seller_created (seller_id, created_at),
+                INDEX idx_ae_name (event_name)
+            )
+        `);
+        try {
+            await db.execute("INSERT IGNORE INTO settings (setting_key, setting_value) VALUES ('fb_pixel_id_platform', '')");
+        } catch(e) {}
+
         // 5. WITHDRAWALS TABLE
         await db.execute(`
             CREATE TABLE IF NOT EXISTS withdrawals (
@@ -140,7 +173,9 @@ async function runAutoHeal() {
             'customer_whatsapp VARCHAR(50)',
             'total_price DECIMAL(15,2)',
             'payment_channel VARCHAR(50)',
-            'customer_ip VARCHAR(50)'
+            'customer_ip VARCHAR(50)',
+            'fbclid VARCHAR(255)',
+            'fbp VARCHAR(255)'
         ];
         for (const colDef of orderCols) {
             const colName = colDef.split(' ')[0];

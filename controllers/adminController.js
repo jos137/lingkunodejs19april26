@@ -200,6 +200,7 @@ exports.getProducts = async (req, res) => {
     try {
         const userId = req.session.userId || (req.session.user ? req.session.user.id : 1);
         const role = req.query.role === 'upsell' ? 'upsell' : 'main';
+        const view = req.query.view === 'trash' ? 'trash' : 'products';
         let products = [];
         
         // Try JOIN with orders for sold count
@@ -208,7 +209,7 @@ exports.getProducts = async (req, res) => {
                 SELECT p.*, 
                     COALESCE((SELECT COUNT(*) FROM orders o WHERE o.product_id = p.id AND o.status = 'completed'), 0) as sold
                 FROM products p 
-                WHERE p.user_id = ? AND COALESCE(p.product_role, 'main') = ?
+                WHERE p.user_id = ? AND COALESCE(p.product_role, 'main') = ? AND (p.deleted_at IS NULL OR p.deleted_at = '0000-00-00 00:00:00')
                 ORDER BY p.id DESC`, [userId, role]);
             products = rows;
         } catch(e) {
@@ -216,8 +217,29 @@ exports.getProducts = async (req, res) => {
             console.log('Products JOIN fallback:', e.message);
             const [rows] = await db.execute('SELECT * FROM products WHERE user_id = ? ORDER BY id DESC', [userId]);
             products = rows
-                .filter(p => (p.product_role || 'main') === role)
+                .filter(p => (p.product_role || 'main') === role && !p.deleted_at)
                 .map(p => ({ ...p, sold: 0 }));
+        }
+
+        // Trash view: show deleted products instead
+        if (view === 'trash') {
+            try {
+                let trashRows = [];
+                try {
+                    const [rows] = await db.execute(
+                        'SELECT * FROM products WHERE user_id = ? AND deleted_at IS NOT NULL AND deleted_at <> "0000-00-00 00:00:00" ORDER BY deleted_at DESC',
+                        [userId]
+                    );
+                    trashRows = rows;
+                } catch (e) {
+                    const [rows] = await db.execute('SELECT * FROM products WHERE user_id = ? ORDER BY id DESC', [userId]);
+                    trashRows = rows.filter(p => !!p.deleted_at);
+                }
+                products = trashRows;
+            } catch (e) {
+                console.error('Trash fetch error:', e.message);
+                products = [];
+            }
         }
 
         // Detect thumbnail column name and handle JSON array format
@@ -264,11 +286,12 @@ exports.getProducts = async (req, res) => {
             layout: './layouts/admin',
             products,
             role,
+            view,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
         console.error('Products Error:', err.message);
-        res.render('admin/products', { title: 'Produk Digital', layout: './layouts/admin', products: [], role: 'main', user: req.session.user || res.locals.user });
+        res.render('admin/products', { title: 'Produk Digital', layout: './layouts/admin', products: [], role: 'main', view: 'products', user: req.session.user || res.locals.user });
     }
 };
 
@@ -598,13 +621,39 @@ exports.createProductPost = async (req, res) => {
 };
 
 exports.deleteProduct = async (req, res) => {
+    const back = '/admin/products' + (req.body.role === 'upsell' ? '?role=upsell' : '');
+    try {
+        // Soft delete: tandai deleted_at agar bisa dipulihkan dari Sampah
+        try {
+            await db.execute('UPDATE products SET deleted_at = NOW() WHERE id = ?', [req.params.id]);
+        } catch (e) {
+            // Kolom belum ada -> buat lalu coba lagi
+            await db.execute('ALTER TABLE products ADD COLUMN deleted_at DATETIME DEFAULT NULL');
+            await db.execute('UPDATE products SET deleted_at = NOW() WHERE id = ?', [req.params.id]);
+        }
+        res.redirect(back);
+    } catch (err) {
+        console.error('Soft delete error:', err.message);
+        res.redirect(back);
+    }
+};
+
+exports.restoreProduct = async (req, res) => {
+    try {
+        await db.execute('UPDATE products SET deleted_at = NULL WHERE id = ?', [req.params.id]);
+    } catch (err) {
+        console.error('Restore product error:', err.message);
+    }
+    res.redirect('/admin/products?view=trash');
+};
+
+exports.purgeProduct = async (req, res) => {
     try {
         await db.execute('DELETE FROM products WHERE id = ?', [req.params.id]);
-        res.redirect('/admin/products' + (req.body.role === 'upsell' ? '?role=upsell' : ''));
     } catch (err) {
-        console.error(err.message);
-        res.redirect('/admin/products' + (req.body.role === 'upsell' ? '?role=upsell' : ''));
+        console.error('Purge product error:', err.message);
     }
+    res.redirect('/admin/products?view=trash');
 };
 
 // ===================== ORDERS =====================
@@ -1380,7 +1429,7 @@ exports.getUserBuyers = async (req, res) => {
 
         // NEW: Fetch user's products
         const [userProducts] = await db.execute(
-            "SELECT * FROM products WHERE user_id = ? ORDER BY created_at DESC",
+            "SELECT * FROM products WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
             [id]
         );
 
@@ -1467,7 +1516,7 @@ exports.getGlobalAnalytics = async (req, res) => {
         try { const [r] = await db.execute("SELECT COUNT(*) as c FROM users"); customer_count = r[0].c; } catch(e) {}
         try { const [r] = await db.execute("SELECT COALESCE(SUM(total_price),0) as c FROM orders WHERE status='completed'"); total_income = r[0].c; } catch(e) {}
         try { const [r] = await db.execute("SELECT COUNT(*) as c FROM orders"); total_orders = r[0].c; } catch(e) {}
-        try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products"); total_products = r[0].c; } catch(e) {}
+        try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products WHERE deleted_at IS NULL"); total_products = r[0].c; } catch(e) {}
 
         // Platform Income (Upgrade PRO)
         try {
@@ -1491,7 +1540,7 @@ exports.getGlobalAnalytics = async (req, res) => {
         try { const [r] = await db.execute("SELECT COALESCE(SUM(amount),0) as c FROM withdrawals WHERE status='pending'"); pending_payouts = r[0].c; } catch(e) {}
 
         // Stock alerts (products with stock = 0)
-        try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products WHERE stock = 0"); stock_alerts = r[0].c; } catch(e) {}
+        try { const [r] = await db.execute("SELECT COUNT(*) as c FROM products WHERE stock = 0 AND deleted_at IS NULL"); stock_alerts = r[0].c; } catch(e) {}
 
         // 7-day chart (Fixed for GMT+7 WIB)
         try {
@@ -1621,10 +1670,10 @@ exports.getSettings = async (req, res) => {
         const [users] = await db.execute('SELECT * FROM users WHERE id = ?', [userId]);
         const user = users.length > 0 ? users[0] : (req.session.user || res.locals.user);
 
-        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key LIKE 'price_pro%' OR setting_key IN ('enable_captcha', 'free_quota_limit')");
+        const [rows] = await db.execute("SELECT setting_key, setting_value FROM settings WHERE setting_key LIKE 'smtp_%' OR setting_key LIKE 'aff_%' OR setting_key LIKE 'fee_%' OR setting_key LIKE 'price_pro%' OR setting_key IN ('enable_captcha', 'free_quota_limit', 'fb_pixel_id_platform')");
         const smtp = {};
         const affiliate = {};
-        let fee_free = '3', fee_pro = '1', price_pro = '99000', price_pro_monthly = '19000', price_pro_yearly = '190000', enable_captcha = '1', free_quota_limit = '100';
+        let fee_free = '3', fee_pro = '1', price_pro = '99000', price_pro_monthly = '19000', price_pro_yearly = '190000', enable_captcha = '1', free_quota_limit = '100', platformPixelId = '';
 
         rows.forEach(r => { 
             if (r.setting_key.startsWith('smtp_')) smtp[r.setting_key] = r.setting_value;
@@ -1636,6 +1685,7 @@ exports.getSettings = async (req, res) => {
             if (r.setting_key === 'price_pro_yearly') price_pro_yearly = r.setting_value;
             if (r.setting_key === 'enable_captcha') enable_captcha = r.setting_value;
             if (r.setting_key === 'free_quota_limit') free_quota_limit = r.setting_value;
+            if (r.setting_key === 'fb_pixel_id_platform') platformPixelId = r.setting_value;
         });
 
         const [freeCountRows] = await db.execute("SELECT COUNT(*) AS used FROM users WHERE role <> 'admin'");
@@ -1657,6 +1707,7 @@ exports.getSettings = async (req, res) => {
             free_quota_limit,
             free_quota_used,
             free_quota_remaining,
+            platformPixelId,
             success: req.query.success,
             error: req.query.error,
             tab: req.query.tab || 'profil',
@@ -1668,6 +1719,35 @@ exports.getSettings = async (req, res) => {
     } catch (err) {
         console.error('Get Settings Error:', err);
         res.render('admin/settings', { title: 'Pengaturan', layout: './layouts/admin', user: req.session.user || res.locals.user, smtp: {} });
+    }
+};
+
+exports.updatePixelSettings = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const role = req.session.user ? req.session.user.role : 'user';
+        const clean = (v) => String(v || '').replace(/[^0-9]/g, '').slice(0, 32);
+
+        if (userId) {
+            const sellerPixel = clean(req.body.fb_pixel_id) || null;
+            const capiToken = String(req.body.fb_capi_token || '').trim().slice(0, 255) || null;
+            await db.execute('UPDATE users SET fb_pixel_id = ?, fb_capi_token = ? WHERE id = ?', [sellerPixel, capiToken, userId]);
+            if (req.session.user) {
+                req.session.user.fb_pixel_id = sellerPixel;
+                req.session.user.fb_capi_token = capiToken;
+            }
+        }
+        if (role === 'admin' && typeof req.body.fb_pixel_id_platform !== 'undefined') {
+            const val = clean(req.body.fb_pixel_id_platform);
+            await db.execute(
+                "INSERT INTO settings (setting_key, setting_value) VALUES ('fb_pixel_id_platform', ?) ON DUPLICATE KEY UPDATE setting_value = ?",
+                [val, val]
+            );
+        }
+        res.redirect('/admin/settings?tab=pixel&success=' + encodeURIComponent('Pengaturan Facebook Pixel disimpan.'));
+    } catch (err) {
+        console.error('Update pixel error:', err.message);
+        res.redirect('/admin/settings?tab=pixel&error=' + encodeURIComponent('Gagal menyimpan Pixel.'));
     }
 };
 
@@ -1780,7 +1860,7 @@ exports.getAffiliate = async (req, res) => {
 
         // 3. Get OWN Products (Affiliate Produk)
         let myProducts = [];
-        const myProductsQuery = "SELECT id, name, price, thumbnail, product_type, is_affiliate, commission_percent FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' ORDER BY id DESC";
+        const myProductsQuery = "SELECT id, name, price, thumbnail, product_type, is_affiliate, commission_percent FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' AND deleted_at IS NULL ORDER BY id DESC";
         try {
             const [myProductsRaw] = await db.execute(myProductsQuery, [userId]);
             myProducts = myProductsRaw.map(p => {
@@ -2185,7 +2265,7 @@ exports.getMarketplace = async (req, res) => {
         const offset = (page - 1) * limit;
         const search = req.query.search || '';
 
-        let whereClause = "WHERE is_affiliate = 1 AND COALESCE(product_role, 'main') = 'main'";
+        let whereClause = "WHERE is_affiliate = 1 AND COALESCE(product_role, 'main') = 'main' AND deleted_at IS NULL";
         let params = [];
 
         if (search) {
@@ -2944,6 +3024,90 @@ exports.getUpgradeOrders = async (req, res) => {
             stats: { total_count: 0, total_revenue: 0 },
             filters: {},
             user: req.session.user || res.locals.user 
+        });
+    }
+};
+
+// ===================== TRACKING DASHBOARD =====================
+exports.getTracking = async (req, res) => {
+    try {
+        const userId = req.session.userId || (req.session.user ? req.session.user.id : null);
+        const isAdmin = !!(req.session.user && req.session.user.role === 'admin');
+        const sellerFilter = isAdmin ? '' : 'AND seller_id = ?';
+        const params = isAdmin ? [] : [userId];
+        const since = 'created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
+
+        const [counts] = await db.execute(
+            `SELECT event_name, COUNT(*) AS total FROM analytics_events WHERE ${since} ${sellerFilter} GROUP BY event_name`,
+            params
+        );
+        const countsMap = {};
+        counts.forEach(r => { countsMap[r.event_name] = Number(r.total); });
+
+        const [uv] = await db.execute(
+            `SELECT COUNT(DISTINCT visitor_id) AS v FROM analytics_events WHERE ${since} ${sellerFilter}`,
+            params
+        );
+        const visitors = uv[0] ? Number(uv[0].v) : 0;
+
+        const [rev] = await db.execute(
+            `SELECT COALESCE(SUM(value), 0) AS total FROM analytics_events WHERE event_name = 'purchase' AND ${since} ${sellerFilter}`,
+            params
+        );
+        const revenue = Number(rev[0].total || 0);
+
+        const [daily] = await db.execute(
+            `SELECT DATE(created_at) AS d,
+                    COUNT(DISTINCT visitor_id) AS visitors,
+                    SUM(CASE WHEN event_name = 'purchase' THEN 1 ELSE 0 END) AS purchases,
+                    SUM(CASE WHEN event_name = 'purchase' THEN value ELSE 0 END) AS revenue
+             FROM analytics_events
+             WHERE created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY) ${sellerFilter}
+             GROUP BY DATE(created_at) ORDER BY d ASC`,
+            params
+        );
+
+        const [sources] = await db.execute(
+            `SELECT COALESCE(NULLIF(utm_source, ''), NULLIF(referrer, ''), 'Direct') AS source, COUNT(*) AS total
+             FROM analytics_events WHERE ${since} ${sellerFilter}
+             GROUP BY source ORDER BY total DESC LIMIT 8`,
+            params
+        );
+
+        const [topProducts] = await db.execute(
+            `SELECT p.name, COUNT(*) AS views
+             FROM analytics_events e JOIN products p ON p.id = e.product_id
+             WHERE e.event_name = 'view_product' AND e.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${isAdmin ? '' : 'AND e.seller_id = ?'}
+             GROUP BY e.product_id ORDER BY views DESC LIMIT 6`,
+            isAdmin ? [] : [userId]
+        );
+
+        const [recent] = await db.execute(
+            `SELECT event_name, page_url, value, utm_source, referrer, created_at
+             FROM analytics_events WHERE 1 = 1 ${sellerFilter}
+             ORDER BY id DESC LIMIT 20`,
+            params
+        );
+
+        res.render('admin/tracking', {
+            title: 'Tracking',
+            layout: './layouts/admin',
+            isAdmin,
+            visitors,
+            counts: countsMap,
+            revenue,
+            daily,
+            sources,
+            topProducts,
+            recent,
+            user: req.session.user || res.locals.user
+        });
+    } catch (err) {
+        console.error('Tracking error:', err.message);
+        res.render('admin/tracking', {
+            title: 'Tracking', layout: './layouts/admin', isAdmin: false,
+            visitors: 0, counts: {}, revenue: 0, daily: [], sources: [], topProducts: [], recent: [],
+            user: req.session.user || res.locals.user
         });
     }
 };

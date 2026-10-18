@@ -191,5 +191,11 @@
             <i class="fas fa-lock"></i> Pembayaran Aman & Terenkripsi oleh iPaymu
         </div>
     </div>
+    <%- include('partials/analytics', {
+        pixelId: (typeof fbPixelId !== 'undefined' ? fbPixelId : null),
+        sellerId: (typeof sellerId !== 'undefined' ? sellerId : null),
+        pixelEvent: 'InitiateCheckout',
+        pixelEventData: JSON.stringify({ content_ids: [String(product.id)], content_name: product.name, value: Number(product.price) || 0, currency: 'IDR' })
+    }) %>
 </body>
 </html>

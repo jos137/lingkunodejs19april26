@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { sendPaymentInstructionEmail, sendAccessEmail } = require('../utils/mailer');
 const { cleanHtml, safeUrl } = require('../utils/sanitize');
 const { notifyTelegram, escapeHtml } = require('../utils/telegram');
+const tracking = require('../utils/tracking');
 
 async function syncPricingTier(product) {
     let stage = Number(product.pricing_stage || 1);
@@ -118,7 +119,7 @@ exports.getBuilder = async (req, res) => {
         // Get all user products for dropdown - safe query
         let products = [];
         try {
-            const [rows] = await db.execute("SELECT id, name, price, thumbnail, image_url, image_small, cover_image, photo FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' ORDER BY name ASC", [userId]);
+            const [rows] = await db.execute("SELECT id, name, price, thumbnail, image_url, image_small, cover_image, photo FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' AND deleted_at IS NULL ORDER BY name ASC", [userId]);
             products = rows;
         } catch(e) {}
 
@@ -130,7 +131,7 @@ exports.getBuilder = async (req, res) => {
                        p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo
                 FROM products p 
                 JOIN users u ON p.user_id = u.id 
-                WHERE p.is_affiliate = 1 AND p.user_id != ? AND COALESCE(p.product_role, 'main') = 'main'
+                WHERE p.is_affiliate = 1 AND p.user_id != ? AND COALESCE(p.product_role, 'main') = 'main' AND p.deleted_at IS NULL
                 ORDER BY p.id DESC
             `, [userId]);
             marketplaceProducts = rows;
@@ -391,7 +392,7 @@ exports.renderUserPage = async (req, res) => {
         let products = [];
         try {
             // 1. Get all products owned by the page owner (Baseline)
-            const [ownerRows] = await db.query("SELECT * FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main'", [user.id]);
+            const [ownerRows] = await db.query("SELECT * FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' AND deleted_at IS NULL", [user.id]);
             
             // 2. Get all unique product IDs from blocks
             const pids = blocks
@@ -466,9 +467,13 @@ exports.renderUserPage = async (req, res) => {
             }
         } catch(e) {}
 
+        tracking.logEvent(req, { sellerId: user.id, eventName: 'page_view', pageUrl: req.originalUrl });
+
         res.render('user-page', {
             title: page.title || user.fullname || 'Landing Page',
             layout: false,
+            fbPixelId: user.fb_pixel_id || null,
+            sellerId: user.id,
             user: {
                 fullname: user.fullname,
                 slug: user.slug,
@@ -498,10 +503,10 @@ exports.renderProductPage = async (req, res) => {
 
         // Get Product
         const [products] = await db.execute(`
-            SELECT p.*, u.fullname as seller_name, u.slug as seller_slug, u.profile_photo as seller_photo
+            SELECT p.*, u.fullname as seller_name, u.slug as seller_slug, u.profile_photo as seller_photo, u.fb_pixel_id as seller_fb_pixel_id
             FROM products p
             JOIN users u ON p.user_id = u.id
-            WHERE p.id = ?
+            WHERE p.id = ? AND p.deleted_at IS NULL
         `, [productId]);
 
         if (products.length === 0) return res.status(404).send('Product not found');
@@ -542,10 +547,20 @@ exports.renderProductPage = async (req, res) => {
         }
         product.processed_thumb = thumb;
 
+        tracking.logEvent(req, {
+            sellerId: product.user_id,
+            eventName: 'view_product',
+            productId: product.id,
+            value: Number(product.price) || 0,
+            pageUrl: req.originalUrl
+        });
+
         res.render('product-detail', {
             title: product.name,
             layout: false,
             product,
+            fbPixelId: product.seller_fb_pixel_id || null,
+            sellerId: product.user_id,
             cleanHtml
         });
     } catch (err) {
@@ -609,7 +624,21 @@ exports.renderCheckoutPage = async (req, res) => {
         }
         product.processed_thumb = thumb;
 
-        res.render('checkout', { title: 'Checkout', product, upsellProducts, layout: false });
+        let sellerPixelId = null;
+        try {
+            const [sellerRows] = await db.execute('SELECT fb_pixel_id FROM users WHERE id = ?', [product.user_id]);
+            sellerPixelId = sellerRows[0] ? sellerRows[0].fb_pixel_id : null;
+        } catch (e) {}
+
+        tracking.logEvent(req, {
+            sellerId: product.user_id,
+            eventName: 'initiate_checkout',
+            productId: product.id,
+            value: Number(product.price) || 0,
+            pageUrl: req.originalUrl
+        });
+
+        res.render('checkout', { title: 'Checkout', product, upsellProducts, layout: false, fbPixelId: sellerPixelId, sellerId: product.user_id });
     } catch (err) {
         console.error('Render Checkout Error:', err.message, err.stack);
         res.status(500).send('Error loading checkout');
@@ -769,6 +798,16 @@ exports.processCheckout = async (req, res) => {
                 throw dbErr;
             }
         }
+
+        // 3b. Simpan atribusi Meta (fbclid/fbp) pada order untuk CAPI
+        try {
+            const attr = req.attribution || {};
+            const fbclid = attr.fbclid || '';
+            const fbp = (req.cookies && req.cookies._fbp) || '';
+            if (fbclid || fbp) {
+                await db.execute('UPDATE orders SET fbclid = ?, fbp = ? WHERE reference_id = ?', [fbclid || null, fbp || null, refId]);
+            }
+        } catch (e) { /* kolom mungkin belum ada; auto-heal akan menambahkannya */ }
 
         // 4. iPaymu Integration (Global Config from Admin)
         const [adminRows] = await db.execute('SELECT ipaymu_sandbox, ipaymu_expiry, ipaymu_va, ipaymu_apikey FROM users WHERE role = "admin" LIMIT 1');
@@ -968,6 +1007,16 @@ exports.getPaymentPage = async (req, res) => {
         const qrImageUrl = order.qr_url;
         const expiryMins = 60; // Default
 
+        // Meta Pixel (browser) untuk event Purchase saat pembayaran terdeteksi lunas.
+        let sellerPixelId = '';
+        try {
+            const [sRows] = await db.execute('SELECT fb_pixel_id FROM users WHERE id = ?', [order.user_id]);
+            sellerPixelId = sRows[0] && sRows[0].fb_pixel_id ? String(sRows[0].fb_pixel_id).replace(/[^0-9]/g, '') : '';
+        } catch (e) {}
+        const pixelHead = sellerPixelId
+            ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${sellerPixelId}');fbq('track','PageView');</script>`
+            : '';
+
         // Build the same item list shown in the order history and email.
         let paymentItems = [{ name: order.product_name }];
         let paymentUpsellIds = [];
@@ -1029,6 +1078,7 @@ exports.getPaymentPage = async (req, res) => {
                     .back-btn { display: block; background: #1e293b; color: white; text-decoration: none; padding: 16px; border-radius: 14px; font-weight: 700; transition: 0.2s; }
                     .back-btn:hover { background: #000; transform: translateY(-2px); }
                 </style>
+                ${pixelHead}
             </head>
             <body>
                 <div class="card">
@@ -1085,11 +1135,22 @@ exports.getPaymentPage = async (req, res) => {
 
                     // Status Check Logic
                     const rid = '${referenceId}';
+                    const pixValue = ${Number(order.total_price) || 0};
+                    const pixPid = '${order.product_id || ''}';
+                    const pixOid = '${order.id || ''}';
                     setInterval(async () => {
                         try {
                             const r = await fetch('/api/order/status/' + rid);
                             const d = await r.json();
-                            if (d.status === 'completed') window.location.href = '/access/go/' + d.orderId;
+                            if (d.status === 'completed') {
+                                try {
+                                    if (window.fbq && !sessionStorage.getItem('pixpurchase_' + rid)) {
+                                        fbq('track', 'Purchase', { value: pixValue, currency: 'IDR', content_ids: [pixPid], order_id: pixOid }, { eventID: rid });
+                                        sessionStorage.setItem('pixpurchase_' + rid, '1');
+                                    }
+                                } catch (e) {}
+                                window.location.href = '/access/go/' + d.orderId;
+                            }
                         } catch(e) {}
                     }, 5000);
                 </script>
@@ -1291,6 +1352,27 @@ exports.ipaymuCallback = async (req, res) => {
                         'UPDATE orders SET status = ?, trx_id = ? WHERE id = ?',
                         ['completed', trx_id || null, order.id]
                     );
+
+                    // 1b. Catat event purchase (first-party tracking)
+                    tracking.logEvent(req, {
+                        sellerId: order.user_id,
+                        eventName: 'purchase',
+                        productId: order.product_id,
+                        orderId: order.id,
+                        value: totalPrice,
+                        pageUrl: '/payment/' + sid,
+                        metadata: { reference_id: sid }
+                    });
+
+                    // 1c. Kirim Purchase ke Meta Conversions API (server-side)
+                    try {
+                        require('../utils/metaCapi').sendPurchaseToMeta({
+                            sellerId: order.user_id,
+                            order
+                        });
+                    } catch (capiErr) {
+                        console.error('CAPI dispatch error:', capiErr.message);
+                    }
 
                     // 2. Add Balance to Merchant (Net Amount)
                     await db.execute(

@@ -1,0 +1,164 @@
+<%
+    const c = locals.counts || {};
+    const visitors = Number(locals.visitors || 0);
+    const pageViews = Number(c['page_view'] || 0);
+    const viewProduct = Number(c['view_product'] || 0);
+    const initiateCheckout = Number(c['initiate_checkout'] || 0);
+    const purchases = Number(c['purchase'] || 0);
+    const clicks = Number(c['click'] || 0);
+    const revenue = Number(locals.revenue || 0);
+    const convRate = visitors > 0 ? (purchases / visitors * 100) : 0;
+    const funnel = [
+        { label: 'Pengunjung', value: visitors, color: '#3b82f6' },
+        { label: 'Lihat Produk', value: viewProduct, color: '#8b5cf6' },
+        { label: 'Checkout', value: initiateCheckout, color: '#f59e0b' },
+        { label: 'Pembelian', value: purchases, color: '#10b981' }
+    ];
+    const funnelMax = Math.max(1, ...funnel.map(f => f.value));
+    const daily = locals.daily || [];
+    const dailyMax = Math.max(1, ...daily.map(d => Number(d.visitors || 0)));
+    const sources = locals.sources || [];
+    const topProducts = locals.topProducts || [];
+    const recent = locals.recent || [];
+    const fmt = n => Number(n || 0).toLocaleString('id-ID');
+%>
+<style>
+    .trk-page { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
+    .trk-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; margin-bottom:20px; }
+    .trk-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:18px 20px; min-width:0; }
+    .trk-card .lbl { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+    .trk-card .val { font-size:clamp(17px, 2vw, 24px); font-weight:800; color:#0f172a; line-height:1.1; overflow-wrap:anywhere; }
+    .trk-card .sub { font-size:11px; color:#94a3b8; margin-top:6px; font-weight:600; }
+    .trk-panel { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:22px; margin-bottom:20px; min-width:0; }
+    .trk-title { font-size:14px; font-weight:900; color:#111827; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+    .funnel-row { display:flex; align-items:center; gap:14px; margin-bottom:12px; min-width:0; }
+    .funnel-name { width:120px; font-size:12px; font-weight:800; color:#374151; flex-shrink:0; }
+    .funnel-track { flex:1; min-width:0; background:#f1f5f9; border-radius:8px; height:30px; overflow:hidden; }
+    .funnel-fill { height:100%; border-radius:8px; display:flex; align-items:center; padding-left:12px; color:#fff; font-size:12px; font-weight:800; min-width:38px; white-space:nowrap; overflow:hidden; transition:width .3s; }
+    .trk-cols { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:20px; }
+    .src-row, .daily-row { display:flex; align-items:center; gap:10px; min-width:0; padding:7px 0; border-bottom:1px solid #f3f4f6; font-size:12px; }
+    .src-row:last-child, .daily-row:last-child { border-bottom:0; }
+    .src-name { flex:1; min-width:0; color:#374151; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .src-bar { width:clamp(60px, 10vw, 120px); flex-shrink:0; height:8px; background:#f1f5f9; border-radius:6px; overflow:hidden; }
+    .src-bar > span { display:block; height:100%; background:#3b82f6; border-radius:6px; }
+    .src-val { width:56px; flex-shrink:0; text-align:right; font-weight:800; color:#0f172a; }
+    .daily-bars { display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:10px; overflow:hidden; }
+    .daily-col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; }
+    .daily-col .bar { width:100%; max-width:26px; background:linear-gradient(180deg,#60a5fa,#3b82f6); border-radius:6px 6px 0 0; min-height:2px; }
+    .daily-col small { font-size:9px; color:#94a3b8; font-weight:700; }
+    .recent-scroll { max-height:260px; overflow:auto; -webkit-overflow-scrolling:touch; }
+    .recent-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:12px; }
+    .recent-table th { text-align:left; color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:.5px; padding:8px 10px; border-bottom:1px solid #e5e7eb; }
+    .recent-table td { padding:8px 10px; border-bottom:1px solid #f3f4f6; color:#374151; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .recent-table th:nth-child(1), .recent-table td:nth-child(1) { width:96px; }
+    .recent-table th:nth-child(3), .recent-table td:nth-child(3) { width:96px; }
+    .recent-table th:nth-child(4), .recent-table td:nth-child(4) { width:92px; }
+    .evt-badge { display:inline-block; max-width:100%; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800; background:#eff6ff; color:#1d4ed8; overflow:hidden; text-overflow:ellipsis; vertical-align:middle; }
+    @media (max-width:1100px) {
+        .trk-grid { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+        .trk-cols { grid-template-columns:minmax(0, 1fr); }
+    }
+    @media (max-width:640px) {
+        .trk-grid { grid-template-columns:minmax(0, 1fr); }
+        .trk-panel { padding:16px; }
+        .funnel-name { width:84px; font-size:11px; }
+        .src-bar { width:56px; }
+        .src-val { width:42px; }
+    }
+</style>
+
+<div class="trk-page">
+<div class="trk-grid">
+    <div class="trk-card"><div class="lbl">Pengunjung</div><div class="val"><%= fmt(visitors) %></div><div class="sub">30 hari terakhir</div></div>
+    <div class="trk-card"><div class="lbl">Page Views</div><div class="val"><%= fmt(pageViews) %></div><div class="sub"><%= fmt(clicks) %> klik tercatat</div></div>
+    <div class="trk-card"><div class="lbl">Pembelian</div><div class="val"><%= fmt(purchases) %></div><div class="sub">Konversi <%= convRate.toFixed(1) %>%</div></div>
+    <div class="trk-card"><div class="lbl">Revenue</div><div class="val">Rp <%= fmt(revenue) %></div><div class="sub">dari event purchase</div></div>
+    <div class="trk-card"><div class="lbl">Scroll 50%</div><div class="val"><%= fmt(c['scroll_50'] || 0) %></div><div class="sub">mencapai setengah halaman</div></div>
+    <div class="trk-card"><div class="lbl">Scroll 90%</div><div class="val"><%= fmt(c['scroll_90'] || 0) %></div><div class="sub">mencapai bawah halaman</div></div>
+</div>
+
+<div class="trk-panel">
+    <div class="trk-title"><i class="fas fa-filter" style="color:#3b82f6;"></i> Funnel Kunjungan (30 hari)</div>
+    <% funnel.forEach(f => { const w = Math.max(4, (f.value / funnelMax) * 100); %>
+        <div class="funnel-row">
+            <div class="funnel-name"><%= f.label %></div>
+            <div class="funnel-track">
+                <div class="funnel-fill" style="width:<%= w %>%; background:<%= f.color %>;"><%= fmt(f.value) %></div>
+            </div>
+        </div>
+    <% }); %>
+</div>
+
+<div class="trk-cols">
+    <div class="trk-panel">
+        <div class="trk-title"><i class="fas fa-calendar-day" style="color:#8b5cf6;"></i> Pengunjung Harian (14 hari)</div>
+        <% if (!daily.length) { %>
+            <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
+        <% } else { %>
+            <div class="daily-bars">
+                <% daily.forEach(d => { const h = Math.max(2, (Number(d.visitors || 0) / dailyMax) * 100); %>
+                    <div class="daily-col" title="<%= d.d %> · <%= d.visitors %> pengunjung">
+                        <div class="bar" style="height:<%= h %>%;"></div>
+                        <small><%= String(d.d).slice(5) %></small>
+                    </div>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="trk-panel">
+        <div class="trk-title"><i class="fas fa-share-nodes" style="color:#f59e0b;"></i> Sumber Traffic</div>
+        <% if (!sources.length) { %>
+            <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
+        <% } else { const srcMax = Math.max(1, ...sources.map(s => Number(s.total || 0))); %>
+            <% sources.forEach(s => { %>
+                <div class="src-row">
+                    <div class="src-name" title="<%= s.source %>"><%= s.source %></div>
+                    <div class="src-bar"><span style="width:<%= (Number(s.total)/srcMax*100) %>%;"></span></div>
+                    <div class="src-val"><%= fmt(s.total) %></div>
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+</div>
+
+<div class="trk-cols">
+    <div class="trk-panel">
+        <div class="trk-title"><i class="fas fa-box" style="color:#10b981;"></i> Produk Paling Dilihat</div>
+        <% if (!topProducts.length) { %>
+            <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
+        <% } else { const pMax = Math.max(1, ...topProducts.map(p => Number(p.views || 0))); %>
+            <% topProducts.forEach(p => { %>
+                <div class="src-row">
+                    <div class="src-name"><%= p.name %></div>
+                    <div class="src-bar"><span style="width:<%= (Number(p.views)/pMax*100) %>%; background:#10b981;"></span></div>
+                    <div class="src-val"><%= fmt(p.views) %></div>
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+
+    <div class="trk-panel">
+        <div class="trk-title"><i class="fas fa-clock-rotate-left" style="color:#64748b;"></i> Event Terbaru</div>
+        <% if (!recent.length) { %>
+            <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada event.</div>
+        <% } else { %>
+            <div class="recent-scroll">
+            <table class="recent-table">
+                <thead><tr><th>Event</th><th>Halaman</th><th>Sumber</th><th>Waktu</th></tr></thead>
+                <tbody>
+                <% recent.forEach(r => { %>
+                    <tr>
+                        <td><span class="evt-badge"><%= r.event_name %></span></td>
+                        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<%= r.page_url || '' %>"><%= r.page_url || '-' %></td>
+                        <td><%= r.utm_source || r.referrer || 'Direct' %></td>
+                        <td style="white-space:nowrap;"><%= new Date(r.created_at).toLocaleString('id-ID',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) %></td>
+                    </tr>
+                <% }); %>
+                </tbody>
+            </table>
+            </div>
+        <% } %>
+    </div>
+</div>
+</div>

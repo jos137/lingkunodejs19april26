@@ -363,5 +363,9 @@
             }
         </script>
     <% } %>
+    <%- include('partials/analytics', {
+        pixelId: (typeof fbPixelId !== 'undefined' ? fbPixelId : null),
+        sellerId: (typeof sellerId !== 'undefined' ? sellerId : null)
+    }) %>
 </body>
 </html>

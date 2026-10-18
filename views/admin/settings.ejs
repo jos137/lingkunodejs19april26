@@ -36,6 +36,7 @@
     <div class="settings-nav">
         <div class="settings-nav-item active" onclick="showSection('profil', this)"><i class="fas fa-user-circle"></i> Profil Akun</div>
         <div class="settings-nav-item" onclick="showSection('toko', this)"><i class="fas fa-store"></i> Tampilan Toko</div>
+        <div class="settings-nav-item" onclick="showSection('pixel', this)"><i class="fab fa-facebook"></i> Facebook Pixel</div>
         <div class="settings-nav-item" onclick="showSection('pembayarann', this)"><i class="fas fa-wallet"></i> Pembayaran</div>
         <div class="settings-nav-item" onclick="showSection('notifikasi', this)"><i class="fas fa-bell"></i> Notifikasi</div>
         <div class="settings-nav-item" onclick="showSection('keamanan', this)"><i class="fas fa-shield-alt"></i> Keamanan</div>
@@ -195,6 +196,45 @@
                 </script>
                 <hr class="s-divider">
                 <button type="submit" class="s-save">Terapkan Tema</button>
+            </form>
+        </div>
+
+        <!-- FACEBOOK PIXEL -->
+        <div class="settings-panel s-section" id="sec-pixel">
+            <div class="settings-title">Facebook Pixel</div>
+            <div class="settings-desc">Pasang Pixel ID Meta untuk melacak kunjungan & konversi di toko Anda.</div>
+
+            <% if (locals.success && locals.tab === 'pixel') { %>
+                <div style="padding:14px; background:#f0fdf4; border:1px solid #10b981; border-radius:12px; color:#065f46; font-size:13px; font-weight:700; margin-bottom:24px; display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-check-circle"></i> <%= locals.success %>
+                </div>
+            <% } %>
+            <% if (locals.error && locals.tab === 'pixel') { %>
+                <div style="padding:14px; background:#fff1f2; border:1px solid #fb7185; border-radius:12px; color:#9f1239; font-size:13px; font-weight:700; margin-bottom:24px;">
+                    <i class="fas fa-exclamation-circle"></i> <%= locals.error %>
+                </div>
+            <% } %>
+
+            <form action="/admin/settings/update-pixel" method="POST">
+                <div class="s-group">
+                    <label class="s-label">Pixel ID (angka)</label>
+                    <input class="s-input" type="text" inputmode="numeric" name="fb_pixel_id" value="<%= user.fb_pixel_id || '' %>" placeholder="contoh: 1234567890123456">
+                    <div style="font-size:11px;color:#94a3b8;margin-top:8px;">Tempel <b>Pixel ID</b> dari Meta Events Manager → Data Sources → Pixel. Hanya angka, tanpa kode JavaScript. Kosongkan untuk menonaktifkan.</div>
+                </div>
+                <div class="s-group" style="margin-top:22px;">
+                    <label class="s-label">Access Token (Opsional — Conversions API)</label>
+                    <input class="s-input" type="password" name="fb_capi_token" value="<%= user.fb_capi_token || '' %>" placeholder="Tempel Access Token dari Meta Events Manager" autocomplete="off">
+                    <div style="font-size:11px;color:#94a3b8;margin-top:8px;">Untuk mengirim <b>Purchase</b> dari server (lebih akurat & tahan ad-blocker). Ambil di Meta Events Manager → Settings → Conversions API → Generate Access Token. <b>Rahasia</b>, jangan dibagikan.</div>
+                </div>
+                <% if (user.role === 'admin') { %>
+                <div class="s-group" style="margin-top:22px;">
+                    <label class="s-label">Pixel ID Platform (halaman Lingku)</label>
+                    <input class="s-input" type="text" inputmode="numeric" name="fb_pixel_id_platform" value="<%= locals.platformPixelId || '' %>" placeholder="Khusus landing / register / upgrade">
+                    <div style="font-size:11px;color:#94a3b8;margin-top:8px;">Dipakai hanya untuk halaman milik platform, bukan toko seller.</div>
+                </div>
+                <% } %>
+                <hr class="s-divider">
+                <button type="submit" class="s-save" style="background:linear-gradient(135deg,#1877f2,#0b5ed7);"><i class="fab fa-facebook"></i> Simpan Pixel</button>
             </form>
         </div>
 

@@ -96,6 +96,8 @@ router.post('/products/create', uploadProduct.single('thumbnail'), adminControll
 router.get('/products/:id/edit', adminController.getProductEdit);
 router.post('/products/:id/update', uploadProduct.single('thumbnail'), adminController.updateProduct);
 router.post('/products/:id/delete', adminController.deleteProduct);
+router.post('/products/:id/restore', adminController.restoreProduct);
+router.post('/products/:id/purge', adminController.purgeProduct);
 
 // ===== ORDERS =====
 router.get('/orders', adminController.getOrders);
@@ -124,6 +126,9 @@ router.post('/users/:id/update-role', isAdmin, adminController.updateUserRole);
 
 // ===== GLOBAL ANALYTICS =====
 router.get('/analytics', isAdmin, adminController.getGlobalAnalytics);
+
+// ===== TRACKING (Funnel) =====
+router.get('/tracking', adminController.getTracking);
 
 // ===== WITHDRAWAL QUEUE (Admin) =====
 router.get('/withdrawal-queue', isAdmin, adminController.getWithdrawalQueue);
@@ -221,6 +226,7 @@ router.post('/settings/test-telegram', isAdmin, adminController.testTelegramSett
 router.post('/settings/update-fee', adminController.updateFeeSettings);
 router.post('/settings/update-free-quota', isAdmin, adminController.updateFreeQuotaSettings);
 router.post('/settings/update-ipaymu', adminController.updateIpaymuSettings);
+router.post('/settings/update-pixel', adminController.updatePixelSettings);
 router.post('/settings/update-affiliate', adminController.updateAffiliateSettings);
 router.post('/settings/upload-photo', uploadProfile.single('profile_photo'), adminController.uploadProfilePhoto);
 

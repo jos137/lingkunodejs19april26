@@ -1,0 +1,51 @@
+<%
+    var _px = (typeof pixelId !== 'undefined' && pixelId) ? String(pixelId).replace(/[^0-9]/g, '') : '';
+    var _ev = (typeof pixelEvent !== 'undefined' && pixelEvent) ? String(pixelEvent) : '';
+    var _evd = (typeof pixelEventData !== 'undefined' && pixelEventData) ? pixelEventData : '{}';
+    var _sid = (typeof sellerId !== 'undefined' && sellerId) ? Number(sellerId) : 0;
+%>
+<% if (_px) { %>
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','<%= _px %>');
+fbq('track','PageView');
+<% if (_ev) { %>fbq('track','<%= _ev %>', <%- _evd %>);<% } %>
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=<%= _px %>&ev=PageView&noscript=1"/></noscript>
+<% } %>
+<% if (_sid) { %>
+<script>
+(function () {
+    var SELLER = <%= _sid %>;
+    function send(name, extra) {
+        try {
+            var payload = Object.assign({ seller_id: SELLER, event_name: name, page: location.pathname + location.search }, extra || {});
+            navigator.sendBeacon('/track', new Blob([JSON.stringify(payload)], { type: 'application/json' }));
+        } catch (e) {}
+    }
+    document.addEventListener('click', function (e) {
+        var el = e.target.closest('[data-track],a,button');
+        if (!el) return;
+        var label = (el.getAttribute('data-track') || el.innerText || el.getAttribute('href') || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+        send('click', { label: label });
+    }, true);
+
+    // Scroll depth (50% & 90%) — masing-masing dikirim sekali per halaman.
+    var fired50 = false, fired90 = false;
+    function scrollPercent() {
+        var d = document.documentElement;
+        var scrollable = (d.scrollHeight - d.clientHeight);
+        if (scrollable <= 0) return 100;
+        var top = window.pageYOffset || d.scrollTop || document.body.scrollTop || 0;
+        return (top / scrollable) * 100;
+    }
+    function checkScroll() {
+        var p = scrollPercent();
+        if (!fired50 && p >= 50) { fired50 = true; send('scroll_50'); }
+        if (!fired90 && p >= 90) { fired90 = true; send('scroll_90'); }
+    }
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    window.addEventListener('DOMContentLoaded', checkScroll);
+})();
+</script>
+<% } %>

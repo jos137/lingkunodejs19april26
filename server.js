@@ -100,6 +100,9 @@ app.use(session({
     }
 }));
 
+// First-party visitor + attribution tracking (visitor id, UTM, fbclid, ref)
+app.use(require('./utils/tracking').trackVisitor);
+
 // Set Templating Engine
 app.use(expressLayouts);
 app.set('layout', './layouts/main');
@@ -136,7 +139,8 @@ app.use(async (req, res, next) => {
                     bio: u.bio,
                     sidebar_theme: u.sidebar_theme || 'default',
                     ipaymu_sandbox: u.ipaymu_sandbox,
-                    ipaymu_expiry: u.ipaymu_expiry
+                    ipaymu_expiry: u.ipaymu_expiry,
+                    fb_pixel_id: u.fb_pixel_id
                 };
             }
         } catch(e) { console.error('Session refresh error:', e.message); }
