@@ -38,12 +38,12 @@
     .funnel-track { flex:1; min-width:0; background:#f1f5f9; border-radius:8px; height:30px; overflow:hidden; }
     .funnel-fill { height:100%; border-radius:8px; display:flex; align-items:center; padding-left:12px; color:#fff; font-size:12px; font-weight:800; min-width:38px; white-space:nowrap; overflow:hidden; transition:width .3s; }
     .funnel-pct { width:56px; flex-shrink:0; text-align:right; font-size:11px; font-weight:400; color:#64748b; font-variant-numeric:tabular-nums; }
-    .funnel-seg em { font-size:10px; font-weight:400; font-style:normal; opacity:.92; }
+    .funnel-seg em { font-size:11px; font-weight:400; font-style:normal; opacity:.95; }
     .funnel-split { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:32px; align-items:center; }
     .funnel-bars { min-width:0; }
-    .funnel-shape { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:0; padding:4px 0; }
-    .funnel-seg { height:50px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; line-height:1.15; }
-    .funnel-seg span { font-size:10px; font-weight:800; opacity:.92; text-transform:uppercase; letter-spacing:.3px; }
+    .funnel-shape { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; padding:4px 0; width:100%; max-width:320px; margin:0 auto; }
+    .funnel-seg { height:42px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; line-height:1.15; }
+    .funnel-seg span { font-size:9px; font-weight:700; opacity:.95; text-transform:uppercase; letter-spacing:.2px; }
     .funnel-seg strong { font-size:15px; font-weight:900; }
     .trk-cols { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:20px; }
     .src-row, .daily-row { display:flex; align-items:center; gap:10px; min-width:0; padding:7px 0; border-bottom:1px solid #f3f4f6; font-size:12px; }
@@ -107,14 +107,12 @@
             <% const shapeW = funnel.map((_, i) => 100 - i * 18); %>
             <% funnel.forEach((f, i) => {
                 const w = shapeW[i];
-                const nw = (i < funnel.length - 1) ? shapeW[i + 1] : Math.max(24, w - 12);
+                const nw = (i < funnel.length - 1) ? shapeW[i + 1] : Math.max(8, w * 0.7);
                 const ratio = nw / w;
                 const bl = ((1 - ratio) / 2) * 100;
                 const br = ((1 + ratio) / 2) * 100;
             %>
-                <div class="funnel-seg" style="width:<%= w.toFixed(2) %>%; background:<%= f.color %>; clip-path:polygon(0 0, 100% 0, <%= br.toFixed(2) %>% 100%, <%= bl.toFixed(2) %>% 100%);">
-                    <span><%= f.label %></span>
-                    <strong><%= fmt(f.value) %></strong>
+                <div class="funnel-seg" title="<%= f.label %>: <%= pctLabel(f.value) %>" style="width:<%= w.toFixed(2) %>%; background:<%= f.color %>; clip-path:polygon(0 0, 100% 0, <%= br.toFixed(2) %>% 100%, <%= bl.toFixed(2) %>% 100%);">
                     <em><%= pctLabel(f.value) %></em>
                 </div>
             <% }); %>

@@ -1,5 +1,7 @@
 node_modules/
 .env
+.env.*
+!.env.example
 .DS_Store
 .vscode/
 dist/
@@ -9,6 +11,7 @@ yarn-error.log*
 logs/
 *.log
 tmp/
+backups/
 6mei26_u427900331_josling.sql
 products.sql
 *_dump.sql

@@ -452,12 +452,13 @@
                     <div style="font-size: 11px; font-weight: 900; color: #64748b; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 0.5px;">DATA AKTIF (DIAMBIL DARI DB / ENV):</div>
                     <div style="font-family: 'Monaco', 'Menlo', monospace; font-size: 13px; line-height: 1.8; color: #1e293b;">
                         <% 
-                            let activeVa = user.ipaymu_sandbox == 1 ? '0000001316083605' : '1179001316083605';
-                            let activeKey = user.ipaymu_sandbox == 1 ? 'SANDBOX2AAD372E-B1FE-4DB1-B006-0C7F7C7B8552' : '5452ECBF-72B0-4A6D-9C40-F86678F2FA6D';
+                            let activeVa = user.ipaymu_va || '(diatur via ENV hosting)';
+                            let activeKey = user.ipaymu_apikey || '';
+                            let activeKeyMasked = activeKey ? activeKey.substring(0, 10) + '********************' : '(diatur via ENV hosting)';
                             let activeUrl = user.ipaymu_sandbox == 1 ? 'https://sandbox.ipaymu.com/api/v2/payment/direct' : 'https://my.ipaymu.com/api/v2/payment/direct';
                         %>
                         <strong>VA Number:</strong> <%= activeVa %><br>
-                        <strong>API Key:</strong> <%= activeKey.substring(0, 10) %>********************<br>
+                        <strong>API Key:</strong> <%= activeKeyMasked %><br>
                         <strong>Endpoint:</strong> <%= activeUrl %>
                     </div>
                 </div>
