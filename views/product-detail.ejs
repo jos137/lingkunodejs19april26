@@ -63,6 +63,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 12px;
+            position: relative;
         }
 
         .price-info { flex: 1; min-width: 0; }
@@ -75,6 +76,12 @@
         .badge-modern { font-size: 9px; font-weight: 800; padding: 5px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.02em; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
         .badge-discount { background: var(--primary); color: #fff; }
         .badge-stock { background: var(--danger); color: #fff; }
+
+        /* Countdown urgensi */
+        .countdown-ticker { position: absolute; top: -11px; right: 20px; z-index: 5; display: flex; align-items: center; }
+        .countdown-boxes { display: flex; align-items: center; gap: 3px; }
+        .cd-box { background: #0f172a; color: #fff; font-size: 13px; font-weight: 900; font-variant-numeric: tabular-nums; padding: 4px 6px; border-radius: 5px; line-height: 1; min-width: 26px; text-align: center; }
+        .cd-colon { font-size: 12px; font-weight: 900; color: #94a3b8; }
 
         /* Tablet/Large Mobile */
         @media (max-width: 420px) {
@@ -140,6 +147,15 @@
                         </div>
                     <% } %>
                 </div>
+                <% if (product.countdown_enabled == 1 && Number(product.countdown_minutes) > 0) { %>
+                    <div class="countdown-ticker">
+                        <div class="countdown-boxes">
+                            <span class="cd-box" id="cdH">00</span><span class="cd-colon">:</span>
+                            <span class="cd-box" id="cdM">00</span><span class="cd-colon">:</span>
+                            <span class="cd-box" id="cdS">00</span>
+                        </div>
+                    </div>
+                <% } %>
             </div>
 
             <div class="description">
@@ -172,5 +188,36 @@
         pixelEvent: 'ViewContent',
         pixelEventData: JSON.stringify({ content_ids: [String(product.id)], content_name: product.name, value: Number(product.price) || 0, currency: 'IDR' })
     }) %>
+    <% if (product.countdown_enabled == 1 && Number(product.countdown_minutes) > 0) { %>
+    <script>
+        (function () {
+            var total = Math.max(1, parseInt('<%= Number(product.countdown_minutes) || 30 %>', 10)) * 60;
+            var storageKey = 'lingku_countdown_<%= product.id %>';
+            var startedAt = 0;
+            try { startedAt = parseInt(localStorage.getItem(storageKey) || '0', 10) || 0; } catch (e) {}
+            if (!startedAt) {
+                startedAt = Date.now();
+                try { localStorage.setItem(storageKey, String(startedAt)); } catch (e) {}
+            }
+            var hEl = document.getElementById('cdH');
+            var mEl = document.getElementById('cdM');
+            var sEl = document.getElementById('cdS');
+            function pad(n) { return String(n).padStart(2, '0'); }
+            function render() {
+                // Lanjut dari waktu mulai tersimpan (tidak reset saat refresh) + loop
+                var elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+                var remaining = total - (elapsed % total);
+                var h = Math.floor(remaining / 3600);
+                var m = Math.floor((remaining % 3600) / 60);
+                var s = remaining % 60;
+                if (hEl) hEl.textContent = pad(h);
+                if (mEl) mEl.textContent = pad(m);
+                if (sEl) sEl.textContent = pad(s);
+            }
+            render();
+            setInterval(render, 1000);
+        })();
+    </script>
+    <% } %>
 </body>
 </html>

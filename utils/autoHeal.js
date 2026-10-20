@@ -40,7 +40,9 @@ async function runAutoHeal() {
             'is_affiliate TINYINT(1) DEFAULT 1',
             'commission_percent DECIMAL(5,2) DEFAULT 20.00',
             "product_role VARCHAR(20) DEFAULT 'main'",
-            'deleted_at DATETIME DEFAULT NULL'
+            'deleted_at DATETIME DEFAULT NULL',
+            'countdown_enabled TINYINT(1) DEFAULT 0',
+            'countdown_minutes INT DEFAULT 30'
         ];
         for (const colDef of productCols) {
             const colName = colDef.split(' ')[0];

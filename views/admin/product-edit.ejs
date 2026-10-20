@@ -345,6 +345,24 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
                                 <% } %>
                             </div>
                         </div>
+                        <% if (!isUpsellRole) { %>
+                        <div class="stan-group" style="margin-top:18px; padding:16px; border:1px solid #e5e7eb; border-radius:12px; background:#f8fafc;">
+                            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+                                <div>
+                                    <div style="font-size:13px; font-weight:800; color:#1e293b;"><i class="fas fa-clock" style="color:#f59e0b;"></i> Countdown Urgensi</div>
+                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Tampilkan timer hitung mundur di halaman produk.</div>
+                                </div>
+                                <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;">
+                                    <input type="checkbox" name="countdown_enabled" <%= p.countdown_enabled == 1 ? 'checked' : '' %> onchange="document.getElementById('countdownMinutesWrap').style.display = this.checked ? 'block' : 'none';"> Aktifkan
+                                </label>
+                            </div>
+                            <div id="countdownMinutesWrap" style="display:<%= p.countdown_enabled == 1 ? 'block' : 'none' %>; margin-top:14px;">
+                                <label class="stan-label">Durasi Countdown (menit)</label>
+                                <input type="number" name="countdown_minutes" class="stan-input" min="1" value="<%= p.countdown_minutes || 30 %>" style="max-width:200px;">
+                                <small>Timer reset otomatis ke durasi ini saat habis (loop).</small>
+                            </div>
+                        </div>
+                        <% } %>
                         <div class="upsell-card" id="upsellSection" style="display:<%= (savedPricingMode === 'free' || isUpsellRole) ? 'none' : 'block' %>">
                             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
                                 <div>
