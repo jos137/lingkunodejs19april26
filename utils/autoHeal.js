@@ -175,7 +175,10 @@ async function runAutoHeal() {
             'payment_channel VARCHAR(50)',
             'customer_ip VARCHAR(50)',
             'fbclid VARCHAR(255)',
-            'fbp VARCHAR(255)'
+            'fbp VARCHAR(255)',
+            'utm_source VARCHAR(120)',
+            'utm_medium VARCHAR(120)',
+            'utm_campaign VARCHAR(120)'
         ];
         for (const colDef of orderCols) {
             const colName = colDef.split(' ')[0];

@@ -799,13 +799,19 @@ exports.processCheckout = async (req, res) => {
             }
         }
 
-        // 3b. Simpan atribusi Meta (fbclid/fbp) pada order untuk CAPI
+        // 3b. Simpan atribusi (fbclid/fbp/UTM) pada order untuk CAPI & deteksi iklan
         try {
             const attr = req.attribution || {};
             const fbclid = attr.fbclid || '';
             const fbp = (req.cookies && req.cookies._fbp) || '';
-            if (fbclid || fbp) {
-                await db.execute('UPDATE orders SET fbclid = ?, fbp = ? WHERE reference_id = ?', [fbclid || null, fbp || null, refId]);
+            const utmSource = attr.utm_source || '';
+            const utmMedium = attr.utm_medium || '';
+            const utmCampaign = attr.utm_campaign || '';
+            if (fbclid || fbp || utmSource || utmMedium || utmCampaign) {
+                await db.execute(
+                    'UPDATE orders SET fbclid = ?, fbp = ?, utm_source = ?, utm_medium = ?, utm_campaign = ? WHERE reference_id = ?',
+                    [fbclid || null, fbp || null, utmSource || null, utmMedium || null, utmCampaign || null, refId]
+                );
             }
         } catch (e) { /* kolom mungkin belum ada; auto-heal akan menambahkannya */ }
 
@@ -1455,7 +1461,17 @@ exports.ipaymuCallback = async (req, res) => {
                         console.error('Notification Error:', e.message);
                     }
 
-                    void notifyTelegram(`💰 <b>Pembayaran berhasil</b>\nProduk: ${escapeHtml(order.product_name || 'Produk digital')}\nPembeli: ${escapeHtml(order.customer_name || order.customer_email)}\nNilai: Rp ${parseFloat(order.total_price || 0).toLocaleString('id-ID')}\nRef: ${escapeHtml(order.reference_id || sid)}`);
+                    const src = String(order.utm_source || '').toLowerCase();
+                    const med = String(order.utm_medium || '').toLowerCase();
+                    const isMetaAd = !!order.fbclid || /facebook|instagram|^fb$|^ig$|meta/.test(src) || /paid|cpc|ads|advert/.test(med);
+                    let adInfo = '';
+                    if (isMetaAd) {
+                        adInfo = '\n🎯 <b>DARI IKLAN META</b>';
+                        if (order.utm_source) adInfo += `\nSumber: ${escapeHtml(order.utm_source)}${order.utm_medium ? '/' + escapeHtml(order.utm_medium) : ''}`;
+                        if (order.utm_campaign) adInfo += `\nCampaign: ${escapeHtml(order.utm_campaign)}`;
+                        if (order.fbclid) adInfo += `\nfbclid: ${escapeHtml(String(order.fbclid).slice(0, 14))}…`;
+                    }
+                    void notifyTelegram(`💰 <b>${isMetaAd ? 'Pembelian dari IKLAN META' : 'Pembayaran berhasil'}</b>${adInfo}\nProduk: ${escapeHtml(order.product_name || 'Produk digital')}\nPembeli: ${escapeHtml(order.customer_name || order.customer_email)}\nNilai: Rp ${parseFloat(order.total_price || 0).toLocaleString('id-ID')}\nRef: ${escapeHtml(order.reference_id || sid)}`);
 
                     console.log(`[SUCCESS] Order ${sid} completed & Email/Notif sent.`);
                 }
