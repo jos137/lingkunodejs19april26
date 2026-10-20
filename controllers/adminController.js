@@ -1730,7 +1730,18 @@ exports.updatePixelSettings = async (req, res) => {
 
         if (userId) {
             const sellerPixel = clean(req.body.fb_pixel_id) || null;
-            const capiToken = String(req.body.fb_capi_token || '').trim().slice(0, 255) || null;
+            const providedToken = String(req.body.fb_capi_token || '').trim().slice(0, 255);
+            const clearToken = req.body.clear_fb_capi_token === 'on';
+            let capiToken;
+            if (clearToken) {
+                capiToken = null;
+            } else if (providedToken) {
+                capiToken = providedToken;
+            } else {
+                // Kosong = jangan ubah token yang sudah tersimpan
+                const [curRows] = await db.execute('SELECT fb_capi_token FROM users WHERE id = ?', [userId]);
+                capiToken = curRows[0] ? curRows[0].fb_capi_token : null;
+            }
             await db.execute('UPDATE users SET fb_pixel_id = ?, fb_capi_token = ? WHERE id = ?', [sellerPixel, capiToken, userId]);
             if (req.session.user) {
                 req.session.user.fb_pixel_id = sellerPixel;

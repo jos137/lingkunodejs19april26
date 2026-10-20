@@ -1,5 +1,34 @@
 <style>
     #richEditor hr, #prevMainDesc hr { border:0; border-top:1px solid #d5dce5; margin:20px 0; clear:both; }
+    /* Gambar di editor & preview tidak boleh melebihi lebar kontainer */
+    #richEditor, #prevMainDesc { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+    #richEditor img, #prevMainDesc img {
+        max-width: 100%;
+        height: auto !important;
+        display: block;
+        border-radius: 10px;
+        margin: 12px 0;
+    }
+    #richEditor img { cursor: default; }
+    /* Seleksi gambar di editor */
+    #richEditor img.desc-img-selected { outline: 3px solid #5850ec; outline-offset: 2px; }
+    #descImgHandle { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #5850ec; border: 2px solid #fff; box-shadow: 0 1px 5px rgba(0,0,0,.35); cursor: nwse-resize; z-index: 4000; display: none; touch-action: none; }
+    /* Crop modal gambar deskripsi */
+    .desc-crop-modal { display:none; position:fixed; inset:0; z-index:3000; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.72); backdrop-filter:blur(5px); }
+    .desc-crop-modal.open { display:flex; }
+    .desc-crop-card { width:min(660px,100%); padding:22px; border-radius:20px; background:#fff; box-shadow:0 24px 70px rgba(0,0,0,.3); }
+    .desc-crop-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .desc-crop-head strong { color:#172033; font-size:17px; }
+    .desc-crop-head button { border:0; background:#f1f5f9; color:#64748b; width:32px; height:32px; border-radius:9px; cursor:pointer; font-size:18px; }
+    .desc-crop-stage { display:flex; justify-content:center; padding:12px; border-radius:14px; background:#0f172a; }
+    #descCropCanvas { width:min(100%,600px); height:auto; aspect-ratio:16/9; touch-action:none; cursor:grab; border-radius:8px; }
+    .desc-crop-help { margin:12px 0 8px; color:#64748b; font-size:12px; text-align:center; }
+    .desc-crop-zoom { width:100%; accent-color:#5850ec; }
+    .desc-crop-actions { display:flex; gap:10px; margin-top:16px; }
+    .desc-crop-actions button { flex:1; border:0; border-radius:11px; padding:12px; font:inherit; font-weight:800; cursor:pointer; }
+    .desc-crop-cancel { color:#475569; background:#f1f5f9; }
+    .desc-crop-save { color:#fff; background:linear-gradient(135deg,#5850ec,#4338ca); }
+    .desc-crop-save:disabled { opacity:.6; cursor:not-allowed; }
     :root {
         --stan-primary: #5850ec;
         --stan-bg: #f9fafb;
@@ -407,7 +436,7 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
                                     <button type="button" onclick="execCmd('italic')" title="Italic" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-italic"></i></button>
                                     <button type="button" onclick="execCmd('insertUnorderedList')" title="Bullet List" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-list-ul"></i></button>
                                     <div style="width:1px; height:20px; background:#e2e8f0; margin: 5px 4px;"></div>
-                                    <button type="button" onclick="execCmd('insertImage', prompt('Enter Image URL:'))" title="Insert Image" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-image"></i></button>
+                                    <button type="button" onclick="openDescriptionImagePicker()" title="Sisipkan Gambar (upload & kompres otomatis < 200KB)" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-image"></i></button>
                                     <button type="button" onpointerdown="rememberDescriptionSelection(); event.preventDefault()" onclick="insertDescriptionDivider()" title="Garis horizontal" aria-label="Sisipkan garis horizontal" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-minus" aria-hidden="true"></i></button>
                                     <button type="button" onclick="insertVideo()" title="Insert Video" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-play"></i></button>
                                     <button type="button" onclick="execCmd('createLink', prompt('Enter Link URL:', 'https://'))" title="Insert Link" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-link"></i></button>
@@ -627,6 +656,9 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
         </div>
     </form>
 </div>
+
+<input type="file" id="descImageInput" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none" onchange="onDescriptionImageSelected(this)">
+<div id="descImgHandle" title="Tarik untuk mengubah ukuran gambar"></div>
 
 <script>
     let currentStepIdx = 0;
@@ -891,6 +923,314 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
             document.execCommand(cmd, false, val);
         }
     }
+
+    // ===== Gambar deskripsi: upload + crop + kompres (<=300KB) =====
+    let descCropImage = null, descCropScale = 1, descCropX = 0, descCropY = 0;
+    let descCropDragging = false, descCropStartX = 0, descCropStartY = 0;
+
+    function openDescriptionImagePicker() {
+        rememberDescriptionSelection();
+        const inp = document.getElementById('descImageInput');
+        if (inp) { inp.value = ''; inp.click(); }
+    }
+
+    function onDescriptionImageSelected(input) {
+        const file = input.files && input.files[0];
+        if (file) handleDescriptionImageFile(file);
+        input.value = '';
+    }
+
+    function handleDescriptionImageFile(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) { alert('File harus berupa gambar.'); return; }
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () { compressAndUploadDescriptionImage(img); };
+            img.onerror = function () { alert('Gagal membaca gambar.'); };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Kompres gambar ke < 200KB (tanpa crop, rasio dipertahankan), lalu upload & sisipkan.
+    async function compressAndUploadDescriptionImage(img) {
+        const TARGET = 200 * 1024;
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        // Batasi dimensi awal agar canvas tidak terlalu berat (rasio tetap)
+        const maxDim = 2000;
+        if (Math.max(w, h) > maxDim) {
+            const r = maxDim / Math.max(w, h);
+            w = Math.round(w * r); h = Math.round(h * r);
+        }
+        let canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+        let blob = null, quality = 0.85;
+        for (let i = 0; i < 18; i++) {
+            blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', quality));
+            if (blob && blob.size <= TARGET) break;
+            if (quality > 0.45) {
+                quality -= 0.1;
+            } else {
+                const nw = Math.round(canvas.width * 0.85);
+                const nh = Math.round(canvas.height * 0.85);
+                const scaled = document.createElement('canvas');
+                scaled.width = nw; scaled.height = nh;
+                scaled.getContext('2d').drawImage(canvas, 0, 0, nw, nh);
+                canvas = scaled;
+                quality = 0.75;
+            }
+        }
+        if (!blob) { alert('Gagal memproses gambar.'); return; }
+        if (blob.size > TARGET) { alert('Gagal: gambar masih lebih dari 200KB.'); return; }
+
+        try {
+            const fd = new FormData();
+            fd.append('image', blob, 'desc-' + Date.now() + '.jpg');
+            const res = await fetch('/admin/builder/upload-image', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!data.success || !data.url) throw new Error(data.message || 'Upload gagal');
+            insertDescriptionImage(data.url);
+        } catch (err) {
+            alert('Gagal upload: ' + err.message);
+        }
+    }
+
+    function drawDescCrop() {
+        const canvas = document.getElementById('descCropCanvas');
+        if (!canvas || !descCropImage) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width, h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#0f172a'; ctx.fillRect(0, 0, w, h);
+        const base = Math.max(w / descCropImage.width, h / descCropImage.height);
+        const scale = base * descCropScale;
+        const iw = descCropImage.width * scale, ih = descCropImage.height * scale;
+        ctx.drawImage(descCropImage, (w - iw) / 2 + descCropX, (h - ih) / 2 + descCropY, iw, ih);
+    }
+
+    document.getElementById('descCropZoom')?.addEventListener('input', function () { descCropScale = Number(this.value); drawDescCrop(); });
+    const descCropCanvasEl = document.getElementById('descCropCanvas');
+    descCropCanvasEl?.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        descCropDragging = true;
+        descCropStartX = e.clientX - descCropX;
+        descCropStartY = e.clientY - descCropY;
+        descCropCanvasEl.style.cursor = 'grabbing';
+        if (descCropCanvasEl.setPointerCapture) { try { descCropCanvasEl.setPointerCapture(e.pointerId); } catch (err) {} }
+    });
+    // Dengarkan di window agar gambar tetap bisa digeser walau kursor keluar canvas
+    window.addEventListener('pointermove', function (e) {
+        if (!descCropDragging) return;
+        e.preventDefault();
+        descCropX = e.clientX - descCropStartX;
+        descCropY = e.clientY - descCropStartY;
+        drawDescCrop();
+    });
+    window.addEventListener('pointerup', function () {
+        descCropDragging = false;
+        if (descCropCanvasEl) descCropCanvasEl.style.cursor = 'grab';
+    });
+
+    // Drag & drop file gambar langsung ke editor deskripsi
+    (function () {
+        const editorDrop = document.getElementById('richEditor');
+        if (!editorDrop) return;
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            editorDrop.addEventListener(ev, function (e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'copy';
+                editorDrop.style.background = '#f5f3ff';
+            });
+        });
+        ['dragleave', 'dragend'].forEach(function (ev) {
+            editorDrop.addEventListener(ev, function (e) {
+                e.preventDefault();
+                editorDrop.style.background = '';
+            });
+        });
+        editorDrop.addEventListener('drop', function (e) {
+            e.preventDefault();
+            editorDrop.style.background = '';
+            const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+            if (!file) return;
+            // Simpan posisi kursor saat drop
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount) descriptionSelection = sel.getRangeAt(0).cloneRange();
+            handleDescriptionImageFile(file);
+        });
+    })();
+
+    function closeDescCrop() {
+        document.getElementById('descCropModal')?.classList.remove('open');
+        const input = document.getElementById('descImageInput'); if (input) input.value = '';
+    }
+
+    async function applyDescCrop() {
+        if (!descCropImage) return;
+        const canvas = document.getElementById('descCropCanvas');
+        const btn = document.getElementById('descCropSave');
+        const oldLabel = btn ? btn.textContent : '';
+
+        // Render hasil crop ke resolusi maksimal 1280px lebar
+        const outW = 1280;
+        const outH = Math.round(outW * canvas.height / canvas.width);
+        let working = document.createElement('canvas');
+        working.width = outW; working.height = outH;
+        const wctx = working.getContext('2d');
+        wctx.fillStyle = '#ffffff'; wctx.fillRect(0, 0, outW, outH);
+        wctx.drawImage(canvas, 0, 0, outW, outH);
+
+        // Kompres bertahap sampai <= 300KB
+        let blob = null, quality = 0.85;
+        for (let attempt = 0; attempt < 14; attempt++) {
+            blob = await new Promise(res => working.toBlob(res, 'image/jpeg', quality));
+            if (blob && blob.size <= 300 * 1024) break;
+            if (quality > 0.45) {
+                quality -= 0.1;
+            } else {
+                const nw = Math.round(working.width * 0.85), nh = Math.round(working.height * 0.85);
+                const scaled = document.createElement('canvas');
+                scaled.width = nw; scaled.height = nh;
+                scaled.getContext('2d').drawImage(working, 0, 0, nw, nh);
+                working = scaled;
+                quality = 0.75;
+            }
+        }
+        if (!blob) { alert('Gagal memproses gambar.'); return; }
+        if (blob.size > 300 * 1024) { alert('Gambar masih lebih dari 300KB. Coba crop lebih kecil.'); return; }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Mengunggah...'; }
+        try {
+            const fd = new FormData();
+            fd.append('image', blob, 'desc-' + Date.now() + '.jpg');
+            const res = await fetch('/admin/builder/upload-image', { method: 'POST', body: fd });
+            const data = await res.json();
+            if (!data.success || !data.url) throw new Error(data.message || 'Upload gagal');
+            closeDescCrop();
+            insertDescriptionImage(data.url);
+        } catch (err) {
+            alert('Gagal upload: ' + err.message);
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = oldLabel; }
+        }
+    }
+
+    function insertDescriptionImage(url) {
+        const editor = document.getElementById('richEditor');
+        const safeUrlAttr = String(url).replace(/"/g, '&quot;');
+        const html = '<img src="' + safeUrlAttr + '" alt="" style="max-width:100%;height:auto;display:block;border-radius:10px;margin:12px 0;">';
+
+        editor.focus();
+        const selection = window.getSelection();
+        let range = (descriptionSelection && descriptionSelection.cloneRange) ? descriptionSelection.cloneRange() : null;
+        if (!range || !editor.contains(range.commonAncestorContainer)) {
+            // Tidak ada kursor tersimpan -> taruh di akhir editor
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false);
+        }
+        selection.removeAllRanges();
+        selection.addRange(range);
+
+        let inserted = false;
+        const beforeCount = editor.querySelectorAll('img').length;
+        try { inserted = document.execCommand('insertHTML', false, html); } catch (e) { inserted = false; }
+        const afterCount = editor.querySelectorAll('img').length;
+
+        if (!inserted || afterCount <= beforeCount) {
+            const wrap = document.createElement('div');
+            wrap.innerHTML = html;
+            editor.appendChild(wrap.firstChild);
+        }
+
+        document.getElementById('hiddenDesc').value = editor.innerHTML;
+        try { updatePreview('desc', editor.innerHTML); } catch (e) {}
+        rememberDescriptionSelection();
+    }
+
+    // ===== Seleksi & resize gambar di editor =====
+    let selectedDescImg = null, descImgResizing = false, descImgStartX = 0, descImgStartW = 0;
+    const descImgHandleEl = document.getElementById('descImgHandle');
+    const descRichEditor = document.getElementById('richEditor');
+
+    function positionDescImgHandle() {
+        if (!selectedDescImg || !descImgHandleEl) return;
+        const r = selectedDescImg.getBoundingClientRect();
+        const size = 14;
+        descImgHandleEl.style.left = (r.right - size / 2 + window.scrollX) + 'px';
+        descImgHandleEl.style.top = (r.bottom - size / 2 + window.scrollY) + 'px';
+    }
+
+    function clearDescImageSelection() {
+        if (selectedDescImg) selectedDescImg.classList.remove('desc-img-selected');
+        selectedDescImg = null;
+        if (descImgHandleEl) descImgHandleEl.style.display = 'none';
+    }
+
+    function selectDescImage(img) {
+        clearDescImageSelection();
+        selectedDescImg = img;
+        img.classList.add('desc-img-selected');
+        if (descImgHandleEl) {
+            descImgHandleEl.style.display = 'block';
+            positionDescImgHandle();
+        }
+    }
+
+    if (descRichEditor) {
+        descRichEditor.addEventListener('click', function (e) {
+            if (e.target && e.target.tagName === 'IMG') selectDescImage(e.target);
+            else clearDescImageSelection();
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest || (!e.target.closest('#richEditor') && e.target !== descImgHandleEl)) {
+            clearDescImageSelection();
+        }
+    }, true);
+
+    if (descImgHandleEl) {
+        descImgHandleEl.addEventListener('pointerdown', function (e) {
+            if (!selectedDescImg) return;
+            e.preventDefault(); e.stopPropagation();
+            descImgResizing = true;
+            descImgStartX = e.clientX;
+            descImgStartW = selectedDescImg.getBoundingClientRect().width;
+            try { descImgHandleEl.setPointerCapture(e.pointerId); } catch (err) {}
+        });
+    }
+
+    window.addEventListener('pointermove', function (e) {
+        if (!descImgResizing || !selectedDescImg) return;
+        e.preventDefault();
+        const maxW = descRichEditor ? (descRichEditor.clientWidth - 44) : 800;
+        let newW = descImgStartW + (e.clientX - descImgStartX);
+        newW = Math.max(60, Math.min(newW, maxW));
+        selectedDescImg.style.width = newW + 'px';
+        selectedDescImg.style.height = 'auto';
+        selectedDescImg.style.maxWidth = '100%';
+        selectedDescImg.setAttribute('width', Math.round(newW));
+        selectedDescImg.removeAttribute('height');
+        positionDescImgHandle();
+    });
+
+    window.addEventListener('pointerup', function () {
+        if (descImgResizing) {
+            descImgResizing = false;
+            if (descRichEditor) {
+                document.getElementById('hiddenDesc').value = descRichEditor.innerHTML;
+                try { updatePreview('desc', descRichEditor.innerHTML); } catch (e) {}
+            }
+        }
+    });
+
+    window.addEventListener('scroll', positionDescImgHandle, true);
+    window.addEventListener('resize', positionDescImgHandle);
 
     function insertVideo() {
         var url = prompt('Enter YouTube/Vimeo Video URL:');

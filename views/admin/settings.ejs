@@ -223,7 +223,12 @@
                 </div>
                 <div class="s-group" style="margin-top:22px;">
                     <label class="s-label">Access Token (Opsional — Conversions API)</label>
-                    <input class="s-input" type="password" name="fb_capi_token" value="<%= user.fb_capi_token || '' %>" placeholder="Tempel Access Token dari Meta Events Manager" autocomplete="off">
+                    <input class="s-input" type="password" name="fb_capi_token" value="" placeholder="<%= user.fb_capi_token ? '•••••••• (token tersimpan — kosongkan jika tidak diubah)' : 'Tempel Access Token dari Meta Events Manager' %>" autocomplete="new-password">
+                    <% if (user.fb_capi_token) { %>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;font-weight:600;color:#64748b;cursor:pointer;">
+                            <input type="checkbox" name="clear_fb_capi_token"> Hapus Access Token tersimpan
+                        </label>
+                    <% } %>
                     <div style="font-size:11px;color:#94a3b8;margin-top:8px;">Untuk mengirim <b>Purchase</b> dari server (lebih akurat & tahan ad-blocker). Ambil di Meta Events Manager → Settings → Conversions API → Generate Access Token. <b>Rahasia</b>, jangan dibagikan.</div>
                 </div>
                 <% if (user.role === 'admin') { %>

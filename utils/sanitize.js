@@ -8,7 +8,7 @@ const cleanHtml = (dirty) => {
         allowedTags: ['b', 'i', 'em', 'strong', 'u', 'p', 'br', 'hr', 'ul', 'ol', 'li', 'span', 'div', 'font', 'a', 'img'],
         allowedAttributes: {
             a: ['href', 'title', 'target', 'rel', 'style'],
-            img: ['src', 'alt', 'title'],
+            img: ['src', 'alt', 'title', 'width', 'height'],
             ...Object.fromEntries(['b', 'i', 'em', 'strong', 'u', 'p', 'ul', 'ol', 'li', 'span', 'div'].map(tag => [tag, ['style']]))
         },
         allowedStyles: {
