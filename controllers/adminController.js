@@ -356,7 +356,26 @@ exports.getProductCreate = async (req, res) => {
 exports.updateProduct = async (req, res) => {
     try {
         const id = req.params.id;
-        
+
+        // Data countdown/rotasi harga saat ini (untuk menentukan anchor waktu)
+        let curCountdown = {};
+        try {
+            const [curRows] = await db.execute('SELECT countdown_enabled, countdown_minutes, countdown_started_at FROM products WHERE id = ? LIMIT 1', [id]);
+            curCountdown = curRows[0] || {};
+        } catch (e) {}
+        const newCountdownEnabled = req.body.countdown_enabled === 'on' ? 1 : 0;
+        const newCountdownMinutes = Math.max(1, parseInt(req.body.countdown_minutes) || 30);
+        let countdownStartedAt = curCountdown.countdown_started_at || null;
+        if (newCountdownEnabled === 1) {
+            const wasEnabled = Number(curCountdown.countdown_enabled || 0) === 1;
+            const oldMinutes = parseInt(curCountdown.countdown_minutes || 30, 10) || 30;
+            if (!wasEnabled || oldMinutes !== newCountdownMinutes || !countdownStartedAt) {
+                countdownStartedAt = new Date();
+            }
+        } else {
+            countdownStartedAt = null;
+        }
+
         // Ensure event columns exist before update
         try {
             await db.execute('SELECT event_date FROM products LIMIT 1');
@@ -414,8 +433,9 @@ exports.updateProduct = async (req, res) => {
             commission_percent: parseFloat(req.body.commission_percent) || 20,
             product_type: req.body.type || 'digital',
             product_role: req.body.product_role === 'upsell' ? 'upsell' : 'main',
-            countdown_enabled: req.body.countdown_enabled === 'on' ? 1 : 0,
-            countdown_minutes: Math.max(1, parseInt(req.body.countdown_minutes) || 30),
+            countdown_enabled: newCountdownEnabled,
+            countdown_minutes: newCountdownMinutes,
+            countdown_started_at: countdownStartedAt,
             thumbnail_style: req.body.thumbnail_style || 'callout',
             subtitle: req.body.subtitle || '',
             button_text: req.body.button_text || 'Ambil Sekarang',
@@ -493,7 +513,10 @@ exports.updateProduct = async (req, res) => {
                     'ALTER TABLE products ADD event_location VARCHAR(255)',
                     'ALTER TABLE products ADD upsell_product_ids TEXT',
                     'ALTER TABLE products ADD pricing_mode VARCHAR(20) DEFAULT "fixed"',
-                    'ALTER TABLE products ADD product_role VARCHAR(20) DEFAULT "main"'
+                    'ALTER TABLE products ADD product_role VARCHAR(20) DEFAULT "main"',
+                    'ALTER TABLE products ADD countdown_enabled TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD countdown_minutes INT DEFAULT 30',
+                    'ALTER TABLE products ADD countdown_started_at DATETIME DEFAULT NULL'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql); } catch(e) {}
@@ -525,6 +548,7 @@ exports.createProductPost = async (req, res) => {
         const pricingMode = req.body.pricing_mode === 'free' ? 'free' : 'fixed';
         const freePrice = Math.max(0, parseFloat(req.body.free_price) || 0);
         const freeStock = Math.max(0, parseInt(req.body.free_stock) || 0);
+        const cdEnabled = req.body.countdown_enabled === 'on' ? 1 : 0;
         const data = {
             user_id: userId,
             name: req.body.name || '',
@@ -541,8 +565,9 @@ exports.createProductPost = async (req, res) => {
             pricing_mode: pricingMode,
             product_type: req.body.type || 'digital',
             product_role: req.body.product_role === 'upsell' ? 'upsell' : 'main',
-            countdown_enabled: req.body.countdown_enabled === 'on' ? 1 : 0,
+            countdown_enabled: cdEnabled,
             countdown_minutes: Math.max(1, parseInt(req.body.countdown_minutes) || 30),
+            countdown_started_at: cdEnabled ? new Date() : null,
             ...accessUpdates(req.body),
             normal_price: req.body.normal_price || null,
             promo_enabled: req.body.promo_enabled === 'on' ? 1 : 0,
@@ -608,7 +633,10 @@ exports.createProductPost = async (req, res) => {
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_time TIME',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS event_location VARCHAR(255)',
                     'ALTER TABLE products ADD COLUMN IF NOT EXISTS pricing_mode VARCHAR(20) DEFAULT "fixed"',
-                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS product_role VARCHAR(20) DEFAULT "main"'
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS product_role VARCHAR(20) DEFAULT "main"',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS countdown_enabled TINYINT(1) DEFAULT 0',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS countdown_minutes INT DEFAULT 30',
+                    'ALTER TABLE products ADD COLUMN IF NOT EXISTS countdown_started_at DATETIME DEFAULT NULL'
                 ];
                 for (let sql of addCols) {
                     try { await db.execute(sql.replace('IF NOT EXISTS ', '')); } catch(e) {}

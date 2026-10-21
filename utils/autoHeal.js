@@ -42,7 +42,8 @@ async function runAutoHeal() {
             "product_role VARCHAR(20) DEFAULT 'main'",
             'deleted_at DATETIME DEFAULT NULL',
             'countdown_enabled TINYINT(1) DEFAULT 0',
-            'countdown_minutes INT DEFAULT 30'
+            'countdown_minutes INT DEFAULT 30',
+            'countdown_started_at DATETIME DEFAULT NULL'
         ];
         for (const colDef of productCols) {
             const colName = colDef.split(' ')[0];

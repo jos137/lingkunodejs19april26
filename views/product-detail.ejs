@@ -53,17 +53,30 @@
         
         /* PRICE BOX - RESPONSIVE FIX */
         .price-box {
-            background: #fff;
-            border: 1px solid var(--border);
-            border-radius: 20px;
+            /* fallback */
+            background: #ffffff;
+            border: 1px solid #e6edf6;
+            border-radius: 22px;
             padding: 20px;
             margin-bottom: 24px;
-            box-shadow: 0 10px 25px -10px rgba(0,0,0,0.05);
+            box-shadow: 0 14px 34px -20px rgba(15, 23, 42, 0.18), 0 2px 6px rgba(15, 23, 42, 0.03), inset 0 1px 0 rgba(255,255,255,0.9);
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
             position: relative;
+            /* gradient border halus mengikuti warna tema */
+            border: 1.5px solid transparent;
+            background:
+                linear-gradient(#ffffff, #ffffff) padding-box,
+                linear-gradient(135deg,
+                    color-mix(in srgb, var(--primary) 55%, #ffffff) 0%,
+                    #eaf0f8 48%,
+                    color-mix(in srgb, var(--primary) 22%, #ffffff) 100%) border-box;
+            box-shadow:
+                0 18px 42px -24px color-mix(in srgb, var(--primary) 60%, transparent),
+                0 3px 10px rgba(15, 23, 42, 0.04),
+                inset 0 1px 0 rgba(255,255,255,0.95);
         }
 
         .price-info { flex: 1; min-width: 0; }
@@ -129,18 +142,14 @@
                 <div class="price-info">
                     <div class="price-label">Harga Spesial</div>
                     <div class="price-main">
-                        <div class="price-current">Rp <%= curPrice.toLocaleString('id-ID') %></div>
-                        <% if (oldPrice > curPrice) { %>
-                            <div class="price-old">Rp <%= oldPrice.toLocaleString('id-ID') %></div>
-                        <% } %>
+                        <div class="price-current" id="priceCurrent">Rp <%= curPrice.toLocaleString('id-ID') %></div>
+                        <div class="price-old" id="priceOld" style="<%= oldPrice > curPrice ? '' : 'display:none;' %>">Rp <%= oldPrice.toLocaleString('id-ID') %></div>
                     </div>
                 </div>
                 
                 <div class="badges-stack">
-                    <% if (oldPrice > curPrice) { %>
-                        <% let save = Math.round((oldPrice - curPrice) / oldPrice * 100); %>
-                        <div class="badge-modern badge-discount">Hemat <%= save %>%</div>
-                    <% } %>
+                    <% const savePct = oldPrice > curPrice ? Math.round((oldPrice - curPrice) / oldPrice * 100) : 0; %>
+                    <div class="badge-modern badge-discount" id="badgeDiscount" style="<%= savePct > 0 ? '' : 'display:none;' %>">Hemat <%= savePct %>%</div>
                     <% if (product.stock > 0) { %>
                         <div class="badge-modern badge-stock">
                             <i class="fas fa-bolt"></i> <%= product.stock %> Slot Sisa
@@ -191,28 +200,53 @@
     <% if (product.countdown_enabled == 1 && Number(product.countdown_minutes) > 0) { %>
     <script>
         (function () {
-            var total = Math.max(1, parseInt('<%= Number(product.countdown_minutes) || 30 %>', 10)) * 60;
-            var storageKey = 'lingku_countdown_<%= product.id %>';
-            var startedAt = 0;
-            try { startedAt = parseInt(localStorage.getItem(storageKey) || '0', 10) || 0; } catch (e) {}
-            if (!startedAt) {
-                startedAt = Date.now();
-                try { localStorage.setItem(storageKey, String(startedAt)); } catch (e) {}
-            }
+            var meta = <%- JSON.stringify(product.countdown_meta || null) %>;
+            var stageSeconds = (meta && meta.stageSeconds) ? meta.stageSeconds : Math.max(1, parseInt('<%= Number(product.countdown_minutes) || 30 %>', 10)) * 60;
+            var startedAt = (meta && meta.startedAt) ? meta.startedAt : Date.now();
+            var stages = (meta && meta.stages) ? meta.stages : [];
+            var normalPrice = meta ? Number(meta.normalPrice || 0) : 0;
+
             var hEl = document.getElementById('cdH');
             var mEl = document.getElementById('cdM');
             var sEl = document.getElementById('cdS');
+            var priceEl = document.getElementById('priceCurrent');
+            var oldEl = document.getElementById('priceOld');
+            var badgeEl = document.getElementById('badgeDiscount');
+            var lastIndex = -1;
+
             function pad(n) { return String(n).padStart(2, '0'); }
+            function rupiah(n) { return 'Rp ' + Number(n || 0).toLocaleString('id-ID'); }
+
             function render() {
-                // Lanjut dari waktu mulai tersimpan (tidak reset saat refresh) + loop
+                // Lanjut dari anchor server (tidak reset saat refresh) + loop
                 var elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
-                var remaining = total - (elapsed % total);
+                var remaining = stageSeconds - (elapsed % stageSeconds);
+                if (remaining <= 0) remaining = stageSeconds;
+
                 var h = Math.floor(remaining / 3600);
                 var m = Math.floor((remaining % 3600) / 60);
                 var s = remaining % 60;
                 if (hEl) hEl.textContent = pad(h);
                 if (mEl) mEl.textContent = pad(m);
                 if (sEl) sEl.textContent = pad(s);
+
+                if (stages.length) {
+                    var idx = Math.floor(elapsed / stageSeconds) % stages.length;
+                    if (idx !== lastIndex) {
+                        lastIndex = idx;
+                        var st = stages[idx];
+                        if (priceEl) priceEl.textContent = rupiah(st.price);
+                        if (oldEl) oldEl.style.display = (normalPrice > st.price) ? '' : 'none';
+                        if (badgeEl) {
+                            if (st.save > 0) {
+                                badgeEl.textContent = 'Hemat ' + st.save + '%';
+                                badgeEl.style.display = '';
+                            } else {
+                                badgeEl.style.display = 'none';
+                            }
+                        }
+                    }
+                }
             }
             render();
             setInterval(render, 1000);

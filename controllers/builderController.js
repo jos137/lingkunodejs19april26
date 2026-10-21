@@ -42,6 +42,50 @@ async function syncPricingTier(product) {
     return product;
 }
 
+// Rotasi harga berbasis waktu (Flash Sale -> Spesial Promo -> Diskon -> loop).
+// Hanya mengubah harga di memori; stok & pricing_stage tetap seperti semula.
+function applyCountdownPrice(product) {
+    try {
+        if (Number(product.countdown_enabled) !== 1) return product;
+
+        const minutes = Math.max(1, parseInt(product.countdown_minutes, 10) || 30);
+        const stageSeconds = minutes * 60;
+        const normal = parseFloat(product.normal_price || 0);
+        const stages = [];
+        for (let i = 1; i <= 3; i++) {
+            const price = parseFloat(product[`price_stage_${i}`] || 0);
+            if (price > 0) {
+                stages.push({
+                    stage: i,
+                    price,
+                    save: normal > price ? Math.round((normal - price) / normal * 100) : 0
+                });
+            }
+        }
+        if (!stages.length) return product;
+
+        let anchorMs = product.countdown_started_at ? new Date(product.countdown_started_at).getTime() : Date.now();
+        if (!anchorMs || isNaN(anchorMs)) anchorMs = Date.now();
+
+        const elapsed = Math.max(0, Math.floor((Date.now() - anchorMs) / 1000));
+        const idx = Math.floor(elapsed / stageSeconds) % stages.length;
+        const remaining = stageSeconds - (elapsed % stageSeconds);
+
+        product.price = stages[idx].price;
+        product.countdown_meta = {
+            stages,
+            stageSeconds,
+            startedAt: anchorMs,
+            normalPrice: normal,
+            index: idx,
+            remaining
+        };
+    } catch (e) {
+        console.error('Countdown price error:', e.message);
+    }
+    return product;
+}
+
 // Ensure tables exist
 async function ensureTables() {
     try {
@@ -510,7 +554,7 @@ exports.renderProductPage = async (req, res) => {
         `, [productId]);
 
         if (products.length === 0) return res.status(404).send('Product not found');
-        const product = await syncPricingTier(products[0]);
+        const product = applyCountdownPrice(await syncPricingTier(products[0]));
         let upsellProducts = [];
         let configuredUpsells = [];
         try { configuredUpsells = JSON.parse(product.upsell_product_ids || '[]').map(Number).filter(Boolean); } catch (e) {}
@@ -575,7 +619,7 @@ exports.renderCheckoutPage = async (req, res) => {
         const [products] = await db.execute('SELECT * FROM products WHERE id = ?', [productId]);
         if (products.length === 0) return res.status(404).send('Product not found');
         
-        const product = await syncPricingTier(products[0]);
+        const product = applyCountdownPrice(await syncPricingTier(products[0]));
 
         // Load the seller's configured UpSell products for the checkout.
         // Keep this lookup isolated so an older database schema cannot break
@@ -705,6 +749,7 @@ exports.processCheckout = async (req, res) => {
         // Anti-Spam Removed as requested
 
         await syncPricingTier(product);
+        applyCountdownPrice(product);
         if (product.stock !== -1 && product.stock <= 0) return res.status(400).send('Stok produk habis.');
         const salePrice = parseFloat(product.price || 0);
         const upsellTotal = upsellItems.reduce((sum, item) => sum + parseFloat(item.price || 0), 0);

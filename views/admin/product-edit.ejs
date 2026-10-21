@@ -350,16 +350,16 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
                             <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
                                 <div>
                                     <div style="font-size:13px; font-weight:800; color:#1e293b;"><i class="fas fa-clock" style="color:#f59e0b;"></i> Countdown Urgensi</div>
-                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Tampilkan timer hitung mundur di halaman produk.</div>
+                                    <div style="font-size:11px; color:#64748b; margin-top:4px;">Timer hitung mundur + rotasi harga otomatis (Flash Sale → Spesial Promo → Diskon) tiap durasi, lalu loop.</div>
                                 </div>
                                 <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#374151;cursor:pointer;">
                                     <input type="checkbox" name="countdown_enabled" <%= p.countdown_enabled == 1 ? 'checked' : '' %> onchange="document.getElementById('countdownMinutesWrap').style.display = this.checked ? 'block' : 'none';"> Aktifkan
                                 </label>
                             </div>
                             <div id="countdownMinutesWrap" style="display:<%= p.countdown_enabled == 1 ? 'block' : 'none' %>; margin-top:14px;">
-                                <label class="stan-label">Durasi Countdown (menit)</label>
+                                <label class="stan-label">Durasi per tahap (menit)</label>
                                 <input type="number" name="countdown_minutes" class="stan-input" min="1" value="<%= p.countdown_minutes || 30 %>" style="max-width:200px;">
-                                <small>Timer reset otomatis ke durasi ini saat habis (loop).</small>
+                                <small>Contoh 30: Flash Sale 30 mnt → Spesial Promo 30 mnt → Diskon 30 mnt → ulang. Timer & harga reset tiap ganti tahap.</small>
                             </div>
                         </div>
                         <% } %>
@@ -449,6 +449,10 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
                                     <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;">Warna
                                         <input type="color" id="descriptionColor" aria-label="Warna teks deskripsi" value="#111827" onpointerdown="rememberDescriptionSelection()" oninput="applyDescriptionColor(this.value)" style="width:32px;height:32px;padding:2px;border:1px solid #dce2e9;border-radius:7px;background:#fff;cursor:pointer;">
                                     </label>
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#334155;">BG
+                                        <input type="color" id="descriptionBgColor" aria-label="Warna background teks deskripsi" value="#fff3bf" onpointerdown="rememberDescriptionSelection()" oninput="applyDescriptionBackground(this.value)" style="width:32px;height:32px;padding:2px;border:1px solid #dce2e9;border-radius:7px;background:#fff;cursor:pointer;">
+                                    </label>
+                                    <button type="button" onclick="clearDescriptionBackground()" title="Hapus background teks" aria-label="Hapus background teks" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-eraser"></i></button>
                                     <button type="button" onclick="execCmd('bold')" title="Bold" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-bold"></i></button>
                                     <button type="button" onclick="execCmd('strikeThrough')" title="Strikethrough" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-strikethrough"></i></button>
                                     <button type="button" onclick="execCmd('italic')" title="Italic" style="width:30px;height:30px;border:none;background:none;cursor:pointer;"><i class="fas fa-italic"></i></button>
@@ -924,6 +928,29 @@ const isUpsellRole = (locals.productRole === 'upsell') || (p.product_role === 'u
         const cssMode = document.queryCommandState('styleWithCSS');
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, color);
+        document.execCommand('styleWithCSS', false, cssMode);
+        syncDescriptionFormatting(editor);
+    }
+
+    function applyDescriptionBackground(color) {
+        if (!/^#[0-9a-f]{6}$/i.test(color)) return;
+        const editor = restoreDescriptionSelection();
+        const cssMode = document.queryCommandState('styleWithCSS');
+        document.execCommand('styleWithCSS', false, true);
+        try { document.execCommand('hiliteColor', false, color); } catch (e) {}
+        document.execCommand('styleWithCSS', false, cssMode);
+        syncDescriptionFormatting(editor);
+    }
+
+    function clearDescriptionBackground() {
+        const editor = restoreDescriptionSelection();
+        const cssMode = document.queryCommandState('styleWithCSS');
+        document.execCommand('styleWithCSS', false, true);
+        try {
+            if (!document.execCommand('hiliteColor', false, 'transparent')) {
+                document.execCommand('backColor', false, 'transparent');
+            }
+        } catch (e) {}
         document.execCommand('styleWithCSS', false, cssMode);
         syncDescriptionFormatting(editor);
     }
