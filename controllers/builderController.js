@@ -852,10 +852,11 @@ exports.processCheckout = async (req, res) => {
             const utmSource = attr.utm_source || '';
             const utmMedium = attr.utm_medium || '';
             const utmCampaign = attr.utm_campaign || '';
-            if (fbclid || fbp || utmSource || utmMedium || utmCampaign) {
+            const referrer = attr.referrer || (req.headers && req.headers.referer) || '';
+            if (fbclid || fbp || utmSource || utmMedium || utmCampaign || referrer) {
                 await db.execute(
-                    'UPDATE orders SET fbclid = ?, fbp = ?, utm_source = ?, utm_medium = ?, utm_campaign = ? WHERE reference_id = ?',
-                    [fbclid || null, fbp || null, utmSource || null, utmMedium || null, utmCampaign || null, refId]
+                    'UPDATE orders SET fbclid = ?, fbp = ?, utm_source = ?, utm_medium = ?, utm_campaign = ?, referrer = ? WHERE reference_id = ?',
+                    [fbclid || null, fbp || null, utmSource || null, utmMedium || null, utmCampaign || null, referrer || null, refId]
                 );
             }
         } catch (e) { /* kolom mungkin belum ada; auto-heal akan menambahkannya */ }

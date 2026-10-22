@@ -181,7 +181,8 @@ async function runAutoHeal() {
             'fbp VARCHAR(255)',
             'utm_source VARCHAR(120)',
             'utm_medium VARCHAR(120)',
-            'utm_campaign VARCHAR(120)'
+            'utm_campaign VARCHAR(120)',
+            'referrer VARCHAR(512)'
         ];
         for (const colDef of orderCols) {
             const colName = colDef.split(' ')[0];

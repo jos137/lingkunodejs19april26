@@ -46,6 +46,7 @@
 
 .order-info { flex: 1; min-width: 0; padding-right: 90px; }
 .order-date { font-size: 11px; color: #94a3b8; font-weight: 700; margin-bottom: 6px; }
+.order-src-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 800; color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 2px 7px; margin-bottom: 6px; }
 .order-buyer { font-size: 15px; font-weight: 900; color: #111827; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .order-product { font-size: 11px; font-weight: 800; color: #f59e0b; margin-top: 2px; text-transform: uppercase; display: flex; align-items: center; gap: 8px; }
 .order-price { font-size: 16px; font-weight: 600; color: #111827; margin-top: 8px; }
@@ -195,6 +196,8 @@
                     <div class="order-card" data-status="<%= o.status %>" data-buyer="<%= o.customer_name.toLowerCase() %>" onclick="selectOrder(this, <%= idx %>)">
                         <div class="order-info">
                             <div class="order-date"><%= o.formatted_date %></div>
+                            <% const _src = (o.utm_source || '').toLowerCase(); const _med = (o.utm_medium || '').toLowerCase(); const _isAd = !!o.fbclid || /facebook|instagram|meta|^fb$|^ig$/.test(_src) || /paid|cpc|ads|advert/.test(_med); %>
+                            <% if (_isAd) { %><div class="order-src-chip"><i class="fas fa-bullseye"></i> Iklan Meta</div><% } %>
                             <div class="order-buyer">
                                 <%= o.customer_name %>
                             </div>
@@ -290,6 +293,28 @@
 const ordersData = <%- JSON.stringify(orders || []) %>;
 let currentFilter = 'all';
 
+// Klasifikasi sumber kunjungan sebuah order
+function orderSource(o) {
+    const src = String(o.utm_source || '').toLowerCase();
+    const med = String(o.utm_medium || '').toLowerCase();
+    const camp = o.utm_campaign || '';
+    if (o.fbclid || /facebook|instagram|meta|^fb$|^ig$/.test(src) || /paid|cpc|ads|advert/.test(med)) {
+        return { label: 'Iklan Meta', icon: 'fa-bullseye', color: '#2563eb', detail: [src || 'facebook', med, camp].filter(Boolean).join(' · ') };
+    }
+    if (src) {
+        return { label: src.toUpperCase(), icon: 'fa-link', color: '#7c3aed', detail: [med, camp].filter(Boolean).join(' · ') };
+    }
+    if (o.affiliate_id) {
+        return { label: 'Affiliate', icon: 'fa-handshake', color: '#f59e0b', detail: 'Referral affiliate' };
+    }
+    if (o.referrer) {
+        let host = o.referrer;
+        try { host = new URL(o.referrer).hostname.replace(/^www\./, ''); } catch (e) {}
+        return { label: 'Referral', icon: 'fa-globe', color: '#0ea5e9', detail: host };
+    }
+    return { label: 'Direct / Tanpa atribusi', icon: 'fa-user', color: '#64748b', detail: '' };
+}
+
 function toggleFilter() { document.getElementById('filterDropdown').classList.toggle('show'); }
 document.addEventListener('click', e => { if (!e.target.closest('.filter-wrap')) document.getElementById('filterDropdown').classList.remove('show'); });
 
@@ -317,6 +342,7 @@ function renderOrderDetail(o, idx) {
     const btnColor = isCompleted ? '#3b82f6' : '#10b981';
     const btnLabel = isCompleted ? 'Kirim Akses' : 'Follow Up';
     const upsellItems = Array.isArray(o.upsell_items) ? o.upsell_items : [];
+    const srcInfo = orderSource(o);
     const upsellHtml = upsellItems.length ? `
         <div style="margin-top:10px; padding:10px 12px; background:#eff6ff; border:1px solid #dbeafe; border-radius:10px;">
             <div style="font-size:10px; color:#1d4ed8; font-weight:850; text-transform:uppercase; margin-bottom:5px;"><i class="fas fa-bolt"></i> Produk UpSell yang dipilih</div>
@@ -384,6 +410,18 @@ function renderOrderDetail(o, idx) {
                     <% } %>
                 </div>
             </div>
+        </div>
+
+        <!-- Sumber Kunjungan -->
+        <div style="margin-top:15px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px 14px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                <span style="width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:${srcInfo.color}18;color:${srcInfo.color};flex-shrink:0;"><i class="fas ${srcInfo.icon}"></i></span>
+                <div style="min-width:0;">
+                    <div style="font-size:9px;color:#94a3b8;font-weight:800;text-transform:uppercase;letter-spacing:.5px;">Sumber Kunjungan</div>
+                    <div style="font-size:12px;font-weight:800;color:#111827;">${srcInfo.label}</div>
+                </div>
+            </div>
+            <div style="font-size:11px;color:#64748b;text-align:right;max-width:55%;overflow-wrap:anywhere;">${srcInfo.detail || '-'}</div>
         </div>
 
         <!-- Email Status Timeline (Ultra Compact) -->
