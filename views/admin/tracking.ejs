@@ -27,7 +27,9 @@
 <style>
     .trk-page { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
     .trk-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; margin-bottom:20px; }
-    .trk-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:18px 20px; min-width:0; }
+    .trk-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:18px 20px; min-width:0; display:flex; align-items:flex-start; gap:12px; }
+    .trk-card-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:17px; flex-shrink:0; }
+    .trk-card-body { min-width:0; flex:1; }
     .trk-card .lbl { font-size:11px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
     .trk-card .val { font-size:clamp(17px, 2vw, 24px); font-weight:800; color:#0f172a; line-height:1.1; overflow-wrap:anywhere; }
     .trk-card .sub { font-size:11px; color:#94a3b8; margin-top:6px; font-weight:600; }
@@ -52,10 +54,12 @@
     .src-bar { width:clamp(60px, 10vw, 120px); flex-shrink:0; height:8px; background:#f1f5f9; border-radius:6px; overflow:hidden; }
     .src-bar > span { display:block; height:100%; background:#3b82f6; border-radius:6px; }
     .src-val { width:56px; flex-shrink:0; text-align:right; font-weight:800; color:#0f172a; }
-    .daily-bars { display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:10px; overflow:hidden; }
-    .daily-col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:4px; }
+    .daily-bars { display:flex; align-items:flex-end; gap:6px; padding-top:10px; overflow:hidden; }
+    .daily-col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .daily-val { font-size:9px; font-weight:800; color:#64748b; }
+    .daily-bar-area { width:100%; height:110px; display:flex; align-items:flex-end; justify-content:center; }
     .daily-col .bar { width:100%; max-width:26px; background:linear-gradient(180deg,#60a5fa,#3b82f6); border-radius:6px 6px 0 0; min-height:2px; }
-    .daily-col small { font-size:9px; color:#94a3b8; font-weight:700; }
+    .daily-col small { font-size:9px; color:#94a3b8; font-weight:700; white-space:nowrap; }
     .recent-scroll { max-height:260px; overflow:auto; -webkit-overflow-scrolling:touch; }
     .recent-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:12px; }
     .recent-table th { text-align:left; color:#64748b; font-size:10px; text-transform:uppercase; letter-spacing:.5px; padding:8px 10px; border-bottom:1px solid #e5e7eb; }
@@ -81,12 +85,30 @@
 
 <div class="trk-page">
 <div class="trk-grid">
-    <div class="trk-card"><div class="lbl">Pengunjung</div><div class="val"><%= fmt(visitors) %></div><div class="sub">30 hari terakhir</div></div>
-    <div class="trk-card"><div class="lbl">Page Views</div><div class="val"><%= fmt(pageViews) %></div><div class="sub"><%= fmt(clicks) %> klik tercatat</div></div>
-    <div class="trk-card"><div class="lbl">Pembelian</div><div class="val"><%= fmt(purchases) %></div><div class="sub">Konversi <%= convRate.toFixed(1) %>%</div></div>
-    <div class="trk-card"><div class="lbl">Revenue</div><div class="val">Rp <%= fmt(revenue) %></div><div class="sub">dari event purchase</div></div>
-    <div class="trk-card"><div class="lbl">Scroll 50%</div><div class="val"><%= fmt(c['scroll_50'] || 0) %></div><div class="sub">mencapai setengah halaman</div></div>
-    <div class="trk-card"><div class="lbl">Scroll 90%</div><div class="val"><%= fmt(c['scroll_90'] || 0) %></div><div class="sub">mencapai bawah halaman</div></div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#eff6ff;color:#2563eb;"><i class="fas fa-users"></i></div>
+        <div class="trk-card-body"><div class="lbl">Pengunjung</div><div class="val"><%= fmt(visitors) %></div><div class="sub">30 hari terakhir</div></div>
+    </div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#f5f3ff;color:#7c3aed;"><i class="fas fa-eye"></i></div>
+        <div class="trk-card-body"><div class="lbl">Page Views</div><div class="val"><%= fmt(pageViews) %></div><div class="sub"><%= fmt(clicks) %> klik tercatat</div></div>
+    </div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#ecfdf5;color:#059669;"><i class="fas fa-shopping-bag"></i></div>
+        <div class="trk-card-body"><div class="lbl">Pembelian</div><div class="val"><%= fmt(purchases) %></div><div class="sub">Konversi <%= convRate.toFixed(1) %>%</div></div>
+    </div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#fffbeb;color:#d97706;"><i class="fas fa-coins"></i></div>
+        <div class="trk-card-body"><div class="lbl">Revenue</div><div class="val">Rp <%= fmt(revenue) %></div><div class="sub">dari event purchase</div></div>
+    </div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#ecfeff;color:#0891b2;"><i class="fas fa-arrow-down"></i></div>
+        <div class="trk-card-body"><div class="lbl">Scroll 50%</div><div class="val"><%= fmt(c['scroll_50'] || 0) %></div><div class="sub">mencapai setengah halaman</div></div>
+    </div>
+    <div class="trk-card">
+        <div class="trk-card-icon" style="background:#fff1f2;color:#e11d48;"><i class="fas fa-angles-down"></i></div>
+        <div class="trk-card-body"><div class="lbl">Scroll 90%</div><div class="val"><%= fmt(c['scroll_90'] || 0) %></div><div class="sub">mencapai bawah halaman</div></div>
+    </div>
 </div>
 
 <div class="trk-panel">
@@ -127,10 +149,16 @@
             <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
         <% } else { %>
             <div class="daily-bars">
-                <% daily.forEach(d => { const h = Math.max(2, (Number(d.visitors || 0) / dailyMax) * 100); %>
-                    <div class="daily-col" title="<%= d.d %> · <%= d.visitors %> pengunjung">
-                        <div class="bar" style="height:<%= h %>%;"></div>
-                        <small><%= String(d.d).slice(5) %></small>
+                <% daily.forEach(d => {
+                    const v = Number(d.visitors || 0);
+                    const h = Math.max(2, (v / dailyMax) * 100);
+                    const dd = new Date(d.d);
+                    const lbl = isNaN(dd.getTime()) ? String(d.d).slice(0, 10) : dd.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' });
+                %>
+                    <div class="daily-col" title="<%= lbl %> · <%= v %> pengunjung">
+                        <span class="daily-val"><%= v %></span>
+                        <div class="daily-bar-area"><div class="bar" style="height:<%= h %>%;"></div></div>
+                        <small><%= lbl %></small>
                     </div>
                 <% }); %>
             </div>
