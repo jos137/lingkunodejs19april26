@@ -16,12 +16,13 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    connectTimeout: 30000, // longgar untuk jaringan seluler/tethering
+    connectTimeout: 10000, // lebih cepat gagal agar bisa retry
     enableKeepAlive: true,
-    keepAliveInitialDelay: 10000,
-    // reconnect otomatis saat koneksi idle diputus server
+    keepAliveInitialDelay: 5000,
+    // Tahan koneksi lebih lama untuk mengurangi lonjakan koneksi baru
+    // (jaringan ke DB kadang intermiten / timeout).
     maxIdle: 10,
-    idleTimeout: 60000
+    idleTimeout: 300000
 });
 
 // Tambahan log manual untuk setiap kejadian (acquire dimatikan: terlalu berisik)
@@ -32,5 +33,35 @@ pool.on('error', (err) => console.error('  [DB POOL ERROR - server tetap hidup]:
 
 const promisePool = pool.promise();
 promisePool.pool = pool;
+
+// Retry khusus query BACA (SELECT/SHOW/...). Query tulis tidak di-retry
+// agar tidak terjadi duplikasi data.
+const READ_SQL = /^\s*(select|show|describe|desc|explain|with)\b/i;
+const TRANSIENT = new Set(['ETIMEDOUT', 'ECONNRESET', 'PROTOCOL_CONNECTION_LOST', 'ECONNREFUSED', 'EPIPE']);
+
+function wrapRead(method) {
+    return async function (sql, params) {
+        const maxAttempts = 3;
+        let attempt = 0;
+        while (true) {
+            try {
+                return await method.call(promisePool, sql, params);
+            } catch (err) {
+                const canRetry = TRANSIENT.has(err && err.code)
+                    && READ_SQL.test(String(sql || ''))
+                    && attempt < maxAttempts - 1;
+                if (!canRetry) throw err;
+                attempt += 1;
+                console.log(`  [DB] retry ${attempt} setelah ${err.code}...`);
+                await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+            }
+        }
+    };
+}
+
+const _execute = promisePool.execute.bind(promisePool);
+const _query = promisePool.query.bind(promisePool);
+promisePool.execute = wrapRead(_execute);
+promisePool.query = wrapRead(_query);
 
 module.exports = promisePool;

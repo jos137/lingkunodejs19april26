@@ -54,8 +54,29 @@
     .src-bar { width:clamp(60px, 10vw, 120px); flex-shrink:0; height:8px; background:#f1f5f9; border-radius:6px; overflow:hidden; }
     .src-bar > span { display:block; height:100%; background:#3b82f6; border-radius:6px; }
     .src-val { width:56px; flex-shrink:0; text-align:right; font-weight:800; color:#0f172a; }
-    .daily-bars { display:flex; align-items:flex-end; gap:6px; padding-top:10px; overflow:hidden; }
-    .daily-col { flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .daily-bars { display:flex; align-items:flex-end; gap:6px; padding-top:26px; }
+    .daily-col { position:relative; flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .daily-col::after {
+        content: attr(data-tip);
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        margin-bottom: 6px;
+        background: #0f172a;
+        color: #fff;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 5px 8px;
+        border-radius: 6px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity .15s;
+        z-index: 20;
+        box-shadow: 0 4px 12px rgba(15,23,42,.25);
+    }
+    .daily-col:hover::after { opacity: 1; }
     .daily-val { font-size:9px; font-weight:800; color:#64748b; }
     .daily-bar-area { width:100%; height:110px; display:flex; align-items:flex-end; justify-content:center; }
     .daily-col .bar { width:100%; max-width:26px; background:linear-gradient(180deg,#60a5fa,#3b82f6); border-radius:6px 6px 0 0; min-height:2px; }
@@ -155,7 +176,7 @@
                     const dd = new Date(d.d);
                     const lbl = isNaN(dd.getTime()) ? String(d.d).slice(0, 10) : dd.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' });
                 %>
-                    <div class="daily-col" title="<%= lbl %> · <%= v %> pengunjung">
+                    <div class="daily-col" data-tip="<%= lbl %> · <%= v %> pengunjung" title="<%= lbl %> · <%= v %> pengunjung">
                         <span class="daily-val"><%= v %></span>
                         <div class="daily-bar-area"><div class="bar" style="height:<%= h %>%;"></div></div>
                         <small><%= lbl %></small>
