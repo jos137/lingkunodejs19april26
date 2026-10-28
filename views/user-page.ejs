@@ -136,6 +136,27 @@
         .fixed-watermark img { height: 16px; }
         .fixed-watermark span { font-size: 11px; color: #64748b; font-weight: 600; }
         .fixed-watermark strong { color: #2271b1; font-weight: 800; }
+
+        /* Realtime Revenue block (admin only) */
+        .rt-card {
+            background: var(--rt-bg, #0b1220);
+            border: 1px solid var(--rt-border, #3b82f6);
+            border-radius: 18px;
+            padding: 18px;
+            margin: 16px 0;
+            color: var(--rt-text, #ffffff);
+            box-shadow: 0 14px 34px -20px rgba(0,0,0,.45);
+        }
+        .rt-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .rt-title { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 8px; color: var(--rt-text, #ffffff); }
+        .rt-live { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.6); animation: rtPulse 1.6s infinite; }
+        @keyframes rtPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.6); } 70% { box-shadow: 0 0 0 9px rgba(34,197,94,0); } 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); } }
+        .rt-clock { font-size: 11px; font-weight: 800; color: var(--rt-text, #ffffff); opacity: .7; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .rt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .rt-metric { background: rgba(127,127,127,.12); border: 1px solid rgba(127,127,127,.22); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+        .rt-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; color: var(--rt-text, #ffffff); opacity: .65; margin-bottom: 4px; }
+        .rt-value { font-size: 18px; font-weight: 900; color: var(--rt-text, #ffffff); line-height: 1.1; overflow-wrap: anywhere; }
+        @media (max-width: 380px) { .rt-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -274,6 +295,19 @@
                         <% } %>
                         </div>
                     <% } %>
+                <% } else if (block.type === 'realtime_revenue' && locals.ownerIsAdmin && block.product_ids && block.product_ids.length) { %>
+                    <div class="rt-card" data-rt-slug="<%= user.slug %>" data-rt-products="<%= block.product_ids.join(',') %>" style="--rt-bg:<%= block.card_color || '#0b1220' %>; --rt-border:<%= block.outline_color || '#3b82f6' %>; --rt-text:<%= block.text_color || '#ffffff' %>;">
+                        <div class="rt-head">
+                            <div class="rt-title"><span class="rt-live"></span> Realtime Revenue</div>
+                            <div class="rt-clock" data-rt-clock>--:--:-- WIB</div>
+                        </div>
+                        <div class="rt-grid">
+                            <div class="rt-metric"><div class="rt-label">Penjualan Hari Ini</div><div class="rt-value" data-rt="revenue">Rp 0</div></div>
+                            <div class="rt-metric"><div class="rt-label">Produk Terjual</div><div class="rt-value" data-rt="sold">0</div></div>
+                            <div class="rt-metric"><div class="rt-label">Views</div><div class="rt-value" data-rt="views">0</div></div>
+                            <div class="rt-metric"><div class="rt-label">Konversi</div><div class="rt-value" data-rt="conv">0%</div></div>
+                        </div>
+                    </div>
                 <% } %>
             <% }) %>
         </div>
@@ -367,5 +401,62 @@
         pixelId: (typeof fbPixelId !== 'undefined' ? fbPixelId : null),
         sellerId: (typeof sellerId !== 'undefined' ? sellerId : null)
     }) %>
+    <script>
+        (function () {
+            // Jam live (WIB)
+            function tickClock() {
+                var now = new Date();
+                var t = now.toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour12: false });
+                document.querySelectorAll('[data-rt-clock]').forEach(function (el) { el.textContent = t + ' WIB'; });
+            }
+            tickClock();
+            setInterval(tickClock, 1000);
+
+            var cards = Array.prototype.slice.call(document.querySelectorAll('.rt-card'));
+            if (!cards.length) return;
+
+            function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+            function updateCard(card, data) {
+                var rev = card.querySelector('[data-rt="revenue"]');
+                var sold = card.querySelector('[data-rt="sold"]');
+                var views = card.querySelector('[data-rt="views"]');
+                var conv = card.querySelector('[data-rt="conv"]');
+                if (rev) rev.textContent = 'Rp ' + fmt(data.revenue);
+                if (sold) sold.textContent = fmt(data.sold);
+                if (views) views.textContent = fmt(data.views);
+                if (conv) conv.textContent = (Number(data.conversion) || 0).toFixed(1) + '%';
+            }
+
+            function refresh() {
+                var seen = {};
+                cards.forEach(function (card) {
+                    var slug = card.getAttribute('data-rt-slug');
+                    var products = card.getAttribute('data-rt-products') || '';
+                    if (!slug || !products) return;
+                    var key = slug + '|' + products;
+                    if (seen[key]) return;
+                    seen[key] = true;
+                    fetch('/api/realtime-stats?slug=' + encodeURIComponent(slug) + '&products=' + encodeURIComponent(products), { headers: { 'Accept': 'application/json' } })
+                        .then(function (r) { return r.json(); })
+                        .then(function (data) {
+                            if (!data || !data.success) return;
+                            cards.forEach(function (c) {
+                                if (c.getAttribute('data-rt-slug') === slug && c.getAttribute('data-rt-products') === products) {
+                                    if (data.empty) {
+                                        c.style.display = 'none';
+                                    } else {
+                                        c.style.display = '';
+                                        updateCard(c, data);
+                                    }
+                                }
+                            });
+                        })
+                        .catch(function () {});
+                });
+            }
+            refresh();
+            setInterval(refresh, 30000);
+        })();
+    </script>
 </body>
 </html>

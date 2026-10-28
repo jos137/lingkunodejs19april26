@@ -424,6 +424,41 @@ document.addEventListener('click', (e) => {
                             <div style="font-size:11px; color:#94a3b8; margin-top:8px; font-style:italic;">
                                 * Produk ini berasal dari user lain yang membuka program affiliate.
                             </div>
+                        <% } else if (block.type === 'realtime_revenue') { 
+                            let rtCfg = {};
+                            try { rtCfg = JSON.parse(block.content || '{}'); } catch(e) {}
+                        %>
+                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                                <div>
+                                    <label class="b-label">Warna Card</label>
+                                    <input type="color" class="b-rt-bg" value="<%= rtCfg.card_color || '#0b1220' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                </div>
+                                <div>
+                                    <label class="b-label">Outline</label>
+                                    <input type="color" class="b-rt-border" value="<%= rtCfg.outline_color || '#3b82f6' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                </div>
+                                <div>
+                                    <label class="b-label">Warna Huruf</label>
+                                    <input type="color" class="b-rt-text" value="<%= rtCfg.text_color || '#ffffff' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                </div>
+                            </div>
+                            <% const rtProductIds = Array.isArray(rtCfg.product_ids) ? rtCfg.product_ids.map(Number) : []; %>
+                            <div style="margin-top:12px;">
+                                <label class="b-label">Produk yang ditracking</label>
+                                <div style="max-height:170px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;">
+                                    <% (products || []).forEach(function(prod) { %>
+                                        <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12px;color:#334155;cursor:pointer;">
+                                            <input type="checkbox" class="b-rt-product" value="<%= prod.id %>" <%= rtProductIds.includes(Number(prod.id)) ? 'checked' : '' %> onchange="updatePreview(); triggerAutoSave();">
+                                            <span><%= prod.name %> <span style="color:#94a3b8;">— Rp <%= Number(prod.price || 0).toLocaleString('id-ID') %></span></span>
+                                        </label>
+                                    <% }); %>
+                                    <% if (!products || !products.length) { %><div style="font-size:11px;color:#94a3b8;padding:6px;">Belum ada produk.</div><% } %>
+                                </div>
+                                <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Kosongkan jika tidak ingin menampilkan blok.</div>
+                            </div>
+                            <div style="font-size:11px; color:#94a3b8; margin-top:8px; font-style:italic;">
+                                * Hanya admin. Tampil sebagai social proof di halaman publik.
+                            </div>
                         <% } %>
                     </div>
                 </div>
@@ -441,6 +476,9 @@ document.addEventListener('click', (e) => {
                 <div class="menu-item" onclick="addBlock('divider'); toggleAddMenu();"><i class="fas fa-minus"></i><span>Divider</span></div>
                 <% if (locals.user && locals.user.role === 'admin' || locals.features && locals.features.enable_affiliate) { %>
                     <div class="menu-item affiliate" onclick="addBlock('affiliate'); toggleAddMenu();"><i class="fas fa-handshake"></i><span>Affiliate</span></div>
+                <% } %>
+                <% if (locals.user && locals.user.role === 'admin') { %>
+                    <div class="menu-item" onclick="addBlock('realtime_revenue'); toggleAddMenu();"><i class="fas fa-chart-line"></i><span>Realtime Revenue</span></div>
                 <% } %>
             </div>
             <button class="btn-main-add" id="mainAddBtn" onclick="toggleAddMenu()">
@@ -597,6 +635,35 @@ function addBlock(type) {
                 ${marketplaceList.map(p => `<option value="${p.id}">${p.name} (${p.seller_name})</option>`).join('')} 
             </select>
             <div style="font-size:11px; color:#94a3b8; margin-top:8px; font-style:italic;">* Hanya menampilkan produk yang membuka program affiliate.</div>`;
+    } else if (type === 'realtime_revenue') {
+        const rtProdChecks = (productList || []).map(p => `
+            <label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12px;color:#334155;cursor:pointer;">
+                <input type="checkbox" class="b-rt-product" value="${p.id}" onchange="updatePreview(); triggerAutoSave();">
+                <span>${p.name} <span style="color:#94a3b8;">— Rp ${Number(p.price || 0).toLocaleString('id-ID')}</span></span>
+            </label>`).join('');
+        bodyHTML = `
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+                <div>
+                    <label class="b-label">Warna Card</label>
+                    <input type="color" class="b-rt-bg" value="#0b1220" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                </div>
+                <div>
+                    <label class="b-label">Outline</label>
+                    <input type="color" class="b-rt-border" value="#3b82f6" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                </div>
+                <div>
+                    <label class="b-label">Warna Huruf</label>
+                    <input type="color" class="b-rt-text" value="#ffffff" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                </div>
+            </div>
+            <div style="margin-top:12px;">
+                <label class="b-label">Produk yang ditracking</label>
+                <div style="max-height:170px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;">
+                    ${rtProdChecks || '<div style="font-size:11px;color:#94a3b8;padding:6px;">Belum ada produk.</div>'}
+                </div>
+                <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Kosongkan jika tidak ingin menampilkan blok.</div>
+            </div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:8px;font-style:italic;">* Blok statistik realtime: Penjualan hari ini, Produk terjual, Views, Konversi. Hanya admin — tampil sebagai social proof.</div>`;
     }
 
     div.innerHTML = `
@@ -740,6 +807,24 @@ function updatePreview() {
                         <div style="font-size:13px;font-weight:900;color:#1e293b;">Rp ${Number(prod.price).toLocaleString('id-ID')}</div>
                     </div>`;
             }
+        } else if (type === 'realtime_revenue') {
+            const rtBg = item.querySelector('.b-rt-bg')?.value || '#0b1220';
+            const rtBorder = item.querySelector('.b-rt-border')?.value || '#3b82f6';
+            const rtText = item.querySelector('.b-rt-text')?.value || '#ffffff';
+            const rtHasProducts = item.querySelectorAll('.b-rt-product:checked').length > 0;
+            html += `<div style="background:${rtBg};border:1px solid ${rtBorder};border-radius:16px;padding:14px;margin-bottom:12px;color:${rtText};box-shadow:0 12px 30px -18px ${rtBg};">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                    <div style="font-size:12px;font-weight:900;color:${rtText};"><i class="fas fa-chart-line" style="color:${rtBorder};"></i> Realtime Revenue</div>
+                    <div style="font-size:10px;font-weight:800;color:${rtText};opacity:.7;">LIVE</div>
+                </div>
+                ${rtHasProducts ? '' : `<div style="font-size:10px;font-weight:700;color:${rtText};opacity:.7;margin-bottom:8px;">Pilih produk dulu agar blok tampil di publik.</div>`}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PENJUALAN HARI INI</div><div style="font-size:14px;font-weight:900;color:${rtText};">Rp 0</div></div>
+                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PRODUK TERJUAL</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
+                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">VIEWS</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
+                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">KONVERSI</div><div style="font-size:14px;font-weight:900;color:${rtText};">0%</div></div>
+                </div>
+            </div>`;
         }
     });
 
@@ -773,6 +858,16 @@ async function saveBuilder() {
             content = item.querySelector('.custom-editor')?.innerHTML || '';
         } else if (type === 'affiliate' || type === 'product') {
             content = item.querySelector('.b-content')?.value || '';
+        } else if (type === 'realtime_revenue') {
+            const rtProductIds = Array.from(item.querySelectorAll('.b-rt-product:checked'))
+                .map(cb => Number(cb.value))
+                .filter(Boolean);
+            content = JSON.stringify({
+                card_color: item.querySelector('.b-rt-bg')?.value || '#0b1220',
+                outline_color: item.querySelector('.b-rt-border')?.value || '#3b82f6',
+                text_color: item.querySelector('.b-rt-text')?.value || '#ffffff',
+                product_ids: rtProductIds
+            });
         } else {
             content = item.querySelector('.b-content')?.value || '';
         }

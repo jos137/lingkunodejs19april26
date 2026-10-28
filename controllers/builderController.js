@@ -249,7 +249,7 @@ exports.savePageData = async (req, res) => {
                 if (typeof content === 'object') content = JSON.stringify(content);
                 
                 // Whitelist allowed types to prevent database errors
-                const allowed = ['image', 'text', 'video', 'product', 'button', 'divider', 'affiliate'];
+                const allowed = ['image', 'text', 'video', 'product', 'button', 'divider', 'affiliate', 'realtime_revenue'];
                 if (allowed.includes(b.type)) {
                     placeholders.push('(?, ?, ?, ?, ?)');
                     values.push(pageId, b.type, content, (b.visible == 1 || b.visible === true) ? 1 : 0, i);
@@ -428,6 +428,20 @@ exports.renderUserPage = async (req, res) => {
                     mapped.size = 'thin';
                 }
             }
+            if (b.type === 'realtime_revenue') {
+                try {
+                    const rtData = typeof b.content === 'object' ? b.content : JSON.parse(b.content || '{}');
+                    mapped.card_color = rtData.card_color || '#0b1220';
+                    mapped.outline_color = rtData.outline_color || '#3b82f6';
+                    mapped.text_color = rtData.text_color || '#ffffff';
+                    mapped.product_ids = Array.isArray(rtData.product_ids) ? rtData.product_ids.map(Number).filter(Boolean) : [];
+                } catch (e) {
+                    mapped.card_color = '#0b1220';
+                    mapped.outline_color = '#3b82f6';
+                    mapped.text_color = '#ffffff';
+                    mapped.product_ids = [];
+                }
+            }
             return mapped;
         });
 
@@ -518,6 +532,8 @@ exports.renderUserPage = async (req, res) => {
             layout: false,
             fbPixelId: user.fb_pixel_id || null,
             sellerId: user.id,
+            ownerId: user.id,
+            ownerIsAdmin: user.role === 'admin',
             user: {
                 fullname: user.fullname,
                 slug: user.slug,
@@ -1628,6 +1644,71 @@ exports.handleAccessLink = async (req, res) => {
     } catch (err) {
         console.error('Handle Access Link Error:', err);
         res.redirect('/');
+    }
+};
+
+exports.getRealtimeStats = async (req, res) => {
+    try {
+        const slug = String(req.query.slug || '').trim();
+        if (!slug) return res.json({ success: false });
+
+        const [u] = await db.execute('SELECT id, role FROM users WHERE slug = ? LIMIT 1', [slug]);
+        if (!u.length || u[0].role !== 'admin') return res.status(403).json({ success: false });
+        const userId = u[0].id;
+
+        const emptyPayload = { success: true, empty: true, revenue: 0, sold: 0, views: 0, visitors: 0, conversion: 0 };
+        const productIds = String(req.query.products || '')
+            .split(',')
+            .map(v => Number(v))
+            .filter(Boolean);
+
+        if (!productIds.length) return res.json(emptyPayload);
+
+        const inPlaceholders = productIds.map(() => '?').join(',');
+        const [validRows] = await db.execute(
+            `SELECT id FROM products WHERE user_id = ? AND id IN (${inPlaceholders})`,
+            [userId, ...productIds]
+        );
+        const ids = validRows.map(r => Number(r.id));
+        if (!ids.length) return res.json(emptyPayload);
+
+        const idsPlaceholders = ids.map(() => '?').join(',');
+        const today = "DATE(CONVERT_TZ(NOW(), '+00:00', '+07:00'))";
+
+        const [o] = await db.execute(
+            `SELECT COUNT(*) AS sold, COALESCE(SUM(total_price), 0) AS revenue
+             FROM orders
+             WHERE user_id = ? AND product_id IN (${idsPlaceholders}) AND status = 'completed'
+               AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ${today}`,
+            [userId, ...ids]
+        );
+
+        const [v] = await db.execute(
+            `SELECT COUNT(DISTINCT visitor_id) AS visitors,
+                    SUM(CASE WHEN event_name = 'view_product' THEN 1 ELSE 0 END) AS views
+             FROM analytics_events
+             WHERE seller_id = ? AND product_id IN (${idsPlaceholders})
+               AND DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ${today}`,
+            [userId, ...ids]
+        );
+
+        const sold = Number(o[0].sold || 0);
+        const visitors = Number(v[0].visitors || 0);
+        const conversion = visitors > 0 ? (sold / visitors * 100) : 0;
+
+        res.set('Cache-Control', 'no-store');
+        res.json({
+            success: true,
+            empty: false,
+            revenue: Number(o[0].revenue || 0),
+            sold,
+            views: Number(v[0].views || 0),
+            visitors,
+            conversion
+        });
+    } catch (e) {
+        console.error('Realtime stats error:', e.message);
+        res.status(500).json({ success: false });
     }
 };
 

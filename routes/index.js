@@ -83,6 +83,7 @@ router.post('/checkout/process', indexController.processCheckout);
 router.get('/checkout/payment/:referenceId', indexController.getPaymentPage);
 router.post('/api/callback/ipaymu', indexController.ipaymuCallback);
 router.get('/api/order/status/:refId', indexController.checkOrderStatus);
+router.get('/api/realtime-stats', indexController.getRealtimeStats);
 
 // Tracking & Email Events
 router.get('/track/email/:orderId.png', indexController.trackEmailOpen);
