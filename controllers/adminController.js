@@ -3132,6 +3132,50 @@ exports.getTracking = async (req, res) => {
             params
         );
 
+        // ===== META ADS PERFORMANCE (khusus trafik iklan Meta) =====
+        const metaAdEvents = "((fbclid IS NOT NULL AND fbclid <> '') OR LOWER(COALESCE(utm_source,'')) IN ('facebook','fb','instagram','ig','meta') OR LOWER(COALESCE(utm_medium,'')) LIKE '%paid%')";
+        const metaAdOrders = "((fbclid IS NOT NULL AND fbclid <> '') OR LOWER(COALESCE(utm_source,'')) IN ('facebook','fb','instagram','ig','meta') OR LOWER(COALESCE(utm_medium,'')) LIKE '%paid%')";
+
+        let metaStats = { visitors: 0, orders: 0, paid: 0, pending: 0, revenue: 0, campaigns: [] };
+        try {
+            const [mv] = await db.execute(
+                `SELECT COUNT(DISTINCT visitor_id) AS v FROM analytics_events WHERE ${since} ${sellerFilter} AND ${metaAdEvents}`,
+                params
+            );
+            metaStats.visitors = mv[0] ? Number(mv[0].v) : 0;
+
+            const orderSellerFilter = isAdmin ? '' : 'AND user_id = ?';
+            const orderParams = isAdmin ? [] : [userId];
+            const [mo] = await db.execute(
+                `SELECT COUNT(*) AS total,
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS paid,
+                        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
+                        COALESCE(SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END), 0) AS revenue
+                 FROM orders
+                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${orderSellerFilter} AND ${metaAdOrders}`,
+                orderParams
+            );
+            const row = mo[0] || {};
+            metaStats.orders = Number(row.total || 0);
+            metaStats.paid = Number(row.paid || 0);
+            metaStats.pending = Number(row.pending || 0);
+            metaStats.revenue = Number(row.revenue || 0);
+
+            const [mc] = await db.execute(
+                `SELECT COALESCE(NULLIF(utm_campaign, ''), '(tanpa campaign)') AS campaign,
+                        COUNT(*) AS orders,
+                        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS paid,
+                        COALESCE(SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END), 0) AS revenue
+                 FROM orders
+                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${orderSellerFilter} AND ${metaAdOrders}
+                 GROUP BY campaign ORDER BY orders DESC LIMIT 5`,
+                orderParams
+            );
+            metaStats.campaigns = mc;
+        } catch (e) {
+            console.error('Meta ads stats error:', e.message);
+        }
+
         res.render('admin/tracking', {
             title: 'Tracking',
             layout: './layouts/admin',
@@ -3143,6 +3187,7 @@ exports.getTracking = async (req, res) => {
             sources,
             topProducts,
             recent,
+            metaStats,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
@@ -3150,6 +3195,7 @@ exports.getTracking = async (req, res) => {
         res.render('admin/tracking', {
             title: 'Tracking', layout: './layouts/admin', isAdmin: false,
             visitors: 0, counts: {}, revenue: 0, daily: [], sources: [], topProducts: [], recent: [],
+            metaStats: { visitors: 0, orders: 0, paid: 0, pending: 0, revenue: 0, campaigns: [] },
             user: req.session.user || res.locals.user
         });
     }

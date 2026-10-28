@@ -23,6 +23,18 @@
     const fmt = n => Number(n || 0).toLocaleString('id-ID');
     const pctOf = (v) => visitors > 0 ? (Number(v) / visitors * 100) : 0;
     const pctLabel = (v) => { const p = pctOf(v); return (p >= 10 ? Math.round(p) : p.toFixed(1)) + '%'; };
+
+    const ms = locals.metaStats || {};
+    const mVisitors = Number(ms.visitors || 0);
+    const mOrders = Number(ms.orders || 0);
+    const mPaid = Number(ms.paid || 0);
+    const mPending = Number(ms.pending || 0);
+    const mRevenue = Number(ms.revenue || 0);
+    const mCampaigns = ms.campaigns || [];
+    const mOrderRate = mVisitors > 0 ? (mOrders / mVisitors * 100) : 0;
+    const mPaidRate = mOrders > 0 ? (mPaid / mOrders * 100) : 0;
+    const mConv = mVisitors > 0 ? (mPaid / mVisitors * 100) : 0;
+    const mFunnelMax = Math.max(1, mVisitors, mOrders, mPaid);
 %>
 <style>
     .trk-page { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
@@ -101,6 +113,74 @@
         .funnel-pct { width:44px; font-size:10px; }
         .src-bar { width:56px; }
         .src-val { width:42px; }
+    }
+
+    /* ===== CARD KHUSUS IKLAN META ===== */
+    .meta-card {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+        padding: 22px;
+        border-radius: 20px;
+        color: #e2e8f0;
+        border: 1px solid rgba(59,130,246,.35);
+        background:
+            radial-gradient(120% 150% at 100% 0%, rgba(37,99,235,.55) 0%, rgba(11,18,32,0) 55%),
+            linear-gradient(135deg, #0b1220 0%, #0f172a 55%, #060a12 100%);
+        box-shadow: 0 18px 45px -24px rgba(37,99,235,.75);
+    }
+    .meta-head { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; position:relative; z-index:1; }
+    .meta-title { font-size:15px; font-weight:900; display:flex; align-items:center; gap:8px; color:#fff; }
+    .meta-title i { color:#60a5fa; }
+    .meta-title small { font-size:10px; font-weight:700; color:#93c5fd; }
+    .meta-period { font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; color:#bfdbfe; background:rgba(59,130,246,.18); border:1px solid rgba(96,165,250,.4); padding:4px 10px; border-radius:999px; }
+    .meta-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; position:relative; z-index:1; }
+    .meta-stat { background:rgba(255,255,255,.05); border:1px solid rgba(148,163,184,.18); border-radius:13px; padding:12px 14px; min-width:0; }
+    .meta-stat .lbl { font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8; margin-bottom:6px; }
+    .meta-stat .val { font-size:20px; font-weight:900; color:#fff; line-height:1.1; overflow-wrap:anywhere; }
+    .meta-stat .sub { font-size:10px; color:#93c5fd; margin-top:5px; font-weight:700; }
+    .meta-funnel { margin-top:16px; position:relative; z-index:1; display:grid; gap:8px; }
+    .meta-f-row { display:flex; align-items:center; gap:10px; min-width:0; }
+    .meta-f-name { width:100px; flex-shrink:0; font-size:11px; font-weight:800; color:#cbd5e1; }
+    .meta-f-track { flex:1; min-width:0; height:10px; background:rgba(148,163,184,.15); border-radius:999px; overflow:hidden; }
+    .meta-f-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#60a5fa,#2563eb); }
+    .meta-f-val { width:52px; flex-shrink:0; text-align:right; font-size:11px; font-weight:800; color:#fff; }
+    .meta-campaigns { margin-top:16px; position:relative; z-index:1; }
+    .meta-campaigns-title { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.5px; color:#94a3b8; margin-bottom:6px; }
+    .meta-camp-row { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid rgba(148,163,184,.12); font-size:11px; }
+    .meta-camp-row:last-child { border-bottom:0; }
+    .meta-camp-name { color:#cbd5e1; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+    .meta-camp-meta { color:#93c5fd; font-weight:800; white-space:nowrap; }
+    .meta-empty { position:relative; z-index:1; margin-top:14px; padding:12px 14px; border-radius:12px; background:rgba(148,163,184,.08); border:1px dashed rgba(148,163,184,.3); color:#94a3b8; font-size:12px; font-weight:600; }
+    @media (max-width:1100px) { .meta-grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+    @media (max-width:560px) {
+        .meta-card { padding:16px; }
+        .meta-grid { grid-template-columns:minmax(0,1fr); }
+        .meta-f-name { width:84px; font-size:10px; }
+    }
+
+    /* ===== TAB SUMBER TRAFFIC / IKLAN META ===== */
+    .trk-tabs { display:flex; gap:6px; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:14px; width:fit-content; }
+    .trk-tab { border:0; background:transparent; padding:6px 12px; border-radius:7px; font:inherit; font-size:11px; font-weight:800; color:#64748b; cursor:pointer; }
+    .trk-tab.active { background:#fff; color:#111827; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .traffic-tab { display:none; }
+    .traffic-tab.active { display:block; }
+    .meta-mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+    .meta-mini { background:linear-gradient(135deg,#eff6ff,#e0e7ff); border:1px solid #dbeafe; border-radius:12px; padding:10px 12px; min-width:0; }
+    .meta-mini .lbl { font-size:9px; font-weight:800; color:#64748b; text-transform:uppercase; letter-spacing:.4px; }
+    .meta-mini .val { font-size:18px; font-weight:900; color:#1e3a8a; margin-top:3px; line-height:1.1; overflow-wrap:anywhere; }
+    .meta-mini .sub { font-size:9px; font-weight:700; color:#2563eb; margin-top:2px; }
+    .meta-mini-funnel { display:grid; gap:6px; margin:8px 0 4px; }
+    .meta-mini-funnel .meta-f-name { color:#475569; width:84px; font-size:10px; }
+    .meta-mini-funnel .meta-f-val { color:#0f172a; width:40px; font-size:10px; }
+    .meta-mini-funnel .meta-f-track { height:8px; background:#f1f5f9; }
+    #ttab-meta .meta-camp-name { color:#334155; }
+    #ttab-meta .meta-camp-meta { color:#2563eb; }
+    #ttab-meta .meta-campaigns-title { color:#94a3b8; }
+    #ttab-meta .meta-camp-row { border-bottom-color:#f1f5f9; }
+    #ttab-meta .meta-empty { background:#f8fafc; border-color:#e2e8f0; color:#64748b; }
+    @media (max-width:560px) {
+        .meta-mini-grid { grid-template-columns:minmax(0,1fr); }
     }
 </style>
 
@@ -187,18 +267,67 @@
     </div>
 
     <div class="trk-panel">
-        <div class="trk-title"><i class="fas fa-share-nodes" style="color:#f59e0b;"></i> Sumber Traffic</div>
-        <% if (!sources.length) { %>
-            <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
-        <% } else { const srcMax = Math.max(1, ...sources.map(s => Number(s.total || 0))); %>
-            <% sources.forEach(s => { %>
-                <div class="src-row">
-                    <div class="src-name" title="<%= s.source %>"><%= s.source %></div>
-                    <div class="src-bar"><span style="width:<%= (Number(s.total)/srcMax*100) %>%;"></span></div>
-                    <div class="src-val"><%= fmt(s.total) %></div>
+        <div class="trk-tabs">
+            <button type="button" class="trk-tab active" onclick="switchTrafficTab('sources', this)">Sumber Traffic</button>
+            <button type="button" class="trk-tab" onclick="switchTrafficTab('meta', this)">🎯 Iklan Meta</button>
+        </div>
+
+        <div class="traffic-tab active" id="ttab-sources">
+            <% if (!sources.length) { %>
+                <div style="color:#94a3b8;font-size:12px;padding:20px 0;text-align:center;">Belum ada data.</div>
+            <% } else { const srcMax = Math.max(1, ...sources.map(s => Number(s.total || 0))); %>
+                <% sources.forEach(s => { %>
+                    <div class="src-row">
+                        <div class="src-name" title="<%= s.source %>"><%= s.source %></div>
+                        <div class="src-bar"><span style="width:<%= (Number(s.total)/srcMax*100) %>%;"></span></div>
+                        <div class="src-val"><%= fmt(s.total) %></div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+
+        <div class="traffic-tab" id="ttab-meta">
+            <div class="meta-mini-grid">
+                <div class="meta-mini"><div class="lbl">Pengunjung iklan</div><div class="val"><%= fmt(mVisitors) %></div><div class="sub"><%= mOrderRate.toFixed(1) %>% jadi pesanan</div></div>
+                <div class="meta-mini"><div class="lbl">Pesanan</div><div class="val"><%= fmt(mOrders) %></div><div class="sub"><%= fmt(mPending) %> pending</div></div>
+                <div class="meta-mini"><div class="lbl">Pembayaran</div><div class="val"><%= fmt(mPaid) %></div><div class="sub"><%= mPaidRate.toFixed(1) %>% dari pesanan</div></div>
+                <div class="meta-mini"><div class="lbl">Revenue</div><div class="val">Rp <%= fmt(mRevenue) %></div><div class="sub">konversi <%= mConv.toFixed(1) %>%</div></div>
+            </div>
+
+            <% if (mVisitors || mOrders || mPaid) { %>
+            <div class="meta-mini-funnel">
+                <div class="meta-f-row">
+                    <div class="meta-f-name">Pengunjung</div>
+                    <div class="meta-f-track"><div class="meta-f-fill" style="width:<%= Math.max(2, (mVisitors / mFunnelMax) * 100) %>%;"></div></div>
+                    <div class="meta-f-val"><%= fmt(mVisitors) %></div>
                 </div>
-            <% }); %>
-        <% } %>
+                <div class="meta-f-row">
+                    <div class="meta-f-name">Pesanan</div>
+                    <div class="meta-f-track"><div class="meta-f-fill" style="width:<%= Math.max(2, (mOrders / mFunnelMax) * 100) %>%; background:linear-gradient(90deg,#a78bfa,#7c3aed);"></div></div>
+                    <div class="meta-f-val"><%= fmt(mOrders) %></div>
+                </div>
+                <div class="meta-f-row">
+                    <div class="meta-f-name">Pembayaran</div>
+                    <div class="meta-f-track"><div class="meta-f-fill" style="width:<%= Math.max(2, (mPaid / mFunnelMax) * 100) %>%; background:linear-gradient(90deg,#34d399,#059669);"></div></div>
+                    <div class="meta-f-val"><%= fmt(mPaid) %></div>
+                </div>
+            </div>
+            <% } else { %>
+            <div class="meta-empty">Belum ada trafik iklan Meta dalam 30 hari terakhir. Pastikan iklan mengarah ke toko dan membawa <b>fbclid</b>/UTM.</div>
+            <% } %>
+
+            <% if (mCampaigns.length) { %>
+            <div class="meta-campaigns">
+                <div class="meta-campaigns-title">Per Campaign</div>
+                <% mCampaigns.forEach(cp => { %>
+                    <div class="meta-camp-row">
+                        <span class="meta-camp-name"><%= cp.campaign %></span>
+                        <span class="meta-camp-meta"><%= cp.orders %> pesanan · <%= cp.paid %> bayar · Rp <%= fmt(cp.revenue) %></span>
+                    </div>
+                <% }); %>
+            </div>
+            <% } %>
+        </div>
     </div>
 </div>
 
@@ -242,3 +371,13 @@
     </div>
 </div>
 </div>
+
+<script>
+function switchTrafficTab(id, el) {
+    document.querySelectorAll('.traffic-tab').forEach(function (t) { t.classList.remove('active'); });
+    document.querySelectorAll('.trk-tab').forEach(function (b) { b.classList.remove('active'); });
+    var target = document.getElementById('ttab-' + id);
+    if (target) target.classList.add('active');
+    if (el) el.classList.add('active');
+}
+</script>
