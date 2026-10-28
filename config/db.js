@@ -16,30 +16,50 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 10,
-    connectTimeout: 10000, // lebih cepat gagal agar bisa retry
+    connectTimeout: 10000, // gagal cepat agar bisa retry
     enableKeepAlive: true,
     keepAliveInitialDelay: 5000,
     // Tahan koneksi lebih lama untuk mengurangi lonjakan koneksi baru
-    // (jaringan ke DB kadang intermiten / timeout).
     maxIdle: 10,
     idleTimeout: 300000
 });
 
-// Tambahan log manual untuk setiap kejadian (acquire dimatikan: terlalu berisik)
 pool.on('connection', (connection) => console.log('  [DEBUG] New connection established'));
 pool.on('enqueue', () => console.log('  [DEBUG] Waiting for available connection slot...'));
-// WAJIB: tanpa listener ini, 1x ETIMEDOUT membuat seluruh server crash
 pool.on('error', (err) => console.error('  [DB POOL ERROR - server tetap hidup]:', err.code || err.message));
+
+// Error yang terjadi SAAT KONEK (query belum terkirim) -> aman di-retry,
+// termasuk untuk query tulis.
+const CONNECT_ERRORS = new Set(['ETIMEDOUT', 'ECONNREFUSED']);
+// Error lain yang transien -> hanya di-retry untuk query baca.
+const TRANSIENT_ERRORS = new Set(['ETIMEDOUT', 'ECONNRESET', 'PROTOCOL_CONNECTION_LOST', 'ECONNREFUSED', 'EPIPE']);
+const READ_SQL = /^\s*(select|show|describe|desc|explain|with)\b/i;
+
+// Retry untuk pool.query (dipakai session store & sebagian kode app).
+// PromisePool.query juga memakai pool.query ini, jadi ikut terlindungi.
+const _rawQuery = pool.query.bind(pool);
+pool.query = function (sql, values, cb) {
+    if (typeof values === 'function') { cb = values; values = undefined; }
+    const maxAttempts = 3;
+    let attempt = 0;
+    const run = () => {
+        _rawQuery(sql, values, (err, results, fields) => {
+            if (err && CONNECT_ERRORS.has(err.code) && attempt < maxAttempts - 1) {
+                attempt += 1;
+                console.log(`  [DB] retry ${attempt} setelah ${err.code}...`);
+                setTimeout(run, 300 * attempt);
+                return;
+            }
+            if (typeof cb === 'function') cb(err, results, fields);
+        });
+    };
+    run();
+};
 
 const promisePool = pool.promise();
 promisePool.pool = pool;
 
-// Retry khusus query BACA (SELECT/SHOW/...). Query tulis tidak di-retry
-// agar tidak terjadi duplikasi data.
-const READ_SQL = /^\s*(select|show|describe|desc|explain|with)\b/i;
-const TRANSIENT = new Set(['ETIMEDOUT', 'ECONNRESET', 'PROTOCOL_CONNECTION_LOST', 'ECONNREFUSED', 'EPIPE']);
-
-function wrapRead(method) {
+function wrapExecute(method) {
     return async function (sql, params) {
         const maxAttempts = 3;
         let attempt = 0;
@@ -47,9 +67,9 @@ function wrapRead(method) {
             try {
                 return await method.call(promisePool, sql, params);
             } catch (err) {
-                const canRetry = TRANSIENT.has(err && err.code)
-                    && READ_SQL.test(String(sql || ''))
-                    && attempt < maxAttempts - 1;
+                const connectFail = CONNECT_ERRORS.has(err && err.code);
+                const readFail = TRANSIENT_ERRORS.has(err && err.code) && READ_SQL.test(String(sql || ''));
+                const canRetry = (connectFail || readFail) && attempt < maxAttempts - 1;
                 if (!canRetry) throw err;
                 attempt += 1;
                 console.log(`  [DB] retry ${attempt} setelah ${err.code}...`);
@@ -60,8 +80,6 @@ function wrapRead(method) {
 }
 
 const _execute = promisePool.execute.bind(promisePool);
-const _query = promisePool.query.bind(promisePool);
-promisePool.execute = wrapRead(_execute);
-promisePool.query = wrapRead(_query);
+promisePool.execute = wrapExecute(_execute);
 
 module.exports = promisePool;
