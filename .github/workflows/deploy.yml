@@ -13,7 +13,7 @@ jobs:
 
     - name: Build archive (exclude secrets/uploads/node_modules)
       run: |
-        tar -czf app.tar.gz \
+        tar -czf /tmp/app.tar.gz \
           --exclude='./node_modules' \
           --exclude='./.git' \
           --exclude='./.env' \
@@ -25,7 +25,8 @@ jobs:
           --exclude='./Tutorial' \
           --exclude='*.log' \
           .
-        ls -lh app.tar.gz
+        ls -lh /tmp/app.tar.gz
+        cp /tmp/app.tar.gz app.tar.gz
 
     - name: Upload archive to server
       uses: appleboy/scp-action@master
