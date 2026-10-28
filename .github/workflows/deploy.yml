@@ -11,35 +11,50 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build archive (exclude secrets/uploads/node_modules)
+      run: |
+        tar -czf app.tar.gz \
+          --exclude='./node_modules' \
+          --exclude='./.git' \
+          --exclude='./.env' \
+          --exclude='./.env.*' \
+          --exclude='./public/uploads' \
+          --exclude='./backups' \
+          --exclude='./npm-cache' \
+          --exclude='./scratch' \
+          --exclude='./Tutorial' \
+          --exclude='*.log' \
+          .
+        ls -lh app.tar.gz
+
+    - name: Upload archive to server
+      uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         password: ${{ secrets.SSH_PASSWORD }}
         port: 65002
-        envs: GITHUB_TOKEN
+        source: app.tar.gz
+        target: domains/lingku.xyz/nodejs
+
+    - name: Extract & restart server
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        password: ${{ secrets.SSH_PASSWORD }}
+        port: 65002
         script: |
+          set -e
           cd domains/lingku.xyz/nodejs
-          # Repo private: fetch pakai token dari GitHub Actions (tanpa kredensial di server)
-          git fetch https://x-access-token:${GITHUB_TOKEN}@github.com/jos137/lingkunodejs19april26.git master
-          git reset --hard FETCH_HEAD
-
-          # Hapus log lama agar tidak menumpuk
+          tar -xzf app.tar.gz
+          rm -f app.tar.gz
           rm -f out.log err.log
-
-          # Install dengan mode hemat memori
           /opt/alt/alt-nodejs22/root/bin/npm install --production --no-audit --no-fund
-
-          # Matikan proses lama dan jalankan ulang
           pkill -u u427900331 node || true
           sleep 2
           nohup /opt/alt/alt-nodejs22/root/bin/node server.js < /dev/null > out.log 2> err.log &
           sleep 5
-
-          # Verifikasi keberhasilan
           if pgrep -f "node server.js" > /dev/null; then
             echo "🚀 Server berhasil dijalankan!"
           else
