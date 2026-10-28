@@ -13,29 +13,32 @@ jobs:
 
     - name: Deploy via SSH
       uses: appleboy/ssh-action@master
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         host: ${{ secrets.SSH_HOST }}
         username: ${{ secrets.SSH_USER }}
         password: ${{ secrets.SSH_PASSWORD }}
-        port: ${{ secrets.SSH_PORT }}
+        port: 65002
+        envs: GITHUB_TOKEN
         script: |
           cd domains/lingku.xyz/nodejs
-          # Ambil data terbaru dan paksa reset agar sama persis dengan GitHub
-          git fetch origin master
-          git reset --hard origin/master
-          
+          # Repo private: fetch pakai token dari GitHub Actions (tanpa kredensial di server)
+          git fetch https://x-access-token:${GITHUB_TOKEN}@github.com/jos137/lingkunodejs19april26.git master
+          git reset --hard FETCH_HEAD
+
           # Hapus log lama agar tidak menumpuk
           rm -f out.log err.log
-          
+
           # Install dengan mode hemat memori
           /opt/alt/alt-nodejs22/root/bin/npm install --production --no-audit --no-fund
-          
-          # Matikan proses lama dan jalankan ulang dengan pemutusan koneksi yang benar
+
+          # Matikan proses lama dan jalankan ulang
           pkill -u u427900331 node || true
           sleep 2
           nohup /opt/alt/alt-nodejs22/root/bin/node server.js < /dev/null > out.log 2> err.log &
           sleep 5
-          
+
           # Verifikasi keberhasilan
           if pgrep -f "node server.js" > /dev/null; then
             echo "🚀 Server berhasil dijalankan!"
