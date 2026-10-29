@@ -171,7 +171,7 @@
                     <option value="phone" <%= locals.searchType === 'phone' ? 'selected' : '' %>>No. WA</option>
                 </select>
                 <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                    <input type="text" name="search" class="orders-search" id="searchInput" placeholder="Cari pembeli... (Tekan Enter / Klik Tombol Cari)" value="<%= locals.searchQuery || '' %>" oninput="filterOrders()" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.form.submit(); }" style="width: 100%; padding-right: 40px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                    <input type="text" name="search" class="orders-search" id="searchInput" placeholder="Cari pembeli... (otomatis di semua halaman)" value="<%= locals.searchQuery || '' %>" oninput="onOrderSearchInput()" onkeydown="if(event.key === 'Enter') { event.preventDefault(); clearTimeout(window.orderSearchTimer); this.form.submit(); }" style="width: 100%; padding-right: 40px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
                     <button type="button" onclick="this.form.submit()" style="position: absolute; right: 12px; background: none; border: none; color: #9ca3af; cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; font-size: 15px; transition: color 0.2s;" onmouseover="this.style.color='#3b82f6'" onmouseout="this.style.color='#9ca3af'">
                         <i class="fas fa-search"></i>
                     </button>
@@ -335,6 +335,26 @@ function filterOrders() {
         card.style.display = (matchFilter && matchSearch) ? '' : 'none';
     });
 }
+
+// Ketik = cari otomatis ke SEMUA halaman (server-side), tanpa klik ikon search.
+function onOrderSearchInput() {
+    filterOrders();
+    clearTimeout(window.orderSearchTimer);
+    window.orderSearchTimer = setTimeout(() => {
+        const form = document.getElementById('searchInput')?.closest('form');
+        if (form) form.submit();
+    }, 700);
+}
+
+// Setelah reload hasil pencarian, kembalikan fokus ke kolom cari
+// supaya pengguna bisa lanjut mengetik tanpa klik ulang.
+(function restoreOrderSearchFocus() {
+    const input = document.getElementById('searchInput');
+    if (!input || !input.value) return;
+    input.focus({ preventScroll: true });
+    const end = input.value.length;
+    try { input.setSelectionRange(end, end); } catch (e) {}
+})();
 
 function renderOrderDetail(o, idx) {
     const isCompleted = o.status === 'completed';

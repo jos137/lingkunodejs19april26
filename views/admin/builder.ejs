@@ -228,13 +228,29 @@
             border-radius: 50%; background: radial-gradient(circle at 35% 30%, #405077, #101624 60%);
         }
         .preview-content {
-            padding: 12px 16px 24px; flex: 1; min-height: 0; overflow-y: auto;
+            padding: 12px 16px 24px; flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden;
             overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: #d8dde5 transparent;
         }
+        /* Pastikan isi preview tidak melebar keluar frame */
+        .preview-content * { max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+        .preview-content img, .preview-content video, .preview-content iframe { height: auto; }
+        .preview-content font[size="7"] { font-size: 20px !important; }
+        .preview-content font[size="6"] { font-size: 18px !important; }
+        .preview-content font[size="5"] { font-size: 16px !important; }
+        .preview-content font[size="4"] { font-size: 14px !important; }
+        .preview-content font[size="3"] { font-size: 12px !important; }
+        .preview-content h1 { font-size: 22px !important; line-height: 1.25; }
+        .preview-content h2 { font-size: 19px !important; line-height: 1.3; }
+        .preview-content h3 { font-size: 16px !important; line-height: 1.35; }
         .preview-device-bottom { height: 19px; flex-shrink: 0; display: flex; justify-content: center; align-items: center; background: #fff; }
         .preview-device-bottom::after { content: ''; height: 4px; width: 86px; border-radius: 4px; background: #25282d; }
         .video-preview-box { width: 300px; max-width: 100%; aspect-ratio: 16/9; }
-</style>
+
+        /* Preset warna Realtime Revenue */
+        .rt-presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+        .rt-preset { width: 46px; height: 32px; border-radius: 8px; border: 1.5px solid #e5e7eb; cursor: pointer; padding: 0; transition: transform .15s, box-shadow .15s; }
+        .rt-preset:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.12); }
+    </style>
 
 <script>
 function toggleAddMenu() {
@@ -428,19 +444,23 @@ document.addEventListener('click', (e) => {
                             let rtCfg = {};
                             try { rtCfg = JSON.parse(block.content || '{}'); } catch(e) {}
                         %>
-                            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-                                <div>
-                                    <label class="b-label">Warna Card</label>
-                                    <input type="color" class="b-rt-bg" value="<%= rtCfg.card_color || '#0b1220' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                                <div style="flex:1;min-width:70px;">
+                                    <input type="color" class="b-rt-bg" value="<%= rtCfg.card_color || '#fff7ed' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                                 </div>
-                                <div>
-                                    <label class="b-label">Outline</label>
-                                    <input type="color" class="b-rt-border" value="<%= rtCfg.outline_color || '#3b82f6' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                <div style="flex:1;min-width:70px;">
+                                    <input type="color" class="b-rt-border" value="<%= rtCfg.outline_color || '#fb923c' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                                 </div>
-                                <div>
-                                    <label class="b-label">Warna Huruf</label>
-                                    <input type="color" class="b-rt-text" value="<%= rtCfg.text_color || '#ffffff' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                <div style="flex:1;min-width:70px;">
+                                    <input type="color" class="b-rt-text" value="<%= rtCfg.text_color || '#9a3412' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                                 </div>
+                                <div style="flex:1;min-width:70px;">
+                                    <input type="color" class="b-rt-shape" value="<%= rtCfg.shape_color || '#ffe4b6' %>" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                                </div>
+                            </div>
+                            <div style="margin-top:10px;">
+                                <label class="b-label">Preset Warna</label>
+                                <div class="rt-presets"></div>
                             </div>
                             <% const rtProductIds = Array.isArray(rtCfg.product_ids) ? rtCfg.product_ids.map(Number) : []; %>
                             <div style="margin-top:12px;">
@@ -640,19 +660,23 @@ function addBlock(type) {
                 <span>${p.name} <span style="color:#94a3b8;">— Rp ${Number(p.price || 0).toLocaleString('id-ID')}</span></span>
             </label>`).join('');
         bodyHTML = `
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-                <div>
-                    <label class="b-label">Warna Card</label>
-                    <input type="color" class="b-rt-bg" value="#0b1220" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <div style="flex:1;min-width:70px;">
+                    <input type="color" class="b-rt-bg" value="#fff7ed" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                 </div>
-                <div>
-                    <label class="b-label">Outline</label>
-                    <input type="color" class="b-rt-border" value="#3b82f6" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                <div style="flex:1;min-width:70px;">
+                    <input type="color" class="b-rt-border" value="#fb923c" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                 </div>
-                <div>
-                    <label class="b-label">Warna Huruf</label>
-                    <input type="color" class="b-rt-text" value="#ffffff" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                <div style="flex:1;min-width:70px;">
+                    <input type="color" class="b-rt-text" value="#9a3412" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
                 </div>
+                <div style="flex:1;min-width:70px;">
+                    <input type="color" class="b-rt-shape" value="#ffe4b6" oninput="updatePreview(); triggerAutoSave();" style="width:100%;height:34px;border:1px solid #e5e7eb;border-radius:8px;padding:2px;background:#fff;cursor:pointer;">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label class="b-label">Preset Warna</label>
+                <div class="rt-presets"></div>
             </div>
             <div style="margin-top:12px;">
                 <label class="b-label">Produk yang ditracking</label>
@@ -674,10 +698,51 @@ function addBlock(type) {
         <div class="block-body">${bodyHTML}</div>
     `;
     list.appendChild(div);
+    renderPresets(div.querySelector('.rt-presets'));
     setupBlockAccordion(div, true);
     updatePreview();
     triggerAutoSave();
 }
+
+// ===== Preset warna cerah untuk Realtime Revenue =====
+const RT_PRESETS = [
+    { name: 'Soft Rose', bg: '#fdf2f8', border: '#fda4af', text: '#831843', shape: '#fce7f3' },
+    { name: 'Mint Mist', bg: '#f0fdfa', border: '#6ee7b7', text: '#065f46', shape: '#ccfbf1' },
+    { name: 'Sky Joy', bg: '#eff6ff', border: '#93c5fd', text: '#1e40af', shape: '#dbeafe' },
+    { name: 'Lemon Zest', bg: '#fefce8', border: '#fde047', text: '#854d0e', shape: '#fef08a' },
+    { name: 'Lavender Dream', bg: '#faf5ff', border: '#c4b5fd', text: '#5b21b6', shape: '#f3e8ff' }
+];
+
+function renderPresets(container) {
+    if (!container || container.dataset.ready === '1') return;
+    container.dataset.ready = '1';
+    container.innerHTML = RT_PRESETS.map(p => `
+        <button type="button" class="rt-preset" title="${p.name}"
+            data-bg="${p.bg}" data-border="${p.border}" data-text="${p.text}" data-shape="${p.shape}"
+            onclick="applyRtPreset(this)"
+            style="background:linear-gradient(135deg, ${p.bg} 0%, ${p.bg} 55%, ${p.shape} 55%, ${p.shape} 100%);border-color:${p.border};">
+        </button>`).join('');
+}
+
+function applyRtPreset(btn) {
+    const item = btn.closest('.block-item');
+    if (!item) return;
+    const bg = item.querySelector('.b-rt-bg');
+    const border = item.querySelector('.b-rt-border');
+    const text = item.querySelector('.b-rt-text');
+    const shape = item.querySelector('.b-rt-shape');
+    if (bg) bg.value = btn.dataset.bg;
+    if (border) border.value = btn.dataset.border;
+    if (text) text.value = btn.dataset.text;
+    if (shape) shape.value = btn.dataset.shape;
+    updatePreview();
+    triggerAutoSave();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.rt-presets').forEach(renderPresets);
+});
+document.querySelectorAll('.rt-presets').forEach(renderPresets);
 
 function removeBlock(btn) {
     if (confirm('Hapus block ini?')) {
@@ -714,6 +779,13 @@ async function uploadBlockImage(input) {
         updatePreview();
         triggerAutoSave();
     }
+}
+
+function clampPreviewFonts(html) {
+    return String(html || '').replace(/font-size\s*:\s*(\d+(?:\.\d+)?)px/gi, (match, size) => {
+        const capped = Math.min(parseFloat(size) || 14, 20);
+        return `font-size:${capped}px`;
+    });
 }
 
 function updatePreview() {
@@ -755,7 +827,7 @@ function updatePreview() {
             }
         } else if (type === 'text') {
             const val = item.querySelector('.custom-editor')?.innerHTML;
-            if (val) html += `<div style="font-size:14px;line-height:1.6;color:#475569;margin-bottom:12px;text-align:left;">${val}</div>`;
+            if (val) html += `<div style="font-size:14px;line-height:1.6;color:#475569;margin-bottom:12px;text-align:left;">${clampPreviewFonts(val)}</div>`;
         } else if (type === 'video') {
             const url = item.querySelector('.b-content').value;
             let vidId = null;
@@ -809,6 +881,7 @@ function updatePreview() {
             const rtBg = item.querySelector('.b-rt-bg')?.value || '#0b1220';
             const rtBorder = item.querySelector('.b-rt-border')?.value || '#3b82f6';
             const rtText = item.querySelector('.b-rt-text')?.value || '#ffffff';
+            const rtShape = item.querySelector('.b-rt-shape')?.value || '#1e293b';
             const rtSelected = Array.from(item.querySelectorAll('.b-rt-product:checked'))
                 .map(cb => (productList || []).find(p => String(p.id) === String(cb.value)))
                 .filter(Boolean);
@@ -816,7 +889,7 @@ function updatePreview() {
             const rtProductsHtml = rtSelected.map(p => {
                 let thumb = p.thumbnail || p.image_url || '';
                 if (thumb && !thumb.startsWith('http') && !thumb.startsWith('/')) thumb = '/uploads/products/' + thumb;
-                return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:rgba(127,127,127,.10);border:1px solid rgba(127,127,127,.18);">
+                return `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:10px;background:${rtShape};border:1px solid rgba(148,163,184,.25);">
                     <div style="width:30px;height:30px;border-radius:7px;overflow:hidden;background:#fff;flex-shrink:0;">${thumb ? `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;">` : ''}</div>
                     <span style="font-size:11px;font-weight:700;color:${rtText};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.name}</span>
                 </div>`;
@@ -828,10 +901,10 @@ function updatePreview() {
                 </div>
                 ${rtHasProducts ? '' : `<div style="font-size:10px;font-weight:700;color:${rtText};opacity:.7;margin-bottom:8px;">Pilih produk dulu agar blok tampil di publik.</div>`}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PENJUALAN HARI INI</div><div style="font-size:14px;font-weight:900;color:${rtText};">Rp 0</div></div>
-                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PRODUK TERJUAL</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
-                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">VIEWS</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
-                    <div style="background:rgba(127,127,127,.12);border:1px solid rgba(127,127,127,.22);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">KONVERSI</div><div style="font-size:14px;font-weight:900;color:${rtText};">0%</div></div>
+                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PENJUALAN HARI INI</div><div style="font-size:14px;font-weight:900;color:${rtText};">Rp 0</div></div>
+                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PRODUK TERJUAL</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
+                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">VIEWS</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
+                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">KONVERSI</div><div style="font-size:14px;font-weight:900;color:${rtText};">0%</div></div>
                 </div>
                 ${rtProductsHtml ? `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">${rtProductsHtml}</div>` : ''}
             </div>`;
@@ -876,6 +949,7 @@ async function saveBuilder() {
                 card_color: item.querySelector('.b-rt-bg')?.value || '#0b1220',
                 outline_color: item.querySelector('.b-rt-border')?.value || '#3b82f6',
                 text_color: item.querySelector('.b-rt-text')?.value || '#ffffff',
+                shape_color: item.querySelector('.b-rt-shape')?.value || '#1e293b',
                 product_ids: rtProductIds
             });
         } else {
