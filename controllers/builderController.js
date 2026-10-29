@@ -1652,8 +1652,8 @@ exports.getRealtimeStats = async (req, res) => {
         const slug = String(req.query.slug || '').trim();
         if (!slug) return res.json({ success: false });
 
-        const [u] = await db.execute('SELECT id, role FROM users WHERE slug = ? LIMIT 1', [slug]);
-        if (!u.length || u[0].role !== 'admin') return res.status(403).json({ success: false });
+        const [u] = await db.execute('SELECT id FROM users WHERE slug = ? LIMIT 1', [slug]);
+        if (!u.length) return res.json({ success: false });
         const userId = u[0].id;
 
         const emptyPayload = { success: true, empty: true, revenue: 0, sold: 0, views: 0, visitors: 0, conversion: 0 };
