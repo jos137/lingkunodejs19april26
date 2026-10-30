@@ -462,6 +462,14 @@ document.addEventListener('click', (e) => {
                                 <label class="b-label">Preset Warna</label>
                                 <div class="rt-presets"></div>
                             </div>
+                            <div style="margin-top:12px;">
+                                <label class="b-label">Mata Uang Tampilan</label>
+                                <select class="b-input b-select b-rt-currency" onchange="updatePreview(); triggerAutoSave();">
+                                    <option value="IDR" <%= (rtCfg.currency || 'IDR') === 'IDR' ? 'selected' : '' %>>Rupiah (Rp)</option>
+                                    <option value="USD" <%= rtCfg.currency === 'USD' ? 'selected' : '' %>>Dollar ($) — kurs Rp 15.000</option>
+                                </select>
+                                <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Hanya mengubah tampilan blok ini. Transaksi tetap Rupiah.</div>
+                            </div>
                             <% const rtProductIds = Array.isArray(rtCfg.product_ids) ? rtCfg.product_ids.map(Number) : []; %>
                             <div style="margin-top:12px;">
                                 <label class="b-label">Produk yang ditracking</label>
@@ -679,6 +687,14 @@ function addBlock(type) {
                 <div class="rt-presets"></div>
             </div>
             <div style="margin-top:12px;">
+                <label class="b-label">Mata Uang Tampilan</label>
+                <select class="b-input b-select b-rt-currency" onchange="updatePreview(); triggerAutoSave();">
+                    <option value="IDR">Rupiah (Rp)</option>
+                    <option value="USD">Dollar ($) — kurs Rp 15.000</option>
+                </select>
+                <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Hanya mengubah tampilan blok ini. Transaksi tetap Rupiah.</div>
+            </div>
+            <div style="margin-top:12px;">
                 <label class="b-label">Produk yang ditracking</label>
                 <div style="max-height:170px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px;padding:8px;background:#fff;">
                     ${rtProdChecks || '<div style="font-size:11px;color:#94a3b8;padding:6px;">Belum ada produk.</div>'}
@@ -882,6 +898,8 @@ function updatePreview() {
             const rtBorder = item.querySelector('.b-rt-border')?.value || '#3b82f6';
             const rtText = item.querySelector('.b-rt-text')?.value || '#ffffff';
             const rtShape = item.querySelector('.b-rt-shape')?.value || '#1e293b';
+            const rtCurrency = item.querySelector('.b-rt-currency')?.value === 'USD' ? 'USD' : 'IDR';
+            const rtRevenueLabel = rtCurrency === 'USD' ? '$ 0.00' : 'Rp 0';
             const rtSelected = Array.from(item.querySelectorAll('.b-rt-product:checked'))
                 .map(cb => (productList || []).find(p => String(p.id) === String(cb.value)))
                 .filter(Boolean);
@@ -901,7 +919,7 @@ function updatePreview() {
                 </div>
                 ${rtHasProducts ? '' : `<div style="font-size:10px;font-weight:700;color:${rtText};opacity:.7;margin-bottom:8px;">Pilih produk dulu agar blok tampil di publik.</div>`}
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PENJUALAN HARI INI</div><div style="font-size:14px;font-weight:900;color:${rtText};">Rp 0</div></div>
+                    <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PENJUALAN HARI INI</div><div style="font-size:14px;font-weight:900;color:${rtText};">${rtRevenueLabel}</div></div>
                     <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">PRODUK TERJUAL</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
                     <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">VIEWS</div><div style="font-size:14px;font-weight:900;color:${rtText};">0</div></div>
                     <div style="background:${rtShape};border:1px solid rgba(148,163,184,.25);border-radius:10px;padding:8px;"><div style="font-size:8px;color:${rtText};opacity:.65;font-weight:800;">KONVERSI</div><div style="font-size:14px;font-weight:900;color:${rtText};">0%</div></div>
@@ -950,6 +968,7 @@ async function saveBuilder() {
                 outline_color: item.querySelector('.b-rt-border')?.value || '#3b82f6',
                 text_color: item.querySelector('.b-rt-text')?.value || '#ffffff',
                 shape_color: item.querySelector('.b-rt-shape')?.value || '#1e293b',
+                currency: item.querySelector('.b-rt-currency')?.value === 'USD' ? 'USD' : 'IDR',
                 product_ids: rtProductIds
             });
         } else {

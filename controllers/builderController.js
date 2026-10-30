@@ -435,12 +435,14 @@ exports.renderUserPage = async (req, res) => {
                     mapped.outline_color = rtData.outline_color || '#3b82f6';
                     mapped.text_color = rtData.text_color || '#ffffff';
                     mapped.shape_color = rtData.shape_color || '#1e293b';
+                    mapped.currency = rtData.currency === 'USD' ? 'USD' : 'IDR';
                     mapped.product_ids = Array.isArray(rtData.product_ids) ? rtData.product_ids.map(Number).filter(Boolean) : [];
                 } catch (e) {
                     mapped.card_color = '#0b1220';
                     mapped.outline_color = '#3b82f6';
                     mapped.text_color = '#ffffff';
                     mapped.shape_color = '#1e293b';
+                    mapped.currency = 'IDR';
                     mapped.product_ids = [];
                 }
             }

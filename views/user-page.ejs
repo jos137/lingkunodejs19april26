@@ -301,13 +301,13 @@
                         </div>
                     <% } %>
                 <% } else if (block.type === 'realtime_revenue' && block.product_ids && block.product_ids.length) { %>
-                    <div class="rt-card" data-rt-slug="<%= user.slug %>" data-rt-products="<%= block.product_ids.join(',') %>" style="--rt-bg:<%= block.card_color || '#0b1220' %>; --rt-border:<%= block.outline_color || '#3b82f6' %>; --rt-text:<%= block.text_color || '#ffffff' %>; --rt-shape:<%= block.shape_color || '#1e293b' %>;">
+                    <div class="rt-card" data-rt-slug="<%= user.slug %>" data-rt-products="<%= block.product_ids.join(',') %>" data-rt-currency="<%= block.currency === 'USD' ? 'USD' : 'IDR' %>" data-rt-rate="15000" style="--rt-bg:<%= block.card_color || '#0b1220' %>; --rt-border:<%= block.outline_color || '#3b82f6' %>; --rt-text:<%= block.text_color || '#ffffff' %>; --rt-shape:<%= block.shape_color || '#1e293b' %>;">
                         <div class="rt-head">
                             <div class="rt-title"><span class="rt-live"></span> Realtime Revenue</div>
                             <div class="rt-clock" data-rt-clock>--:--:-- WIB</div>
                         </div>
                         <div class="rt-grid">
-                            <div class="rt-metric"><div class="rt-label">Penjualan Hari Ini</div><div class="rt-value" data-rt="revenue">Rp 0</div></div>
+                            <div class="rt-metric"><div class="rt-label">Penjualan Hari Ini</div><div class="rt-value" data-rt="revenue"><%= block.currency === 'USD' ? '$ 0.00' : 'Rp 0' %></div></div>
                             <div class="rt-metric"><div class="rt-label">Produk Terjual</div><div class="rt-value" data-rt="sold">0</div></div>
                             <div class="rt-metric"><div class="rt-label">Views</div><div class="rt-value" data-rt="views">0</div></div>
                             <div class="rt-metric"><div class="rt-label">Konversi</div><div class="rt-value" data-rt="conv">0%</div></div>
@@ -437,12 +437,21 @@
             if (!cards.length) return;
 
             function fmt(n) { return Number(n || 0).toLocaleString('id-ID'); }
+            function formatRevenue(card, value) {
+                var currency = card.getAttribute('data-rt-currency') || 'IDR';
+                var rate = Number(card.getAttribute('data-rt-rate')) || 15000;
+                if (currency === 'USD') {
+                    var usd = Number(value || 0) / rate;
+                    return '$ ' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                }
+                return 'Rp ' + fmt(value);
+            }
             function updateCard(card, data) {
                 var rev = card.querySelector('[data-rt="revenue"]');
                 var sold = card.querySelector('[data-rt="sold"]');
                 var views = card.querySelector('[data-rt="views"]');
                 var conv = card.querySelector('[data-rt="conv"]');
-                if (rev) rev.textContent = 'Rp ' + fmt(data.revenue);
+                if (rev) rev.textContent = formatRevenue(card, data.revenue);
                 if (sold) sold.textContent = fmt(data.sold);
                 if (views) views.textContent = fmt(data.views);
                 if (conv) conv.textContent = (Number(data.conversion) || 0).toFixed(1) + '%';
