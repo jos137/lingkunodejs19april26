@@ -82,11 +82,12 @@
 
         .block-product {
             display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; 
-            border: 1.5px solid #f1f5f9;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); text-decoration: none; color: inherit; transition: 0.2s;
+            border: 1px solid #eef2f7;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px -10px rgba(15, 23, 42, 0.18);
+            text-decoration: none; color: inherit; transition: 0.2s;
             width: 100%; box-sizing: border-box;
         }
-        .block-product:hover { transform: scale(1.01); border-color: #10b981; }
+        .block-product:hover { transform: scale(1.01); border-color: #10b981; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.07), 0 18px 36px -14px rgba(16, 185, 129, 0.35); }
         .product-thumb { width: 55px; height: 55px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px; overflow: hidden; border: 1px solid #f1f5f9; flex-shrink: 0; }
         .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .product-info { flex: 1; min-width: 0; }
@@ -113,7 +114,7 @@
         .theme-dark .product-ready { color: #cbd5e1 !important; }
         
         .theme-sky { background: #eff6ff !important; color: #1e3a8a !important; }
-        .theme-sky .block-product { background: #ffffff !important; border-color: #dbeafe !important; box-shadow: 0 4px 12px rgba(30, 58, 138, 0.05) !important; }
+        .theme-sky .block-product { background: #ffffff !important; border-color: #dbeafe !important; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.06), 0 10px 24px -10px rgba(30, 58, 138, 0.18) !important; }
         .theme-sky .product-name { color: #1e3a8a !important; }
 
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; width: 100%; }
