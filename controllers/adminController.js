@@ -1119,8 +1119,9 @@ exports.getStatistics = async (req, res) => {
         const f = filtered[0];
 
         // Best Sellers for this Seller (All Time)
-        const [bestSellers] = await db.execute(`
-            SELECT p.name, COUNT(o.id) as total_sold, SUM(o.total_price) as revenue
+        const [bestSellerRows] = await db.execute(`
+            SELECT p.id, p.name, p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo,
+                   COUNT(o.id) as total_sold, SUM(o.total_price) as revenue
             FROM orders o
             JOIN products p ON o.product_id = p.id
             WHERE p.user_id = ? AND o.status = 'completed'
@@ -1128,6 +1129,13 @@ exports.getStatistics = async (req, res) => {
             ORDER BY total_sold DESC
             LIMIT 5
         `, [userId]);
+
+        const bestSellers = bestSellerRows.map(p => {
+            const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+            const raw = [p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo]
+                .find(c => c && typeof c === 'string' && !invalidStrings.includes(c.toLowerCase().trim())) || '';
+            return { ...p, thumb: raw };
+        });
 
         res.render('admin/statistics', {
             title: 'Statistik',

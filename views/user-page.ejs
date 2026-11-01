@@ -65,7 +65,7 @@
         .name { font-size: <%= user.name_font_size || 18 %>px; font-weight: 850; margin: 0; color: <%= user.profile_text_color || '#111827' %>; letter-spacing: -0.3px; }
         .handle { color: var(--primary); font-size: 13px; font-weight: 700; margin-top: 2px; display: block; opacity: 0.8; }
         .bio-text { font-size: <%= user.bio_font_size || 12 %>px; color: <%= user.profile_text_color || '#64748b' %>; margin-top: 6px; line-height: 1.4; opacity: 0.7; }
-        .blocks-container { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+        .blocks-container { width: 100%; display: flex; flex-direction: column; gap: 20px; }
 
         /* Block Styles (Sesuai Struktur Baru PHP) */
         .block-text { font-size: 15px; color: #475569; line-height: 1.6; text-align: left; }
@@ -82,12 +82,12 @@
 
         .block-product {
             display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; 
-            border: 1px solid #eef2f7;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06), 0 10px 24px -10px rgba(15, 23, 42, 0.18);
+            border: 1.5px solid #dbe2ea;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 20px -12px rgba(15, 23, 42, 0.16);
             text-decoration: none; color: inherit; transition: 0.2s;
             width: 100%; box-sizing: border-box;
         }
-        .block-product:hover { transform: scale(1.01); border-color: #10b981; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.07), 0 18px 36px -14px rgba(16, 185, 129, 0.35); }
+        .block-product:hover { transform: scale(1.01); border-color: #10b981; box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06), 0 16px 32px -14px rgba(16, 185, 129, 0.3); }
         .product-thumb { width: 55px; height: 55px; background: #f8fafc; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 20px; overflow: hidden; border: 1px solid #f1f5f9; flex-shrink: 0; }
         .product-thumb img { width: 100%; height: 100%; object-fit: cover; }
         .product-info { flex: 1; min-width: 0; }
@@ -114,7 +114,7 @@
         .theme-dark .product-ready { color: #cbd5e1 !important; }
         
         .theme-sky { background: #eff6ff !important; color: #1e3a8a !important; }
-        .theme-sky .block-product { background: #ffffff !important; border-color: #dbeafe !important; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.06), 0 10px 24px -10px rgba(30, 58, 138, 0.18) !important; }
+        .theme-sky .block-product { background: #ffffff !important; border-color: #c7d7f5 !important; box-shadow: 0 1px 2px rgba(30, 58, 138, 0.05), 0 8px 20px -12px rgba(30, 58, 138, 0.18) !important; }
         .theme-sky .product-name { color: #1e3a8a !important; }
 
         .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; width: 100%; }
