@@ -19,33 +19,81 @@
             box-sizing: border-box;
         }
 
-        @media (max-width: 500px) {
-            body { padding: 12px 12px; }
-            .container { 
-                border-radius: 24px; 
-                min-height: calc(100vh - 24px);
-                padding: 25px 20px 50px 20px;
-            }
+        /* Hero header + menu: full-bleed, menyatu dengan body */
+        .store-hero {
+            width: calc(100% + 50px);
+            margin: -30px -25px 26px -25px;
+            padding: 16px 25px 24px;
+            background-color: <%= user.profile_box_color || '#ffffff' %>;
+            background-image: linear-gradient(135deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 55%);
+            color: <%= user.profile_text_color || '#111827' %>;
+            box-sizing: border-box;
+            border-radius: 0;
         }
-        .profile { 
-            width: 100%; background: <%= user.profile_box_color || '#ffffff' %>; 
-            padding: 20px;
-            display: <%= user.show_header == 0 ? 'none' : 'flex' %>; 
+        /* Jika profil disembunyikan, hero mengikuti tinggi menu saja */
+        .store-hero.hero-menu-only { padding-top: 0; padding-bottom: 0; margin-bottom: 0; background-color: transparent !important; background-image: none !important; }
+        .store-hero.hero-menu-only .store-nav { margin-top: 0; margin-bottom: 0; }
+        .store-nav {
+            position: relative;
+            display: flex; justify-content: flex-start; align-items: center; gap: 0;
+            width: calc(100% + 50px);
+            margin: -16px -25px 20px -25px;
+            padding: 9px 22px;
+            background: <%= user.store_nav_color || '#ffffff' %>;
+            color: <%= user.store_nav_text || '#111827' %>;
+            box-sizing: border-box;
+            border-radius: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+        }
+        .store-nav-toggle {
+            border: 0; background: transparent; color: inherit; cursor: pointer;
+            font-size: 17px; line-height: 1; padding: 4px 8px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .store-nav-toggle:hover { background: rgba(0,0,0,0.08); }
+        .store-nav-links {
+            display: none; position: absolute; top: calc(100% + 6px); left: 12px;
+            min-width: 150px; padding: 6px; border-radius: 12px;
+            background: rgba(15, 23, 42, 0.68);
+            -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.14);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.35); z-index: 80; flex-direction: column;
+        }
+        .store-nav-links.open { display: flex; }
+        .store-nav-links a {
+            display: block; color: #f8fafc !important; text-decoration: none;
+            font-size: 12px !important; font-weight: 700 !important; letter-spacing: 0 !important;
+            text-transform: none !important; opacity: 1 !important; padding: 10px 12px !important;
+            border-radius: 8px; text-align: left; position: static !important;
+        }
+        .store-nav-links a:hover { background: rgba(255,255,255,0.10); }
+        .store-nav-links a.active { background: rgba(255,255,255,0.16); color: #ffffff !important; }
+        .store-nav-links a.active::after { display: none !important; }
+        .store-nav.shape-pill { border-radius: 0 0 999px 999px; }
+        .store-nav.shape-rounded { border-radius: 0 0 14px 14px; }
+        .store-nav.shape-square { border-radius: 0; }
+        .store-nav.shape-flat { border-radius: 0; }
+        .store-nav.shape-outline { border-radius: 0; background: transparent; border-bottom: 2px solid <%= user.store_nav_color || '#111827' %>; color: <%= user.store_nav_color || '#111827' %>; }
+        .store-nav.is-floating {
+            position: fixed;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            width: 100%;
+            max-width: 480px;
+            margin: 0;
+        }
+        .store-hero.nav-floating { padding-top: 44px; }
+        .store-hero.hero-menu-only.nav-floating { margin-bottom: 0; }
+        .store-nav a { color: inherit; text-decoration: none; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; opacity: 0.55; padding: 2px 0; position: relative; transition: opacity 0.2s; }
+        .store-nav a:hover, .store-nav a.active { opacity: 1; }
+        .store-nav a.active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 2px; border-radius: 2px; background: currentColor; }
+        .profile {
+            width: 100%;
+            display: <%= user.show_header == 0 ? 'none' : 'flex' %>;
             align-items: center; gap: 20px;
-            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.05);
-            margin-bottom: 24px; border: 1.5px solid #f1f5f9;
             box-sizing: border-box; text-align: left;
-            
-            /* Dynamic Shapes */
-            <% if (user.header_type === 'box') { %>
-                border-radius: 0;
-            <% } else if (user.header_type === 'sketch') { %>
-                border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
-                border: 2px solid #111827;
-                box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
-            <% } else { %>
-                border-radius: 20px;
-            <% } %>
         }
         .avatar { 
             width: 70px; height: 70px; 
@@ -78,7 +126,7 @@
         }
         .block-button:hover { transform: translateY(-2px); }
 
-        .block-image { width: 100%; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.05); margin-bottom: 10px; }
+        .block-image { width: calc(100% + 50px); margin: 0 -25px; border-radius: 0; box-shadow: none; display: block; }
 
         .block-product {
             display: flex; align-items: center; gap: 16px; background: white; border-radius: 15px; padding: 16px; 
@@ -163,18 +211,64 @@
         .rt-product img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; flex-shrink: 0; background: #fff; }
         .rt-product-name { font-size: 11px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
         @media (max-width: 380px) { .rt-grid { grid-template-columns: 1fr; } }
+
+        @media (max-width: 500px) {
+            body { padding: 12px 12px; }
+            .container {
+                border-radius: 24px;
+                min-height: calc(100vh - 24px);
+                padding: 25px 20px 50px 20px;
+            }
+            .store-hero {
+                width: calc(100% + 40px);
+                margin: -25px -20px 22px -20px;
+                padding: 14px 20px 20px;
+                border-radius: 24px 24px 0 0;
+            }
+            .store-nav {
+                width: calc(100% + 40px);
+                margin: -14px -20px 18px -20px;
+                padding: 8px 20px;
+                border-top-left-radius: 24px !important;
+                border-top-right-radius: 24px !important;
+            }
+            .store-nav.is-floating {
+                top: 0;
+                width: calc(100vw - 24px);
+                margin: 0;
+            }
+            .store-hero.nav-floating { padding-top: 42px; }
+            .block-image {
+                width: calc(100% + 40px);
+                margin-left: -20px;
+                margin-right: -20px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="profile">
-            <img src="<%= img(user.profile_photo, 'profiles') %>" class="avatar" alt="Avatar" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.fullname || 'U') %>&background=2271b1&color=fff'">
-            <div class="profile-info">
-                <h1 class="name"><%= user.fullname || 'User' %></h1>
-                <span class="handle">@<%= user.slug || user.username %></span>
-                <% if (user.bio) { %>
-                    <div class="bio-text"><%= user.bio %></div>
-                <% } %>
+        <% const hideStoreHero = user.show_header == 0 && user.show_store_menu == 0; %>
+        <% const menuOnlyHero = user.show_header == 0 && user.show_store_menu != 0; %>
+        <div class="store-hero <%= menuOnlyHero ? 'hero-menu-only' : '' %> <%= (user.store_nav_floating && user.show_store_menu != 0) ? 'nav-floating' : '' %>" style="<%= hideStoreHero ? 'display:none;' : '' %>">
+            <% if (user.show_store_menu != 0) { %>
+            <nav class="store-nav shape-<%= user.store_nav_shape || 'pill' %> <%= user.store_nav_floating ? 'is-floating' : '' %>">
+                <button type="button" class="store-nav-toggle" aria-label="Menu"><i class="fas fa-bars"></i></button>
+                <div class="store-nav-links" id="storeNavLinks">
+                    <a href="/<%= user.slug %>" class="active">Home</a>
+                    <a href="/<%= user.slug %>/produk">Produk</a>
+                </div>
+            </nav>
+            <% } %>
+            <div class="profile">
+                <img src="<%= img(user.profile_photo, 'profiles') %>" class="avatar" alt="Avatar" onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.fullname || 'U') %>&background=2271b1&color=fff'">
+                <div class="profile-info">
+                    <h1 class="name"><%= user.fullname || 'User' %></h1>
+                    <span class="handle">@<%= user.slug || user.username %></span>
+                    <% if (user.bio) { %>
+                        <div class="bio-text"><%= user.bio %></div>
+                    <% } %>
+                </div>
             </div>
         </div>
 
@@ -487,6 +581,24 @@
             }
             refresh();
             setInterval(refresh, 30000);
+        })();
+    </script>
+    <script>
+        (function () {
+            var toggle = document.querySelector('.store-nav-toggle');
+            var menu = document.getElementById('storeNavLinks');
+            if (!toggle || !menu) return;
+            toggle.addEventListener('click', function (e) {
+                e.stopPropagation();
+                menu.classList.toggle('open');
+                toggle.setAttribute('aria-expanded', menu.classList.contains('open') ? 'true' : 'false');
+            });
+            document.addEventListener('click', function (e) {
+                if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+                    menu.classList.remove('open');
+                    toggle.setAttribute('aria-expanded', 'false');
+                }
+            });
         })();
     </script>
 </body>

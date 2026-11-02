@@ -7,6 +7,17 @@ const { cleanHtml, safeUrl } = require('../utils/sanitize');
 const { notifyTelegram, escapeHtml } = require('../utils/telegram');
 const tracking = require('../utils/tracking');
 
+// Pilih warna teks yang kontras untuk latar hex tertentu.
+function contrastText(hex) {
+    let h = String(hex || '#ffffff').replace('#', '');
+    if (h.length === 3) h = h.split('').map(c => c + c).join('');
+    const r = parseInt(h.substring(0, 2), 16) || 0;
+    const g = parseInt(h.substring(2, 4), 16) || 0;
+    const b = parseInt(h.substring(4, 6), 16) || 0;
+    const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    return lum > 150 ? '#111827' : '#ffffff';
+}
+
 async function syncPricingTier(product) {
     let stage = Number(product.pricing_stage || 1);
     if (!product.price_stage_1 || stage < 1 || stage > 3) return product;
@@ -545,6 +556,11 @@ exports.renderUserPage = async (req, res) => {
                 bio: user.bio,
                 profile_box_color: user.profile_box_color,
                 show_header: user.show_header,
+                show_store_menu: user.show_store_menu,
+                store_nav_color: user.store_nav_color || '#ffffff',
+                store_nav_text: contrastText(user.store_nav_color || '#ffffff'),
+                store_nav_floating: user.store_nav_floating ? 1 : 0,
+                store_nav_shape: ['pill','rounded','square','flat','outline'].includes(user.store_nav_shape) ? user.store_nav_shape : 'pill',
                 header_type: user.header_type,
                 profile_text_color: user.profile_text_color,
                 name_font_size: user.name_font_size,
@@ -561,10 +577,78 @@ exports.renderUserPage = async (req, res) => {
     }
 };
 
+exports.renderUserProducts = async (req, res) => {
+    try {
+        await ensureTables();
+        const { username } = req.params;
+
+        const [users] = await db.execute('SELECT * FROM users WHERE LOWER(slug) = LOWER(?)', [username]);
+        let user = users[0];
+        if (!user) {
+            const [byId] = await db.execute('SELECT * FROM users WHERE id = ?', [username]).catch(() => [[]]);
+            user = byId[0];
+        }
+        if (!user) return res.status(404).send('User not found');
+
+        let products = [];
+        try {
+            const [rows] = await db.execute(
+                "SELECT * FROM products WHERE user_id = ? AND COALESCE(product_role, 'main') = 'main' AND deleted_at IS NULL ORDER BY id DESC",
+                [user.id]
+            );
+            const invalidStrings = ['digital', 'mentoring', 'webinar', 'tiket', 'tiket webinar', 'null', 'undefined'];
+            products = rows.map(p => {
+                const candidates = [p.thumbnail, p.image_url, p.image_small, p.cover_image, p.photo];
+                let thumb = candidates.find(c => c && typeof c === 'string' && !invalidStrings.includes(c.toLowerCase().trim())) || '';
+                if (typeof thumb === 'string' && thumb.startsWith('[')) {
+                    try {
+                        const arr = JSON.parse(thumb);
+                        if (Array.isArray(arr) && arr.length) thumb = arr[0];
+                    } catch (e) { thumb = thumb; }
+                }
+                return { ...p, processed_thumb: thumb };
+            });
+        } catch (e) {
+            console.error('Store products error:', e.message);
+        }
+
+        tracking.logEvent(req, { sellerId: user.id, eventName: 'page_view', pageUrl: req.originalUrl });
+
+        res.render('user-products', {
+            title: 'Produk — ' + (user.fullname || 'Toko'),
+            layout: false,
+            fbPixelId: user.fb_pixel_id || null,
+            sellerId: user.id,
+            user: {
+                fullname: user.fullname,
+                slug: user.slug,
+                username: user.username,
+                profile_photo: user.profile_photo,
+                bio: user.bio,
+                profile_box_color: user.profile_box_color,
+                show_header: user.show_header,
+                show_store_menu: user.show_store_menu,
+                store_nav_color: user.store_nav_color || '#ffffff',
+                store_nav_text: contrastText(user.store_nav_color || '#ffffff'),
+                store_nav_floating: user.store_nav_floating ? 1 : 0,
+                store_nav_shape: ['pill','rounded','square','flat','outline'].includes(user.store_nav_shape) ? user.store_nav_shape : 'pill',
+                header_type: user.header_type,
+                profile_text_color: user.profile_text_color,
+                name_font_size: user.name_font_size,
+                bio_font_size: user.bio_font_size,
+                plan: user.plan || 'free'
+            },
+            products
+        });
+    } catch (err) {
+        console.error('Render Products Page Error:', err.message);
+        res.status(500).send('Internal Server Error');
+    }
+};
+
 exports.renderProductPage = async (req, res) => {
     try {
         const { productId } = req.params;
-
         // Get Product
         const [products] = await db.execute(`
             SELECT p.*, u.fullname as seller_name, u.slug as seller_slug, u.profile_photo as seller_photo, u.fb_pixel_id as seller_fb_pixel_id

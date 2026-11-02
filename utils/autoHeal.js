@@ -12,6 +12,10 @@ async function runAutoHeal() {
             }
         }
         try { await db.execute("ALTER TABLE users ADD COLUMN sidebar_theme VARCHAR(50) DEFAULT 'default' AFTER bio"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN show_store_menu TINYINT(1) DEFAULT 1"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN store_nav_color VARCHAR(20) DEFAULT '#ffffff'"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN store_nav_floating TINYINT(1) DEFAULT 0"); } catch(e){}
+        try { await db.execute("ALTER TABLE users ADD COLUMN store_nav_shape VARCHAR(20) DEFAULT 'pill'"); } catch(e){}
         try { await db.execute("ALTER TABLE users ADD COLUMN affiliate_code VARCHAR(50) UNIQUE DEFAULT NULL AFTER email"); } catch(e){}
         try { await db.execute("ALTER TABLE users ADD COLUMN referred_by INT DEFAULT NULL AFTER affiliate_code"); } catch(e){}
         try { await db.execute("ALTER TABLE users ADD COLUMN ipaymu_sandbox TINYINT(1) DEFAULT 0"); } catch(e){}

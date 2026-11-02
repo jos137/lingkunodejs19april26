@@ -95,6 +95,7 @@ router.post('/api/tiket/validate/:code', ticketController.validateTicket);
 
 // Dynamic User Landing Pages (MUST BE LAST)
 router.get('/:username', indexController.renderUserPage);
+router.get('/:username/produk', indexController.renderUserProducts);
 router.get('/:username/:pageSlug', indexController.renderUserPage);
 
 module.exports = router;
