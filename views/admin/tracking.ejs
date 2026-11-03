@@ -36,6 +36,7 @@
     const mConv = mVisitors > 0 ? (mPaid / mVisitors * 100) : 0;
     const mFunnelMax = Math.max(1, mVisitors, mOrders, mPaid);
 %>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
     .trk-page { width:100%; max-width:100%; min-width:0; overflow-x:hidden; }
     .trk-grid { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px; margin-bottom:20px; }
@@ -163,6 +164,14 @@
     .trk-tabs { display:flex; gap:6px; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:14px; width:fit-content; }
     .trk-tab { border:0; background:transparent; padding:6px 12px; border-radius:7px; font:inherit; font-size:11px; font-weight:800; color:#64748b; cursor:pointer; }
     .trk-tab.active { background:#fff; color:#111827; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+    .trk-panel-head { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .trk-panel-head .trk-tabs { margin-bottom:0; }
+    .trk-date-form { display:flex; align-items:center; gap:6px; }
+    .trk-date { border:1px solid #e2e8f0; border-radius:8px; padding:6px 8px; font-size:11px; font-weight:600; color:#334155; background:#fff; font-family:inherit; outline:none; }
+    .trk-date:focus { border-color:#3b82f6; }
+    .trk-date-range { min-width:180px; cursor:pointer; }
+    .trk-date-btn { border:0; background:#3b82f6; color:#fff; border-radius:8px; padding:7px 10px; cursor:pointer; font-size:11px; font-weight:800; display:flex; align-items:center; }
+    .trk-date-btn:hover { background:#2563eb; }
     .traffic-tab { display:none; }
     .traffic-tab.active { display:block; }
     .meta-mini-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
@@ -267,9 +276,16 @@
     </div>
 
     <div class="trk-panel">
-        <div class="trk-tabs">
-            <button type="button" class="trk-tab active" onclick="switchTrafficTab('sources', this)">Sumber Traffic</button>
-            <button type="button" class="trk-tab" onclick="switchTrafficTab('meta', this)">🎯 Iklan Meta</button>
+        <div class="trk-panel-head">
+            <div class="trk-tabs">
+                <button type="button" class="trk-tab active" onclick="switchTrafficTab('sources', this)">Sumber Traffic</button>
+                <button type="button" class="trk-tab" onclick="switchTrafficTab('meta', this)">🎯 Iklan Meta</button>
+            </div>
+            <form method="GET" action="/admin/tracking" class="trk-date-form" id="trkRangeForm">
+                <input type="text" id="trkDateRange" class="trk-date trk-date-range" placeholder="Pilih rentang tanggal" readonly>
+                <input type="hidden" name="from" id="trkFrom" value="<%= locals.filterFrom || '' %>">
+                <input type="hidden" name="to" id="trkTo" value="<%= locals.filterTo || '' %>">
+            </form>
         </div>
 
         <div class="traffic-tab active" id="ttab-sources">
@@ -371,6 +387,28 @@
     </div>
 </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var input = document.getElementById('trkDateRange');
+    if (!input || typeof flatpickr === 'undefined') return;
+    var fromEl = document.getElementById('trkFrom');
+    var toEl = document.getElementById('trkTo');
+    flatpickr(input, {
+        mode: 'range',
+        dateFormat: 'd M Y',
+        defaultDate: (fromEl.value && toEl.value) ? [new Date(fromEl.value + 'T00:00:00'), new Date(toEl.value + 'T00:00:00')] : null,
+        onChange: function (selectedDates, dateStr, instance) {
+            if (selectedDates.length === 2) {
+                fromEl.value = instance.formatDate(selectedDates[0], 'Y-m-d');
+                toEl.value = instance.formatDate(selectedDates[1], 'Y-m-d');
+                document.getElementById('trkRangeForm').submit();
+            }
+        }
+    });
+});
+</script>
 
 <script>
 function switchTrafficTab(id, el) {

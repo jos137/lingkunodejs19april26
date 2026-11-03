@@ -3104,6 +3104,16 @@ exports.getTracking = async (req, res) => {
         const params = isAdmin ? [] : [userId];
         const since = 'created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)';
 
+        // Rentang tanggal khusus panel Sumber Traffic & Iklan Meta (date range)
+        const dateRe = /^\d{4}-\d{2}-\d{2}$/;
+        const wibNow = new Date(Date.now() + 7 * 60 * 60 * 1000);
+        const defaultTo = wibNow.toISOString().slice(0, 10);
+        const defaultFrom = new Date(wibNow.getTime() - 29 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        let filterFrom = dateRe.test(String(req.query.from || '')) ? req.query.from : defaultFrom;
+        let filterTo = dateRe.test(String(req.query.to || '')) ? req.query.to : defaultTo;
+        if (filterFrom > filterTo) { const tmp = filterFrom; filterFrom = filterTo; filterTo = tmp; }
+        const panelCond = "DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) BETWEEN ? AND ?";
+
         const [counts] = await db.execute(
             `SELECT event_name, COUNT(*) AS total FROM analytics_events WHERE ${since} ${sellerFilter} GROUP BY event_name`,
             params
@@ -3136,9 +3146,9 @@ exports.getTracking = async (req, res) => {
 
         const [sources] = await db.execute(
             `SELECT COALESCE(NULLIF(utm_source, ''), NULLIF(referrer, ''), 'Direct') AS source, COUNT(*) AS total
-             FROM analytics_events WHERE ${since} ${sellerFilter}
+             FROM analytics_events WHERE ${panelCond} ${sellerFilter}
              GROUP BY source ORDER BY total DESC LIMIT 8`,
-            params
+            [filterFrom, filterTo, ...params]
         );
 
         const [topProducts] = await db.execute(
@@ -3163,8 +3173,8 @@ exports.getTracking = async (req, res) => {
         let metaStats = { visitors: 0, orders: 0, paid: 0, pending: 0, revenue: 0, campaigns: [] };
         try {
             const [mv] = await db.execute(
-                `SELECT COUNT(DISTINCT visitor_id) AS v FROM analytics_events WHERE ${since} ${sellerFilter} AND ${metaAdEvents}`,
-                params
+                `SELECT COUNT(DISTINCT visitor_id) AS v FROM analytics_events WHERE ${panelCond} ${sellerFilter} AND ${metaAdEvents}`,
+                [filterFrom, filterTo, ...params]
             );
             metaStats.visitors = mv[0] ? Number(mv[0].v) : 0;
 
@@ -3176,8 +3186,8 @@ exports.getTracking = async (req, res) => {
                         SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS pending,
                         COALESCE(SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END), 0) AS revenue
                  FROM orders
-                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${orderSellerFilter} AND ${metaAdOrders}`,
-                orderParams
+                 WHERE ${panelCond} ${orderSellerFilter} AND ${metaAdOrders}`,
+                [filterFrom, filterTo, ...orderParams]
             );
             const row = mo[0] || {};
             metaStats.orders = Number(row.total || 0);
@@ -3191,9 +3201,9 @@ exports.getTracking = async (req, res) => {
                         SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS paid,
                         COALESCE(SUM(CASE WHEN status = 'completed' THEN total_price ELSE 0 END), 0) AS revenue
                  FROM orders
-                 WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) ${orderSellerFilter} AND ${metaAdOrders}
+                 WHERE ${panelCond} ${orderSellerFilter} AND ${metaAdOrders}
                  GROUP BY campaign ORDER BY orders DESC LIMIT 5`,
-                orderParams
+                [filterFrom, filterTo, ...orderParams]
             );
             metaStats.campaigns = mc;
         } catch (e) {
@@ -3212,6 +3222,8 @@ exports.getTracking = async (req, res) => {
             topProducts,
             recent,
             metaStats,
+            filterFrom,
+            filterTo,
             user: req.session.user || res.locals.user
         });
     } catch (err) {
@@ -3220,6 +3232,8 @@ exports.getTracking = async (req, res) => {
             title: 'Tracking', layout: './layouts/admin', isAdmin: false,
             visitors: 0, counts: {}, revenue: 0, daily: [], sources: [], topProducts: [], recent: [],
             metaStats: { visitors: 0, orders: 0, paid: 0, pending: 0, revenue: 0, campaigns: [] },
+            filterFrom: '',
+            filterTo: '',
             user: req.session.user || res.locals.user
         });
     }
